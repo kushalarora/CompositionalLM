@@ -85,21 +85,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 oSpanScore[start][end] = 0f;
             }
         }
-
-        /*log.debug("Initializing narrowLExtent and wideLExtent arrays with {} and {}", -1, length +1);
-        for (int loc = 0; loc <= length; loc++) {
-            // the rightmost left with state s ending at i that we can get is the beginning
-            Arrays.fill(narrowLExtent[loc], -1);
-            // the leftmost left with state s ending at i that we can get is the end
-            Arrays.fill(wideLExtent[loc], length + 1);
-        }
-        log.debug("Initializing narrowRExtent and wideRExtent arrays with {} and {}", length +1, -1);
-        for (int loc = 0; loc < length; loc++) {
-            // the leftmost right with state s starting at i that we can get is the end
-            Arrays.fill(narrowRExtent[loc], length + 1);
-            // the rightmost right with state s starting at i that we can get is the beginning
-            Arrays.fill(wideRExtent[loc], -1);
-        }*/
         initializeChart(sentence);
 
         log.debug("Starting inside score computation");
@@ -235,10 +220,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             Arrays.fill(tags[start], false);
 
             float[] iScore_start_end = iScore[start][end];
-            /*int[] narrowRExtent_start = narrowRExtent[start];
-            int[] narrowLExtent_end = narrowLExtent[end];
-            int[] wideRExtent_start = wideRExtent[start];
-            int[] wideLExtent_end = wideLExtent[end];*/
 
             //Word context (e.g., morphosyntactic info)
             // TODO:: Figure out how to use this to advantage
@@ -263,19 +244,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 if (lexScore > Float.NEGATIVE_INFINITY) {
                     assignedSomeTag = true;
                     iScore_start_end[state] = ((float)exp(lexScore));
-                    /*
-                    // leftmost and rightmost right child of
-                    // non terminal state with span starting at
-                    // start are equal and span one word *word*
-                    narrowRExtent_start[state] = end;
-                    wideRExtent_start[state] = end;
-
-                    // rightmost and leftmost left child of
-                    // non terminal state with span ending at
-                    // end(start+1) are equal and span one word *word*
-                    narrowLExtent_end[state] = start;
-                    wideLExtent_end[state] = start;
-                    */
                 }
 
                 int tag = tagging.tag;
@@ -294,19 +262,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                         float lexScore = lex.score(new IntTaggedWord(word, tagIndex.indexOf(stateIndex.get(state))), start, wordIndex.get(word), wordContextStr);
                         if (lexScore > Float.NEGATIVE_INFINITY) {
                             iScore_start_end[state] = ((float)exp(lexScore));
-                            /*
-                            // leftmost and rightmost right child of
-                            // non terminal state with span starting at
-                            // start are equal and span one word *word*
-                            narrowRExtent_start[state] = end;
-                            wideRExtent_start[state] = end;
-
-                            // rightmost and leftmost left child of
-                            // non terminal state with span ending at
-                            // end(start+1) are equal and span one word *word*
-                            narrowLExtent_end[state] = start;
-                            wideLExtent_end[state] = start;
-                            */
                         }
                     }
                 }
@@ -334,17 +289,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     // different intermediate tags, so adding to
                     // previous instead of overwriting
                     iScore_start_end[parentState] += ((float) tot);
-
-                    /*
-                    // Min and max left and right span for
-                    // parentState can be start(end) and end(start)
-                    // as only span one has been considered till now
-                    // so not overwriting anything
-                    narrowRExtent_start[parentState] = end;
-                    narrowLExtent_end[parentState] = start;
-
-                    wideRExtent_start[parentState] = end;
-                    wideLExtent_end[parentState] = start;*/
 
                 }   // end for unary rules
             }   // end for state for unary rules
@@ -394,10 +338,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             }
         }
 
-        /*int[] narrowRExtent_start = narrowRExtent[start];
-        int[] wideRExtent_start = wideRExtent[start];
-        int[] narrowLExtent_end = narrowLExtent[end];
-        int[] wideLExtent_end = wideLExtent[end];*/
         float[][] iScore_start = iScore[start];
         float[] iScore_start_end = iScore_start[end];
 
@@ -408,60 +348,8 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 int leftChild = rule.leftChild;
                 int rightChild = rule.rightChild;
 
-                /*// leftmost right sibling of the left child
-                int narrowROfLC = narrowRExtent_start[leftChild];
-                // rightmost right sibling of left child
-                int wideROfLC = wideRExtent_start[leftChild];
-
-                // rightmost left sibling of the right child
-                int narrowLOfRC = narrowLExtent_end[rightChild];
-                // leftmost left sibling of right child
-                int wideLOfRC = wideLExtent_end[rightChild];
-
-                // can this left constituent leave space for a right constituent?
-                if (narrowROfLC >= end) {
-                    // maybe throw RunTimeException
-                    continue;
-                }
-
-                // can this right constituent leave space for a left constituent?
-                if (narrowLOfRC <= start) {
-                    // maybe throw RunTimeException
-                    continue;
-                }
-
-                // can this right constituent fit next to the left constituent?
-                // rightmost left child corresponding to right sibling is positioned before
-                // leftmost right child corresponding to the left sibling
-                // The two children can't fit next to each other as they always
-                // overlap
-                if (narrowLOfRC < narrowROfLC) {
-                    // maybe throw RunTimeException
-                    continue;
-                }
-
-                // maxPossibleLeftSpan = max(leftmost right sibling of left child,
-                //                           leftmost left sibling of the right child)
-                //  interior of the two
-                int maxPossibleLeftSpan = max(narrowROfLC, wideLOfRC);
-
-                // maxPossibleRightSpan = min(rightmost right sibling of leftchild,
-                //                            rightmost left sibling of the right child)
-                //  interior of the two
-                int maxPossibleRightSpan = (wideROfLC < narrowLOfRC ? wideROfLC : narrowLOfRC);
-
-                // can this left constituent stretch far enough to reach the right constituent?
-                // If maximum possible right span left child is to the left of
-                // max possible left right child, then there is no chance
-                // these rules can cover the whole span
-                if (maxPossibleLeftSpan > maxPossibleRightSpan) {
-                    continue;
-                }*/
-
                 // This binary split might be able to cover the span depending upon children's coverage.
                 float pS = rule.score;
-
-                //System.out.println("Min "+maxPossibleLeftSpan+" max "+maxPossibleRightSpan+" start "+start+" end "+end);
 
                 // find the split that can use this rule to make the max score
                 for (int split = start; split < end; split++) {
@@ -555,19 +443,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 double tot = exp(logAdd(iS, pS));
                 iScore_start_end[parentState] = ((float) tot);
 
-                /*double cur = iScore_start_end[parentState];
-                if (cur == 0f) {
-                    if (start > narrowLExtent_end[parentState]) {
-                        narrowLExtent_end[parentState] = wideLExtent_end[parentState] = start;
-                    } else if (start < wideLExtent_end[parentState]) {
-                        wideLExtent_end[parentState] = start;
-                    }
-                    if (end < narrowRExtent_start[parentState]) {
-                        narrowRExtent_start[parentState] = wideRExtent_start[parentState] = end;
-                    } else if (end > wideRExtent_start[parentState]) {
-                        wideRExtent_start[parentState] = end;
-                    }
-                }*/
             } // for UnaryRule r
         } // for unary rules
     }
@@ -596,10 +471,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
 
                 // do binaries
                 for (int state = 0; state < numStates; state++) {
-                    /*int min1 = narrowRExtent[start][state];
-                    if (end < min1) {
-                        continue;
-                    }*/
                     BinaryRule[] rules = bg.splitRulesWithLC(state);
                     for (BinaryRule br  : rules) {
 
@@ -609,27 +480,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                         }
                         oS = log(oS);
 
-                        /*int max1 = narrowLExtent[end][br.rightChild];
-                        if (max1 < min1) {
-                            continue;
-                        }
-
-                        int min = min1;
-                        int max = max1;
-
-                        if (max - min > 2) {
-                            int min2 = wideLExtent[end][br.rightChild];
-                            min = (min1 > min2 ? min1 : min2);
-                            if (max1 < min) {
-                                continue;
-                            }
-
-                            int max2 = wideRExtent[start][br.leftChild];
-                            max = (max1 < max2 ? max1 : max2);
-                            if (max < min) {
-                                continue;
-                            }
-                        }*/
                         float pS = br.score;
 
                         for (int split = start; split < end; split++) {
@@ -644,36 +494,12 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     }
                 }
                 for (int state = 0; state < numStates; state++) {
-                    /*int max1 = narrowLExtent[end][state];
-                    if (max1 < start) {
-                        continue;
-                    }*/
                     BinaryRule[] rules = bg.splitRulesWithRC(state);
                     for (BinaryRule br : rules) {
                         float oS = oScore[start][end][br.parent];
                         if (oS == 0f) {
                             continue;
                         }
-
-                        /*int min1 = narrowRExtent[start][br.leftChild];
-                        if (max1 < min1) {
-                            continue;
-                        }
-
-                        int min = min1;
-                        int max = max1;
-                        if (max - min > 2) {
-                            int min2 = wideLExtent[end][br.rightChild];
-                            min = (min1 > min2 ? min1 : min2);
-                            if (max1 < min) {
-                                continue;
-                            }
-                            int max2 = wideRExtent[start][br.leftChild];
-                            max = (max1 < max2 ? max1 : max2);
-                            if (max < min) {
-                                continue;
-                            }
-                        }*/
 
                         float pS = br.score;
 
