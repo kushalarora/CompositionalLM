@@ -7,8 +7,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import static com.kushalarora.compositionalLM.model.Parameters.Activation;
-
+import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -21,7 +20,7 @@ import java.lang.reflect.Method;
  */
 @Slf4j
 public class Model implements Serializable {
-    Parameters params;
+    public Parameters params;
 
     public Model(Parameters params, LexicalizedParser parserGrammar) {
         this.params = params;
@@ -42,20 +41,6 @@ public class Model implements Serializable {
         return params.getX().getColumn(index);
     }
 
-    @SneakyThrows
-    private static INDArray applyActivation(INDArray arr,
-                                            Activation activation) {
-        Method method = null;
-        try {
-            method = Transforms.class.getDeclaredMethod(activation.toString(), INDArray.class);
-        } catch (NoSuchMethodException e) {
-            log.error("Activation {} not found.", activation);
-            throw e;
-        }
-        assert method != null;
-        return (INDArray) method.invoke(null, arr);
-    }
-
     /**
      * Compose parent node from two children.
      *
@@ -72,8 +57,22 @@ public class Model implements Serializable {
                             "Current sizes are  : (%d, %d)", params.getDimensions(),
                     child1.size(0), child2.size(0)));
         }
-        val child12 = Nd4j.concat(0, child1, child2);
-        return applyActivation(params.getW().mmul(child12), params.getF());
+        INDArray child12 = Nd4j.concat(0, child1, child2);
+        return params.getF().apply(params.getW().mmul(child12));
+    }
+
+
+    public INDArray composeDerivative(@NonNull INDArray child1, @NonNull INDArray child2) {
+        if (!child1.isColumnVector() || !child2.isColumnVector()) {
+            throw new IllegalArgumentException("Child1 and Child2 should be column vectors");
+        } else if (child1.size(0) != params.getDimensions() ||
+                child2.size(0) != params.getDimensions()) {
+            throw new IllegalArgumentException(String.format("Child1 and Child2 should of size %d. " +
+                            "Current sizes are  : (%d, %d)", params.getDimensions(),
+                    child1.size(0), child2.size(0)));
+        }
+        INDArray child12 = Nd4j.concat(0, child1, child2);
+        return params.getF().applyDerivative(params.getW().mmul(child12));
     }
 
     /**
@@ -84,14 +83,40 @@ public class Model implements Serializable {
      * @param child2 right child embedding. d dimension column vector
      * @return energy value for the composition.
      */
-    public INDArray energy(@NonNull INDArray node, INDArray child1, INDArray child2) {
+    public float energy(@NonNull INDArray node, INDArray child1, INDArray child2) {
         if (!node.isColumnVector()) {
             throw new RuntimeException("Composed node should be a column vector");
         } else if (node.size(0) != params.getDimensions()) {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", params.getDimensions(), node.size(0)));
         }
-        return applyActivation(params.getU().mmul(node), params.getG());
+        INDArray valObj = params.getG().apply(params.getU().mmul(node));
+        int [] valShape = valObj.shape();
+        if (valShape.length != 2 || valShape[0] != 1 || valShape[1] != 1) {
+            throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
+        }
+        return valObj.getFloat(0, 0);
+    }
+
+
+    public float energyDerivative(@NonNull INDArray node, INDArray child1, INDArray child2) {
+        if (!node.isColumnVector()) {
+            throw new RuntimeException("Composed node should be a column vector");
+        } else if (node.size(0) != params.getDimensions()) {
+            throw new IllegalArgumentException(String.format("Node should of size %d. " +
+                    "Current size is: (%d)", params.getDimensions(), node.size(0)));
+        }
+        INDArray valObj = params.getG().applyDerivative(params.getU().mmul(node));
+        int [] valShape = valObj.shape();
+        if (valShape.length != 2 || valShape[0] != 1 || valShape[1] != 1) {
+            throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
+        }
+        return valObj.getFloat(0, 0);
+
+    }
+
+    public float energyDerivative(@NonNull INDArray node) {
+        return energyDerivative(node, null, null);
     }
 
     /**
@@ -100,7 +125,7 @@ public class Model implements Serializable {
      * @param node Leaf node embedding. d dimension column vector.
      * @return energy value for the leaf node.
      */
-    public INDArray energy(@NonNull INDArray node) {
+    public float energy(@NonNull INDArray node) {
         return this.energy(node, null, null);
     }
 }

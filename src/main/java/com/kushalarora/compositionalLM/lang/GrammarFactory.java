@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.kushalarora.compositionalLM.options.Options;
 import edu.berkeley.nlp.PCFGLA.Grammar;
 import edu.berkeley.nlp.PCFGLA.Lexicon;
 import edu.berkeley.nlp.PCFGLA.ParserData;
@@ -18,12 +19,12 @@ import lombok.val;
     // See how to handle all that shit
 
 public class GrammarFactory {
-    public enum GrammarType {
+    public static enum GrammarType {
         BERKELEY_GRAMMAR,
         STANFORD_GRAMMAR
     }
 
-    public IGrammar getGrammar(GrammarType type, String filename) {
+    public static IGrammar getGrammar(GrammarType type, String filename, Options op) {
         switch (type) {
             case BERKELEY_GRAMMAR:
                 @NonNull ParserData parserData = ParserData.Load(filename);
@@ -34,7 +35,7 @@ public class GrammarFactory {
             case STANFORD_GRAMMAR:
                 // TODO: Do similar thing for stanford grammar
                 @NonNull val model = LexicalizedParser.loadModel(filename);
-                return new StanfordGrammar(model.bg, model.ug, model.lex,
+                return new StanfordGrammar(model.bg, model.ug, model.lex, op,
                         model.getOp(), model.stateIndex, model.wordIndex,
                         model.tagIndex);
             default:

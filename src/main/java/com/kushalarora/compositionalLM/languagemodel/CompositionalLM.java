@@ -2,8 +2,8 @@ package com.kushalarora.compositionalLM.languagemodel;
 
 
 import com.kushalarora.compositionalLM.model.Parameters;
-import com.kushalarora.compositionalLM.utils.ArgUtils;
 import com.kushalarora.compositionalLM.options.ParserOptions;
+import com.kushalarora.compositionalLM.utils.ArgUtils;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
 import lombok.extern.slf4j.Slf4j;

@@ -6,7 +6,7 @@ package com.kushalarora.compositionalLM.options;
 public class GrammarOptions {
     public static int DEFAULT_MAX_LENGTH = 40;
 
-    public int maxLength = DEFAULT_MAX_LENGTH;
+    public static int maxLength = DEFAULT_MAX_LENGTH;
 
 
 }
