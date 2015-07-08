@@ -129,7 +129,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             // allocate just the parts of iScore and oScore used (end > start, etc.)
             // todo: with some modifications to doInsideScores,
             // we wouldn't need to allocate iScore[i,length] for i != 0 and i != length
-            log.debug("initializing iScore arrays with length " + length + " and numStates " + numStates);
             iScore = new float[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -137,7 +136,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 }
             }
 
-            log.debug("initializing oScore arrays with length " + length + " and numStates " + numStates);
             oScore = new float[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -145,8 +143,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 }
             }
 
-            // Kushal::ADDED CODE BEGIN
-            log.debug("initializing iSpanSplitScore arrays with length " + length);
             iSpanScore = new float[length][length + 1];
             oSpanScore = new float[length][length + 1];
 
@@ -194,8 +190,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 }
             }
 
-            log.debug("initializing oSpanScore arrays with length " + length);
-
             muScore = new float[length][length + 1][];
             muSpanSplitScore = new float[length][length + 1][];
             for (int start = 0; start < length; start++) {
@@ -206,8 +200,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     muScore[start][end] = new float[numStates];
                 }
             }
-            log.debug("Finished creating iscore, oscore, narrow, wide, " +
-                    "iSpanSplit and iSpan arrays");
+            log.debug("Finished allocating inside, outside and mu score arrays");
         }
 
         @Override
