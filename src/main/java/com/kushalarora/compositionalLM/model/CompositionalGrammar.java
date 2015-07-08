@@ -32,87 +32,42 @@ public class CompositionalGrammar {
         myMaxLength = Integer.MAX_VALUE;
     }
 
-    public void train(List<Word> sentence) {
-
-
-        float previousScore = Float.POSITIVE_INFINITY;
-        //Step 1:  Calculate priors \pi, \beta and \muSpanSplitScore
-
-        // Step 2: Optimize
-        // Step 2a Initialize matrices to be used in computation.
-        val scorer = new CompositionalInsideOutsideScorer(sentence);
-
-        // While iter or tolerance
-        // TODO:: Add condition for stopping optimization
-        do {
-            //Step 2b:  Calculate scorer for the sentence
-            // Step 2ba: Get continuous vectors for word and Initialize the leaf nodes
-
-            // Step 2bb: Iterate over inside scorer and build
-            // compositional matrix and phrasal representation matrix
-            // calculate posterior inside, outside probability and
-            // muSpanSplitScore.
-            float score = scorer.computeCompInsideOutsideScores();
-
-
-            // Step 2b:
-            // Step 2b1: If scorer diff from previous scorer less than tolerance
-            // return
-            // Step 2b2: Else
-            // Step 2b2a: Calculate derivatives
-
-            // Pass compositionalMu to derivate computation functions
-            // Let them handle derivative computation
-            // Step 2b2b: Do SGD on params
-            // Figure out how to do SGD
-        } while (true);     // add threshold or tolerance condition
-    }
-
-    public void parse(List<Word> sentence) {
-
-    }
-
-    public void nbest(List<List<Word>> decodings) {
-
-    }
-
-    public CompositionalInsideOutsideScorer getScorer(List<Word> sentence) {
-        return new CompositionalInsideOutsideScorer(sentence);
-    }
-
     public class CompositionalInsideOutsideScorer {
         private final int length;
-        List<Word> sentence;
-        // Inside outside score object for grammar
-        // being used
-        IInsideOutsideScores preScores;
         // Averaged representation of phrases in sentence
         private transient INDArray[][] phraseMatrix;
+
         // composition matrix for all possible phrases
         // contains multiple representation for each
         // phrase originating from different split
         private transient INDArray[][][] compositionMatrix;
+
         // extended mu to included compositional score
         private transient float[][][] compositionalMu;
+
         // extended inside score with compositional score
         private transient float[][] compositionalIScore;
+
         private transient float[][][] compositionISplitScore;
+
         // extended outside score extended with compositional score
         private transient float[][] compositionalOScore;
+
         // score for each phrase composition.
         private transient float[][][] compositionScore;
+
         // sum of scores all possible composition of a phrase.
         // marginalization over split
         private transient float[][] cumlCompositionScore;
+
         // current maximum length that we can handle
         private transient int arraySize;
 
-        public CompositionalInsideOutsideScorer(List<Word> sentence) {
-            arraySize = 0;
-            this.sentence = sentence;
-            length = sentence.size();
-            preScores = grammar.computeInsideOutsideProb(sentence);
-        }
+        List<Word> sentence;
+
+        // Inside outside score object for grammar
+        // being used
+        IInsideOutsideScores preScores;
 
         private void clearMatrices() {
             phraseMatrix = null;
@@ -357,6 +312,13 @@ public class CompositionalGrammar {
             }
         }
 
+        public CompositionalInsideOutsideScorer(List<Word> sentence) {
+            arraySize = 0;
+            this.sentence = sentence;
+            length = sentence.size();
+            preScores = grammar.computeInsideOutsideProb(sentence);
+        }
+
         public float[][] getInsideSpanProb() {
             return compositionalIScore;
         }
@@ -390,6 +352,55 @@ public class CompositionalGrammar {
             doMuScore();
             return compositionalIScore[0][length];
         }
+    }
+
+
+    public void train(List<Word> sentence) {
+
+
+        float previousScore = Float.POSITIVE_INFINITY;
+        //Step 1:  Calculate priors \pi, \beta and \muSpanSplitScore
+
+        // Step 2: Optimize
+        // Step 2a Initialize matrices to be used in computation.
+        val scorer = new CompositionalInsideOutsideScorer(sentence);
+
+        // While iter or tolerance
+        // TODO:: Add condition for stopping optimization
+        do {
+            //Step 2b:  Calculate scorer for the sentence
+            // Step 2ba: Get continuous vectors for word and Initialize the leaf nodes
+
+            // Step 2bb: Iterate over inside scorer and build
+            // compositional matrix and phrasal representation matrix
+            // calculate posterior inside, outside probability and
+            // muSpanSplitScore.
+            float score = scorer.computeCompInsideOutsideScores();
+
+
+            // Step 2b:
+            // Step 2b1: If scorer diff from previous scorer less than tolerance
+            // return
+            // Step 2b2: Else
+            // Step 2b2a: Calculate derivatives
+
+            // Pass compositionalMu to derivate computation functions
+            // Let them handle derivative computation
+            // Step 2b2b: Do SGD on params
+            // Figure out how to do SGD
+        } while (true);     // add threshold or tolerance condition
+    }
+
+    public void parse(List<Word> sentence) {
+
+    }
+
+    public void nbest(List<List<Word>> decodings) {
+
+    }
+
+    public CompositionalInsideOutsideScorer getScorer(List<Word> sentence) {
+        return new CompositionalInsideOutsideScorer(sentence);
     }
 
 }

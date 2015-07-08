@@ -26,11 +26,12 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class StanfordInsideOutsideScoresTest {
 
+    public AbstractInsideOutsideScores sIOScore;
     private static int numStates;
     private static int length;
     private static List<Word> defaultSentence;
     private static StanfordGrammar sg;
-    public AbstractInsideOutsideScores sIOScore;
+
 
     @BeforeClass
     public static void setUpClass() {

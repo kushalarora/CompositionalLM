@@ -34,9 +34,9 @@ public class CompositionalInsideOutsideScorerTest {
     private static List<Word> defaultSentence;
     private static int length;
     private static CompositionalGrammar cg;
+    private CompositionalGrammar.CompositionalInsideOutsideScorer scorer;
     private static int dim;
     private static Model model;
-    private CompositionalGrammar.CompositionalInsideOutsideScorer scorer;
 
     @BeforeClass
     public static void setUpClass() {
