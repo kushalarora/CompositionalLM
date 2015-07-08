@@ -4,11 +4,8 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
-import org.nd4j.linalg.api.activation.HardTanh;
-import org.nd4j.linalg.api.activation.Tanh;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import sun.rmi.server.Activation;
 
 import java.io.Serializable;
 
@@ -34,9 +31,9 @@ public class Parameters implements Serializable {
     public Parameters(int dimensions, int vocabSize, ActivationFunction composition, ActivationFunction output) {
         this.dimensions = dimensions;
         this.vocabSize = vocabSize;
-        W = Nd4j.create(dimensions, 2 * dimensions);    // d X 2d matrix
-        u = Nd4j.create(1, dimensions);                // row vector with d entries
-        X = Nd4j.create(dimensions, vocabSize);         // d X V matrix
+        W = Nd4j.rand(dimensions, 2 * dimensions);    // d X 2d matrix
+        u = Nd4j.rand(1, dimensions);                // row vector with d entries
+        X = Nd4j.rand(dimensions, vocabSize);         // d X V matrix
         f = composition;                                // default composition activation
         g = output;                         // default output activation
     }

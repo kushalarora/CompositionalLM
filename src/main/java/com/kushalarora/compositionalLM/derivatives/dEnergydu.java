@@ -2,9 +2,7 @@ package com.kushalarora.compositionalLM.derivatives;
 
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.model.Parameters;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.activation.Activations.*;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -30,16 +28,26 @@ class dEnergydu extends AbstractBaseDerivativeClass implements IDerivative {
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         float[][][] compositionMu = scorer.getMuScore();
 
-        for (int index = 0; index < length; index++) {
-            
-        }
+        // do leaf nodes
         for (int start = 0; start < length; start++) {
-            for (int end = start + 1; end <= length; end++) {
+            int end = start + 1;
+            int split = start;
+
+            INDArray compositionVector = compositionMatrix[start][end][split];
+            float dE = model.energyDerivative(compositionVector);
+            dEdu.add(compositionVector.muli(
+                    dE * compositionMu[start][end][split]));
+        }
+
+        for (int diff = 2; diff <= length; diff++) {
+            for (int start = 0; start + diff < length; start++) {
+                int end = start + diff;
                 for (int split = start + 1; split < end; split++) {
                     INDArray compositionVector = compositionMatrix[start][end][split];
                     float dE = model.energyDerivative(compositionVector);
-                    dEdu.add(compositionVector.muli(
-                            dE * compositionMu[start][end][split]));
+                    dEdu = dEdu.add(
+                            compositionVector.muli(
+                                    dE * compositionMu[start][end][split]));
                 }
             }
         }

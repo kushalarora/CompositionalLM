@@ -1,12 +1,13 @@
 package com.kushalarora.test.lang;
 
-import com.kushalarora.compositionalLM.lang.*;
+import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScores;
+import com.kushalarora.compositionalLM.lang.GrammarFactory;
+import com.kushalarora.compositionalLM.lang.StanfordGrammar;
+import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
-import junit.framework.Assert;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -25,12 +26,11 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class StanfordInsideOutsideScoresTest {
 
-    public AbstractInsideOutsideScores sIOScore;
     private static int numStates;
     private static int length;
     private static List<Word> defaultSentence;
     private static StanfordGrammar sg;
-
+    public AbstractInsideOutsideScores sIOScore;
 
     @BeforeClass
     public static void setUpClass() {
@@ -41,9 +41,6 @@ public class StanfordInsideOutsideScoresTest {
                 GrammarFactory.GrammarType.STANFORD_GRAMMAR,
                 filePath, new Options());
         numStates = sg.getNumStates();
-
-
-
         PropertyConfigurator.configure("log4j.properties");
     }
 
@@ -238,6 +235,7 @@ public class StanfordInsideOutsideScoresTest {
         sIOScore.doLexScores();
         sIOScore.doInsideScores();
         sIOScore.doOutsideScores();
+        sIOScore.computeMuSpanScore();
 
         float[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
         float[][][] muSpanStateScore = sIOScore.getMuScore();

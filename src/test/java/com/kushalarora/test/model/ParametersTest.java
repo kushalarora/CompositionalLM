@@ -2,7 +2,6 @@ package com.kushalarora.test.model;
 
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.model.Parameters;
-import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
 import lombok.val;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -11,12 +10,10 @@ import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static edu.stanford.nlp.parser.lexparser.LexicalizedParser.loadModel;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.nd4j.linalg.ops.transforms.Transforms.identity;
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by karora on 6/18/15.
@@ -27,9 +24,8 @@ public class ParametersTest {
 
     @BeforeClass
     public static void setUpClass() {
-        LexicalizedParser lp = loadModel();
         model = new Model(
-                new Parameters(10, 100, Activations.sigmoid(), Activations.linear()), lp);
+                new Parameters(10, 100, Activations.sigmoid(), Activations.linear()));
     }
 
     @Test

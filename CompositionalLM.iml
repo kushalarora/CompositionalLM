@@ -194,5 +194,6 @@
     <orderEntry type="library" name="Maven: io.dropwizard:dropwizard-views-freemarker:0.8.0" level="project" />
     <orderEntry type="library" name="Maven: org.freemarker:freemarker:2.3.21" level="project" />
     <orderEntry type="library" name="Maven: commons-io:commons-io:2.4" level="project" />
+    <orderEntry type="library" name="Maven: org.mockito:mockito-all:1.9.5" level="project" />
   </component>
 </module>

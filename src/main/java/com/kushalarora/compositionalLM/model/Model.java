@@ -1,19 +1,12 @@
 package com.kushalarora.compositionalLM.model;
 
 import com.kushalarora.compositionalLM.lang.Word;
-import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
-import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.Serializable;
-import java.lang.reflect.Method;
 
 /**
  * Created by karora on 6/18/15.
@@ -22,7 +15,7 @@ import java.lang.reflect.Method;
 public class Model implements Serializable {
     public Parameters params;
 
-    public Model(Parameters params, LexicalizedParser parserGrammar) {
+    public Model(Parameters params) {
         this.params = params;
     }
 
@@ -92,10 +85,10 @@ public class Model implements Serializable {
         }
         INDArray valObj = params.getG().apply(params.getU().mmul(node));
         int [] valShape = valObj.shape();
-        if (valShape.length != 2 || valShape[0] != 1 || valShape[1] != 1) {
+        if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
         }
-        return valObj.getFloat(0, 0);
+        return valObj.getFloat(0);
     }
 
 
