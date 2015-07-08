@@ -147,11 +147,16 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             oSpanScore = new float[length][length + 1];
 
             iSpanSplitScore = new float[length][length + 1][];
-            oSpanWParentScore = new float[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     // splits
                     iSpanSplitScore[start][end] = new float[length];
+                }
+            }
+
+            oSpanWParentScore = new float[length][length + 1][];
+            for (int start = 0; start < length; start++) {
+                for (int end = start + 1; end <= length; end++) {
                     // parents
                     oSpanWParentScore[start][end] = new float[length + 1];
                 }
@@ -175,17 +180,12 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             }
 
             iSplitSpanStateScore = new float[length][length + 1][][];
-            muSpanScoreWParent = new float[length][length + 1][][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
-                    // splits
-                    muSpanScoreWParent[start][end] = new float[length][];
                     iSplitSpanStateScore[start][end] = new float[length][];
                     for (int split = start; split < end; split++) {
                         // states
                         iSplitSpanStateScore[start][end][split] = new float[numStates];
-                        // parents
-                        muSpanScoreWParent[start][end][split] = new float[length + 1];
                     }
                 }
             }
@@ -198,6 +198,18 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     muSpanSplitScore[start][end] = new float[length];
                     // states
                     muScore[start][end] = new float[numStates];
+                }
+            }
+
+            muSpanScoreWParent = new float[length][length + 1][][];
+            for (int start = 0; start < length; start++) {
+                for (int end = start + 1; end <= length; end++) {
+                    // splits
+                    muSpanScoreWParent[start][end] = new float[length][];
+                    for (int split = start; split < end; split++) {
+                        // parents
+                        muSpanScoreWParent[start][end][split] = new float[length + 1];
+                    }
                 }
             }
             log.debug("Finished allocating inside, outside and mu score arrays");
