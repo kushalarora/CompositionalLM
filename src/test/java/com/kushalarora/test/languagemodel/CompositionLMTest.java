@@ -2,12 +2,15 @@ package com.kushalarora.test.languagemodel;
 
 import com.kushalarora.compositionalLM.languagemodel.CompositionalLM;
 import com.kushalarora.compositionalLM.model.Parameters;
+import edu.stanford.nlp.io.IOUtils;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.ObjectOutputStream;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -22,11 +25,16 @@ public class CompositionLMTest {
     public static String TRUE_FILENAME;
 
     @BeforeClass
+    @SneakyThrows
     public static void setUpClass() {
         TRUE_FILENAME = FileUtils.getFile("src/test/resources/model.gz")
                 .getAbsolutePath();
 
+        ObjectOutputStream out = IOUtils.writeStreamFromString(TRUE_FILENAME);
+
         trueParameters = new Parameters(10, 100);
+        out.writeObject(trueParameters);
+        out.close();
         compositionalLM = new CompositionalLM(trueParameters);
     }
 
@@ -35,7 +43,7 @@ public class CompositionLMTest {
     public void testSaveModelSerialized() {
         compositionalLM.saveModelSerialized("/tmp/model.gz");
 
-        val openedModel = compositionalLM.loadModelSerialized("/tmp/model.gz");
+        Parameters openedModel = compositionalLM.loadModelSerialized("/tmp/model.gz");
         assertEquals(trueParameters, openedModel);
     }
 
@@ -46,10 +54,9 @@ public class CompositionLMTest {
     }
 
     @Test
-    @Ignore
     // TODO:: Write test in a proper way
     public void testLoadModelSerialized() {
-        val model = compositionalLM.loadModelSerialized(TRUE_FILENAME);
+        Parameters model = compositionalLM.loadModelSerialized(TRUE_FILENAME);
         assertEquals(trueParameters, model);
     }
 

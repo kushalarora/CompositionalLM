@@ -28,6 +28,9 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by karora on 7/2/15.
  */
+
+// TODO:: Use mockito to mock  prescorer and write
+// better and smarter tests
 public class CompositionalInsideOutsideScorerTest {
 
     private static StanfordGrammar sg;
@@ -115,8 +118,8 @@ public class CompositionalInsideOutsideScorerTest {
         scorer.doMuScore();
 
 
-        // scorer.initializeMatrices(length);
-
+        boolean alliScoresZeros = true;
+        boolean allmuScoresZeros = true;
         iScore = scorer.getInsideSpanProb();
         muScore = scorer.getMuScore();
         compMatrix = scorer.getCompositionMatrix();
@@ -129,12 +132,11 @@ public class CompositionalInsideOutsideScorerTest {
         INDArray zerosIndArray = Nd4j.create(dim, 1);
         Arrays.fill(zerosLength, 0f);
         Arrays.fill(zerosLengthP1, 0f);
-        for (int start = 0; start < length; start++) {
-            for (int end = start + 1; end < length; end++) {
-                assertFalse("Start: " + start + " End: " + end,
-                        Arrays.equals(muScore[start][end], zerosLength));
-                assertFalse("Start: " + start + " End: " + end,
-                        Arrays.equals(iSplitScore[start][end], zerosLength));
+        for (int diff = 2; diff <= length; diff++) {
+            for (int start = 0; start + diff <= length; start++) {
+                int end = start + diff;
+                allmuScoresZeros &= Arrays.equals(muScore[start][end], zerosLength);
+                alliScoresZeros &= Arrays.equals(iSplitScore[start][end], zerosLength);
 
                 assertEquals(dim,
                         phraseMatrix[start][end].neq(
@@ -151,14 +153,17 @@ public class CompositionalInsideOutsideScorerTest {
                 }
             }
         }
+        assertFalse(alliScoresZeros);
+        assertFalse(allmuScoresZeros);
 
         scorer.initializeMatrices(length);
 
+        alliScoresZeros  = true;
+        allmuScoresZeros = true;
         for (int start = 0; start < length; start++) {
             for (int end = start + 1; end < length; end++) {
-                //               assertFalse(Arrays.equals(muScore[start][end], zerosLength));
-                assertTrue("Start: " + start + "End: " + end,
-                        Arrays.equals(iSplitScore[start][end], zerosLength));
+                allmuScoresZeros &= Arrays.equals(muScore[start][end], zerosLength);
+                alliScoresZeros &= Arrays.equals(iSplitScore[start][end], zerosLength);
 
                 assertEquals(dim,
                         phraseMatrix[start][end].eq(
@@ -175,6 +180,10 @@ public class CompositionalInsideOutsideScorerTest {
                 }
             }
         }
+
+        assertTrue(alliScoresZeros);
+        assertTrue(allmuScoresZeros);
+
     }
 
     @Test
@@ -224,12 +233,14 @@ public class CompositionalInsideOutsideScorerTest {
     @Test
     @Ignore
     public void testDoOutsideScores() {
-
+        // TODO:: Do we even need to test this
+        // as it is not being used at all.
+        // Maybe sanity check? If so, then how?
     }
 
     @Test
     @Ignore
     public void testDoMuScores() {
-
+        // TODO:: Figure out how to test  this
     }
 }

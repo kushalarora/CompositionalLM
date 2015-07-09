@@ -801,7 +801,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     }
 
                     // Takes care of the parents with span (start, parentEnd)
-                    for (int parentEnd = end; parentEnd < length; parentEnd++) {
+                    for (int parentEnd = end; parentEnd <= length; parentEnd++) {
                         double oScoreWParent = oSpanStateScoreWParent[start][end][parentEnd][state];
                         // If this is zero then parent  (start, parentEnd)
                         // were never expanded to child with this state spanning
@@ -874,7 +874,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                             }
 
                             // Takes care of the parents with span (start, parentEnd)
-                            for (int parentEnd = end; parentEnd < length; parentEnd++) {
+                            for (int parentEnd = end; parentEnd <= length; parentEnd++) {
                                 double oScoreWParent = oSpanStateScoreWParent[start][end][parentEnd][state];
                                 // If this is zero then parent  (start, parentEnd)
                                 // were never expanded to child with this state spanning

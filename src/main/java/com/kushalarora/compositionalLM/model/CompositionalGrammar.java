@@ -63,25 +63,48 @@ public class CompositionalGrammar {
         // current maximum length that we can handle
         private transient int arraySize;
 
+        // current sentence being processed
         List<Word> sentence;
 
         // Inside outside score object for grammar
         // being used
         IInsideOutsideScores preScores;
 
+        /**
+         * Clear all matrices.
+         */
         private void clearMatrices() {
+            // IndArray [start][end]
             phraseMatrix = null;
+
+            // IndArray [start][end][split]
             compositionMatrix = null;
 
+            // float [start][end]
             compositionalIScore = null;
+
+            // float  [start][end][split]
             compositionISplitScore = null;
+
+            // float [start][end]
             compositionalOScore = null;
+
+            // float[start][end][split]
             compositionalMu = null;
 
+            // float [start][end][split]
             compositionScore = null;
+
+            // float [start][end]
             cumlCompositionScore = null;
         }
 
+        /**
+         * Create matrix if the length is greater than the previous
+         * matrices else use the same. Initialize them by wiping out
+         *
+         * @param length length of the current sentence
+         */
         private void considerCreatingMatrices(int length) {
             if (length > GrammarOptions.maxLength ||
                     // myMaxLength if greater than zero,
@@ -96,12 +119,20 @@ public class CompositionalGrammar {
                 } catch (Exception e) {
                     log.error("Unable to create array of length {}. Reverting to size: {}",
                             length, arraySize);
+                    myMaxLength = length;
                     createMatrices(arraySize);
                 }
             }
             initializeMatrices(length);
         }
 
+        /**
+         * Allocate memory to matrices
+         *
+         * @param length length of the current sentence
+         */
+        // TODO:: Either remove length as argument here
+        // and in considerCreatingMatrices or add dimension as argument
         public void createMatrices(int length) {
             int dim = model.params.getDimensions();
             phraseMatrix = new INDArray[length][length + 1];
@@ -142,6 +173,11 @@ public class CompositionalGrammar {
             }
         }
 
+        /**
+         * Initialize all matrices to zeros
+         *
+         * @param length length of the current sentence
+         */
         public void initializeMatrices(int length) {
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -169,6 +205,10 @@ public class CompositionalGrammar {
             }
         }
 
+        /**
+         * Calculate compositional iScore, composition scores,
+         * cumulative composition score and phrase and composition matrix.
+         */
         public void doInsideScore() {
 
             float[][] iScores = preScores.getInsideSpanProb();
@@ -177,21 +217,34 @@ public class CompositionalGrammar {
             // compute scores and phrasal representation for leaf nodes
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
+                int split = start;
+
+                // Set phrase for word sentence[start]
                 phraseMatrix[start][end] = model.word2vec(sentence.get(start));
 
+                // For leaf nodes, the energy of the node is
+                // a function of phrase representation
                 val energy = model.energy(phraseMatrix[start][end]);
+
+                // un-normalized prob or score, is negative exp of energy
                 float score = ((float) exp(-energy));
 
-                compositionScore[start][end][start] = score;
-                cumlCompositionScore[start][end] = score;
-                compositionalIScore[start][end] = score * iScores[start][end];
-                compositionISplitScore[start][end][start] = score * iScores[start][end];
+                cumlCompositionScore[start][end] += score;
+                compositionScore[start][end][split] += score;
+
+                // comp iScore for a leaf node is iScore of span (start, start + 1)
+                // into composition score of (start, start + 1)
+                // This is like re-writing unary rule a=>w_i
+                compositionalIScore[start][end] += score * iScores[start][end];
+                compositionISplitScore[start][end][split] += score * iScores[start][end];
             }
 
 
-            for (int diff = 2; diff < length; diff++) {
+            for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start <= length - diff; start++) {
                     int end = start + diff;
+
+                    // if grammar iScores is 0, so will be comp score
                     if (iScores[start][end] == 0) {
                         throw new RuntimeException(
                                 String.format("Span iScore[%d][%d] == zero", start, end));
@@ -213,7 +266,7 @@ public class CompositionalGrammar {
                                 child1, child2);
                         float score = ((float) exp(-energy));
 
-                        compositionScore[start][end][split] = score;
+                        compositionScore[start][end][split] += score;
 
                         // Marginalize over split.
                         // This is composition score of span (start, end)
@@ -222,15 +275,21 @@ public class CompositionalGrammar {
 
                         float iSplitScore = iSplitScores[split][end][split];
 
-                        // composition iScore for span (start, end)
-                        // from children (start, split), (split, end)
-                        // iScore is current split * iScore of right child
-                        // * iScore of left child
+                        // iSplitScore consist iscore of (start, split) and
+                        // (split, end), so we just need to multiply
+                        // them with cuml composition score
+                        // For the binary rule, we multiply with binary composition
+                        // score
                         float compISplitScore = iSplitScore * score *
-                                compositionalIScore[start][split] *
-                                compositionalIScore[split][end];
+                                cumlCompositionScore[start][split] *
+                                cumlCompositionScore[split][end];
 
-                        compositionISplitScore[start][end][split] = compISplitScore;
+                        compositionISplitScore[start][end][split] += compISplitScore;
+
+
+                        // Composition iScore
+                        // Marginalized over various splits
+                        compositionalIScore[start][end] += compISplitScore;
 
                         // Phrase representation is weighted average
                         // of various split with iScores as weights
@@ -239,73 +298,97 @@ public class CompositionalGrammar {
                                         compositionMatrix[start][end][split].mul(
                                                 compISplitScore));
 
-
-                        // Composition iScore
-                        // Marginalized over various splits
-                        compositionalIScore[start][end] += compISplitScore;
                     }
-
                     // normalize weights to get them sum to 1.
                     phraseMatrix[start][end].div(compositionalIScore[start][end]);
                 }
             }
         }
 
+        /**
+         * Calculate composition outside score
+         */
         public void doOutsideScore() {
             float[][][] oScoreWParent = preScores.getOutsideSpanWParentScore();
-            for (int diff = length; diff >= 1; diff--) {
+            for (int diff = 1; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
 
+                    // Composition oScore is calculated using the grammar outside score by
+                    // multiplying cumlComposition score for expanded child and composition
+                    // score for binary rule.
                     for (int parentL = 0; parentL < start; parentL++) {
+                        // composition o score is composition score of parent(parentL, end)
+                        // by children (parentL, start), (start, end).
+                        // Then it is multiplied by cumilative score for (parentL, start)
+                        // which was expanded
                         compositionalOScore[start][end] += compositionScore[parentL][end][start] *
-                                cumlCompositionScore[start][end] * oScoreWParent[start][end][parentL];
+                                cumlCompositionScore[parentL][start] * oScoreWParent[start][end][parentL];
                     }
 
-                    for (int parentR = end; parentR < length; parentR++) {
+                    for (int parentR = end; end != length && parentR <= length; parentR++) {
+                        // composition o score is composition score of parent(start, parentR)
+                        // by children (start, end), (end, parentR).
+                        // Then it is multiplied by cumilative score for (end, parentR)
+                        // which was expanded
                         compositionalOScore[start][end] += compositionScore[start][parentR][end] *
-                                cumlCompositionScore[start][end] * oScoreWParent[start][end][parentR];
+                                cumlCompositionScore[end][parentR] * oScoreWParent[start][end][parentR];
                     }
                 }
             }
         }
 
+        /**
+         * Calculate compositional mu score
+         */
         public void doMuScore() {
             float[][][][] muSplitSpanScoresWParents = preScores.getMuSpanScoreWParent();
+            // do leaf nodes
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
 
-                float compISplitScore = compositionScore[start][end][split] *
-                        cumlCompositionScore[start][split] *
-                        cumlCompositionScore[split][end];
-
+                // muScore is computed as  iScore * oScore.
+                // To compute compositional mu score, we need to compute
+                // TODO:: Will this always be zero?
                 for (int parentL = 0; parentL < start; parentL++) {
-                    compositionalMu[start][end][split] += muSplitSpanScoresWParents[start][end][split][parentL] *
-                            compISplitScore * compositionScore[parentL][end][start];
+                    compositionalMu[start][end][split] +=
+                            muSplitSpanScoresWParents[start][end][split][parentL] *
+                                    cumlCompositionScore[start][end] *
+                                    compositionScore[parentL][end][start] *
+                                    cumlCompositionScore[parentL][start];
                 }
-                for (int parentR = end; parentR < length; parentR++) {
-                    compositionalMu[start][end][split] += muSplitSpanScoresWParents[start][end][split][parentR] *
-                            compositionScore[start][parentR][end];
+                for (int parentR = end; parentR <= length; parentR++) {
+                    try {
+                        compositionalMu[start][end][split] +=
+                                muSplitSpanScoresWParents[start][end][split][parentR] *
+                                        cumlCompositionScore[start][end] *
+                                        compositionScore[start][parentR][end] *
+                                        cumlCompositionScore[end][parentR];
+                    } catch (Exception e) {
+                        log.error("Nothing");
+                    }
                 }
 
             }
-
             for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
                     for (int split = start + 1; split < end; split++) {
-                        float compISplitScore = compositionScore[start][end][split] *
-                                cumlCompositionScore[start][split] *
-                                cumlCompositionScore[split][end];
 
                         for (int parentL = 0; parentL < start; parentL++) {
-                            compositionalMu[start][end][split] = muSplitSpanScoresWParents[start][end][split][parentL] *
-                                    compISplitScore * compositionScore[parentL][end][start];
+                            compositionalMu[start][end][split] +=
+                                    muSplitSpanScoresWParents[start][end][split][parentL] *
+                                            cumlCompositionScore[start][end] *
+                                            compositionScore[parentL][end][start] *
+                                            cumlCompositionScore[parentL][start];
                         }
-                        for (int parentR = end; parentR < length; parentR++) {
-                            compositionalMu[start][end][split] = muSplitSpanScoresWParents[start][end][split][parentR] *
-                                    compISplitScore * compositionScore[start][parentR][end];
+                        for (int parentR = end; end != length && parentR <= length; parentR++) {
+                            compositionalMu[start][end][split] +=
+                                    muSplitSpanScoresWParents[start][end][split][parentR] *
+                                            cumlCompositionScore[start][end] *
+                                            compositionScore[start][parentR][end] *
+                                            cumlCompositionScore[end][parentR];
                         }
                     }
                 }
