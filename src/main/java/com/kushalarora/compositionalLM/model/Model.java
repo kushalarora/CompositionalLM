@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.model;
 
 import com.kushalarora.compositionalLM.lang.Word;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,6 +14,7 @@ import java.io.Serializable;
  */
 @Slf4j
 public class Model implements Serializable {
+    @Getter
     public Parameters params;
 
     public Model(Parameters params) {
