@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by karora on 6/25/15.
  */
+
+
 @Slf4j
 public class StanfordInsideOutsideScoresTest {
 
@@ -240,20 +242,61 @@ public class StanfordInsideOutsideScoresTest {
 
         float[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
         float[][][] muSpanStateScore = sIOScore.getMuScore();
-
+        float [][][][] muSpanSplitWParent = sIOScore.getMuSpanScoreWParent();
         for (int start = 0; start < length; start++) {
-            for (int end = start + 1; end <= length; end++) {
+            int end = start + 1;
+            int split = start;
+
+            float mu_score_state_sum = 0.0f;
+            for (int state = 0; state < numStates; state++) {
+                mu_score_state_sum += muSpanStateScore[start][end][state];
+            }
+
+            float mu_score_split_sum = 0.0f;
+            float mu_score_split_parent_sum = 0;
+            mu_score_split_sum += muSpanSplitScore[start][end][split];
+            for (int parentL = 0; parentL < start; parentL++) {
+                mu_score_split_parent_sum += muSpanSplitWParent[start][end][split][parentL];
+            }
+
+            for (int parentR = 0; parentR < start; parentR++) {
+                mu_score_split_parent_sum += muSpanSplitWParent[start][end][split][parentR];
+            }
+
+            assertEquals("Start: " + start + " End: " +  end,
+                    mu_score_split_sum, mu_score_state_sum, 0.00001);
+
+            assertEquals("Start: " + start + " End: " +  end,
+                    mu_score_split_sum, mu_score_split_parent_sum, 0.00001);
+        }
+
+        for (int diff = 2; diff <= length; diff++)  {
+            for  (int start = 0; start + diff <= length; start++) {
+                int end = start + diff;
+
                 float mu_score_state_sum = 0.0f;
                 for (int state = 0; state < numStates; state++) {
                     mu_score_state_sum += muSpanStateScore[start][end][state];
                 }
 
                 float mu_score_split_sum = 0.0f;
+                float mu_score_split_parent_sum = 0;
                 for (int split = start + 1; split < end; split++) {
                     mu_score_split_sum += muSpanSplitScore[start][end][split];
+                    for (int parentL = 0; parentL < start; parentL++) {
+                        mu_score_split_parent_sum += muSpanSplitWParent[start][end][split][parentL];
+                    }
+
+                    for (int parentR = 0; parentR < start; parentR++) {
+                        mu_score_split_parent_sum += muSpanSplitWParent[start][end][split][parentR];
+                    }
                 }
 
-                assertEquals(mu_score_split_sum, mu_score_state_sum);
+                assertEquals("Start: " + start + " End: " +  end,
+                        mu_score_split_sum, mu_score_state_sum, 0.00001);
+
+                assertEquals("Start: " + start + " End: " +  end,
+                        mu_score_split_sum, mu_score_split_parent_sum, 0.00001);
             }
         }
     }

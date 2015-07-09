@@ -21,6 +21,11 @@ import static java.lang.Math.log;
  *
  * @author Kushal Arora
  */
+
+// TODO:: Avoid repeatition in all functions while handling
+// unary and binary rule cases by creating sub routines
+// of the common code with arguments start, end, split
+
 @Slf4j
 public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
     /**
@@ -39,7 +44,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         /**
          * Deallocate all the arrays.
          */
-        // Kushal::Added nullification of span score arrays
         public void clearArrays() {
             log.debug("clearing arrays");
             // [start][end][state]
@@ -126,9 +130,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             // ran out of memory and are reallocating
             clearArrays();
 
-            // allocate just the parts of iScore and oScore used (end > start, etc.)
-            // todo: with some modifications to doInsideScores,
-            // we wouldn't need to allocate iScore[i,length] for i != 0 and i != length
             iScore = new float[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -235,13 +236,16 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
 
                     // fill splits (start, end)
                     Arrays.fill(iSpanSplitScore[start][end], 0f);
+
                     // fill splits (start, end)
                     Arrays.fill(oSpanWParentScore[start][end], 0f);
 
                     for (int split = start + 1; split < end; split++) {
                         // fill state
                         Arrays.fill(iSplitSpanStateScore[start][end][split], 0f);
+                    }
 
+                    for (int split = start + 1; split < end; split++) {
                         // fill parent
                         Arrays.fill(muSpanScoreWParent[start][end][split], 0f);
                     }
@@ -330,9 +334,8 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
 
                         // in case of leaf nodes there is no node, hence
                         // we keeping the value of split at start
-                        iSpanSplitScore[start][end][start] += tot;
                         iSplitSpanStateScore[start][end][start][state] += tot;
-
+                        iSpanSplitScore[start][end][start] += tot;
                         iSpanScore[start][end] += tot;
                         log.debug("Start:{} End:{} State: {}  Tag => Word : {} {} Score: {}", start, end, state,
                                 tagging,
@@ -362,9 +365,8 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
 
                                 // in case of leaf nodes there is no node, hence
                                 // we keeping the value of split at start
-                                iSpanSplitScore[start][end][start] += tot;
                                 iSplitSpanStateScore[start][end][start][state] += tot;
-
+                                iSpanSplitScore[start][end][start] += tot;
                                 iSpanScore[start][end] += tot;
                             }
                         }
@@ -397,9 +399,8 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
 
                         // in case of leaf nodes there is no node, hence
                         // we keeping the value of split at start
-                        iSpanSplitScore[start][end][start] += tot;
                         iSplitSpanStateScore[start][end][start][state] += tot;
-
+                        iSpanSplitScore[start][end][start] += tot;
                         iSpanScore[start][end] += tot;
                         log.debug("Start:{} End:{} Unary {} iScore: {}", start, end, ur,
                                 iScore_start_end[parentState]);
@@ -470,6 +471,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                         stateSplit[parentState][split] = true;
 
                         double tot = exp(pS + lS + rS);
+
                         // in left child
                         iScore[start][end][parentState] += tot;
 
@@ -552,7 +554,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     double tot = exp(iS + pS);
                     iScore[start][end][parentState] += tot;
 
-                    // Kushal::ADDED CODE BEGINS
                     // We are marginalizing over all states and this state
                     // spans (start,end) and should be marginalized for all
                     // splits
@@ -562,34 +563,28 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                             iSplitSpanStateScore[start][end][split][parentState] += tot;
                         }
                     }
-                    //  Kushal::ADDED CODE ENDS
 
                 } // for UnaryRule r
             } // for unary rules
 
-            // Kushal::ADDED CODE BEGINS
             for (int split = start + 1; split < end; split++) {
                 // Marginalizing over both split and parent state
                 iSpanScore[start][end] += iSpanSplitScore[start][end][split];
             }
-            // Kushal::ADDED CODE ENDS
-
-            for (int state = 0; state < numStates; state++) {
-                if (iScore[start][end][state] > 0) {
-                    log.debug("iScore[{}][{}][{}] = {}", start, end, state, iScore[start][end][state]);
-                }
-            }
         }
 
         /**
-         *
+         * Populate outside score related arrays.
          */
         public void doOutsideScores() {
-            int goal = stateIndex.indexOf(goalStr);
-            oScore[0][length][goal] = 1.0f;
-            oSpanScore[0][length] = 1.0f;
-            oSpanWParentScore[0][length][length] = 1.0f;
-            oSpanStateScoreWParent[0][length][length][goal] = 1.0f;
+            int initialParentIdx = length;
+            int initialStart = 0;
+            int initialEnd = length;
+            int startSymbol = stateIndex.indexOf(goalStr);
+            oScore[initialStart][initialEnd][startSymbol] = 1.0f;
+            oSpanScore[initialStart][initialEnd] = 1.0f;
+            oSpanWParentScore[initialStart][initialEnd][initialParentIdx] = 1.0f;
+            oSpanStateScoreWParent[initialStart][initialEnd][initialParentIdx][startSymbol] = 1.0f;
 
             for (int diff = length; diff >= 1; diff--) {
                 for (int start = 0; start + diff <= length; start++) {
@@ -598,6 +593,12 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     log.info("Computing oScore for span ({}, {})", start, end);
                     // do unaries
                     for (int parentState = 0; parentState < numStates; parentState++) {
+                        // As this is unary rule and parent span is same as child,
+                        // so consider the whole sentence to be parent ending with end
+                        int parent = end;
+
+                        // if current parentState's outside score is zero,
+                        // child's would be zero as well
                         double oS = oScore[start][end][parentState];
                         if (oS == 0f) {
                             continue;
@@ -607,24 +608,32 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                         UnaryRule[] rules = ug.closedRulesByParent(parentState);
                         for (UnaryRule ur : rules) {
                             float pS = ur.score;
+                            int childState = ur.child;
                             double tot = exp(oS + pS);
                             log.debug("Adding unary rule {} to outside score for Start: {}, End: {}"
                                     , ur, start, end);
-                            oScore[start][end][ur.child] += tot;
-                            oSpanScore[start][end] += tot;
 
-                            // As this is unary rule and parent span is same as child,
-                            // so consider the whole sentence to be parent ending with end
-                            oSpanWParentScore[start][end][end] += tot;
-                            oSpanStateScoreWParent[start][end][end][ur.child] += tot;
+                            oSpanScore[start][end] += tot;
+                            oScore[start][end][ur.child] += tot;
+                            oSpanWParentScore[start][end][parent] += tot;
+                            oSpanStateScoreWParent[start][end][parent][childState] += tot;
                         }   // end for unary rule iter
                     }   // end for parentState
 
                     // do binaries
+
+                    // Outside score with left child not expanded
                     for (int leftState = 0; leftState < numStates; leftState++) {
+                        // Left span starts at start and ends at split.
+                        // The parent ends at end and is stored, the parent
+                        // begins at start
+                        int lStart = start;
+                        int lParent = end;
                         BinaryRule[] rules = bg.splitRulesWithLC(leftState);
                         for (BinaryRule br : rules) {
 
+                            // If paren't outside score is zero, so will be
+                            // the child's
                             double oS = oScore[start][end][br.parent];
                             if (oS == 0f) {
                                 continue;
@@ -634,13 +643,26 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                             float pS = br.score;
 
                             for (int split = start + 1; split < end; split++) {
+                                // left span ends at end.
+                                int lEnd = split;
 
+                                // iScore of the right child.
+                                // If the right child's iScore is zero, so
+                                // will be the oScore of left child.
                                 double rS = iScore[split][end][br.rightChild];
                                 if (rS == 0f) {
+                                    log.debug("oScore[{}][{}][{}] = {} found but iScore[{}][{}][{}] = 0 for rule {}",
+                                            start, end, br.parent, oS,
+                                            split, end, br.rightChild,
+                                            br);
                                     continue;
                                 }
                                 rS = log(rS);
-                                log.debug("oScore[{}][{}][{}]=oScore[{}][{}][{}]({}) + iScore[{}][{}][{}]({}) Rule {}",
+
+                                log.debug("oScore[{}][{}][{}]= pS + oScore[{}][{}][{}]({}) + iScore[{}][{}][{}]" +
+                                                "({}) " +
+                                                "Rule" +
+                                                " {}",
                                         start, split, leftState,
                                         start, end, br.parent, oS,
                                         split, end, br.rightChild, rS,
@@ -648,24 +670,26 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
 
                                 double totR = exp(pS + rS + oS);
 
-                                oScore[start][split][leftState] += totR;
-
-                                // outside Score for span (start, split) with
-                                // parent ending at end
-                                oSpanWParentScore[start][split][end] += totR;
-
-                                oSpanStateScoreWParent[start][split][end][leftState] += totR;
-
-                                // outside score for span (start, split)
-                                oSpanScore[start][split] += totR;
+                                oSpanScore[lStart][lEnd] += totR;
+                                oScore[lStart][lEnd][leftState] += totR;
+                                oSpanWParentScore[lStart][lEnd][lParent] += totR;
+                                oSpanStateScoreWParent[lStart][lEnd][lParent][leftState] += totR;
 
                             }   // end for split
                         }   // end for binary rule iter
                     }   // end for leftState
 
+                    // Outside score with right child not expanded
                     for (int rightState = 0; rightState < numStates; rightState++) {
+                        // for right span, the span spans (split, end) with parents left endpoint
+                        // stored in start, with right endpoint being end.
+                        int rEnd = end;
+                        int rParent = start;
+
                         BinaryRule[] rules = bg.splitRulesWithRC(rightState);
                         for (BinaryRule br : rules) {
+
+                            //  if oScore of parent is zero, so is child's.
                             double oS = oScore[start][end][br.parent];
                             if (oS == 0f) {
                                 continue;
@@ -675,8 +699,17 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                             float pS = br.score;
 
                             for (int split = start + 1; split < end; split++) {
+                                // the left endpoint of  right span is split.
+                                int  rStart = split;
+
+                                // If iScore of the left span is zero, so is the
+                                // oScore of left span
                                 double lS = iScore[start][split][br.leftChild];
                                 if (lS == 0f) {
+                                    log.debug("oScore[{}][{}][{}] = {} found but iScore[{}][{}][{}] = 0 for rule {}",
+                                            start, end, br.parent, oS,
+                                            start, split, br.leftChild,
+                                            br);
                                     continue;
                                 }
                                 lS = log(lS);
@@ -687,16 +720,10 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                                         start, split, br.leftChild, lS,
                                         br);
                                 double totL = exp(pS + lS + oS);
-                                oScore[split][end][rightState] += totL;
-
-                                // outside score for span (split, end) with parent
-                                // starting at start
-                                oSpanWParentScore[split][end][start] += totL;
-
-                                oSpanStateScoreWParent[split][end][start][rightState] += totL;
-
-                                // outside score for span (split, end)
-                                oSpanScore[split][end] += totL;
+                                oSpanScore[rStart][rEnd] += totL;
+                                oScore[rStart][rEnd][rightState] += totL;
+                                oSpanWParentScore[rStart][rEnd][rParent] += totL;
+                                oSpanStateScoreWParent[rStart][rEnd][rParent][rightState] += totL;
 
                             }   // end for split
                         }   // end for binary rules iter
@@ -707,7 +734,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         }   // end doOutsideScores
 
         /**
-         *
+         * Populate mu score arrays
          */
         public void computeMuSpanScore() {
 
@@ -719,6 +746,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 int split = start;
                 for (int state = 0; state < numStates; state++) {
 
+                    // If iScore or oScore is zero, the mu score is zero
                     double iS = iScore[start][end][state];
                     if (iS == 0) {
                         continue;
@@ -732,52 +760,71 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     }
                     oS = log(oS);
 
+
+
                     double tot;
                     tot = exp(iS + oS);
                     muScore[start][end][state] += tot;
                     log.debug("muScore[{}][{}][{}] = {}",
                             start, end, state, tot);
 
+                    // Will surely reach here if this is non zero
+                    // as iScore is nothing but marginalization over split
+                    // If this is zero, then this split with this state
+                    // din't occur in grammar
                     double iSplitSpanStateScore = this.iSplitSpanStateScore[start][end][split][state];
                     if (iSplitSpanStateScore == 0) {
                         continue;
                     }
                     iSplitSpanStateScore = log(iSplitSpanStateScore);
 
-                    for (int parent = 0; parent < start; parent++) {
-                        double oScoreWParent = oSpanStateScoreWParent[start][end][parent][state];
+                    tot = exp(oS + iSplitSpanStateScore);
+                    muSpanSplitScore[start][end][split] += tot;
+                    log.debug("muSpanSplitScore[{}][{}][{}] = {}",
+                            start, end, split, tot);
 
+                    // Takes care of parents of span (parentBegin, end)
+                    for (int parentBegin = 0; parentBegin < start; parentBegin++) {
+                        double oScoreWParent = oSpanStateScoreWParent[start][end][parentBegin][state];
+
+                        // If this is zero then parent  (parentBegin, end)
+                        // were never expanded to child with this state spanning
+                        // (start, end)
                         if (oScoreWParent == 0f) {
                             continue;
                         }
                         oScoreWParent = log(oScoreWParent);
                         tot = exp(oScoreWParent + iSplitSpanStateScore);
-                        muSpanScoreWParent[start][end][split][parent] += tot;
+                        muSpanScoreWParent[start][end][split][parentBegin] += tot;
                         log.debug("muSpanScoreWParent[{}][{}][{}][{}] = {}",
-                                start, end, split, parent, tot);
+                                start, end, split, parentBegin, tot);
                     }
 
-                    for (int parent = end; parent < length; parent++) {
-                        double oScoreWParent = oSpanStateScoreWParent[start][end][parent][state];
-
+                    // Takes care of the parents with span (start, parentEnd)
+                    for (int parentEnd = end; parentEnd < length; parentEnd++) {
+                        double oScoreWParent = oSpanStateScoreWParent[start][end][parentEnd][state];
+                        // If this is zero then parent  (start, parentEnd)
+                        // were never expanded to child with this state spanning
+                        // (start, end)
                         if (oScoreWParent == 0f) {
                             continue;
                         }
                         oScoreWParent = log(oScoreWParent);
                         tot = exp(oScoreWParent + iSplitSpanStateScore);
-                        muSpanScoreWParent[start][end][split][parent] += tot;
+                        muSpanScoreWParent[start][end][split][parentEnd] += tot;
                         log.debug("muSpanScoreWParent[{}][{}][{}][{}] = {}",
-                                start, end, split, parent, tot);
+                                start, end, split, parentEnd, tot);
                     }
                 }
             }
 
             // Handle cases for diff = 2 and above
-            for (int diff = length; diff >= 2; diff--) {
+            for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
                     for (int state = 0; state < numStates; state++) {
 
+                        // If iScore or oScore is zero, the mu score is zero
                         double oS = oScore[start][end][state];
                         if (oS == 0) {
                             continue;
@@ -789,6 +836,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                             continue;
                         }
                         iS = log(iS);
+
                         double tot;
 
                         tot = exp(oS + iS);
@@ -808,31 +856,38 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                             log.debug("muSpanSplitScore[{}][{}][{}] = {}",
                                     start, end, split, tot);
 
-                            for (int parent = 0; parent < start; parent++) {
-                                double oScoreWParent = oSpanStateScoreWParent[start][end][parent][state];
-
+                            // Takes care of parents of span (parentBegin, end)
+                            for (int parentBegin = 0; parentBegin < start; parentBegin++) {
+                                double oScoreWParent = oSpanStateScoreWParent[start][end][parentBegin][state];
+                                // If this is zero then parent  (parentBegin, end)
+                                // were never expanded to child with this state spanning
+                                // (start, end)
                                 if (oScoreWParent == 0f) {
                                     continue;
                                 }
                                 oScoreWParent = log(oScoreWParent);
 
                                 tot = exp(oScoreWParent + iSplitSpanStateScore);
-                                muSpanScoreWParent[start][end][split][parent] += tot;
+                                muSpanScoreWParent[start][end][split][parentBegin] += tot;
                                 log.debug("muSpanScoreWParent[{}][{}][{}][{}] = {}",
-                                        start, end, split, parent, tot);
+                                        start, end, split, parentBegin, tot);
                             }
 
-                            for (int parent = end; parent < length; parent++) {
-                                double oScoreWParent = oSpanStateScoreWParent[start][end][parent][state];
-
+                            // Takes care of the parents with span (start, parentEnd)
+                            for (int parentEnd = end; parentEnd < length; parentEnd++) {
+                                double oScoreWParent = oSpanStateScoreWParent[start][end][parentEnd][state];
+                                // If this is zero then parent  (start, parentEnd)
+                                // were never expanded to child with this state spanning
+                                // (start, end)
                                 if (oScoreWParent == 0f) {
                                     continue;
                                 }
                                 oScoreWParent = log(oScoreWParent);
+
                                 tot = exp(oScoreWParent + iSplitSpanStateScore);
-                                muSpanScoreWParent[start][end][split][parent] += tot;
+                                muSpanScoreWParent[start][end][split][parentEnd] += tot;
                                 log.debug("muSpanScoreWParent[{}][{}][{}][{}] = {}",
-                                        start, end, split, parent, tot);
+                                        start, end, split, parentEnd, tot);
                             }
                         }
                     }   // end for start
