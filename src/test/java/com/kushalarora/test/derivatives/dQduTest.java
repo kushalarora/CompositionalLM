@@ -1,6 +1,7 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dQdu;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,11 +15,10 @@ import static org.junit.Assert.assertEquals;
  */
 public class dQduTest extends AbstractDerivativeTest {
 
-    protected static dQdu dQdu;
+    protected dQdu dQdu;
 
-    @BeforeClass
-    public static void setUpClass() {
-        AbstractDerivativeTest.setUpClass();
+    @Before
+    public void setUp() {
         dQdu = new dQdu(model);
     }
 
@@ -32,8 +32,6 @@ public class dQduTest extends AbstractDerivativeTest {
      */
     @Test
     public void testCalcDerivative() {
-        dQdu.clear();
-
         INDArray arr = dQdu.calcDerivative(cScorer);
 
         INDArray trueArray = Nd4j.zeros(dim, 1);

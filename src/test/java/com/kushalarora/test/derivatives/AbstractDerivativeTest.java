@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jblas.NDArray;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.when;
 public class AbstractDerivativeTest {
 
     protected static Model model;
+    protected static Parameters params;
     protected static int dim = 10;
     protected static int V = 100;
     protected static CompositionalGrammar.CompositionalInsideOutsideScorer cScorer;
@@ -29,6 +31,7 @@ public class AbstractDerivativeTest {
     @BeforeClass
     public static void setUpClass() {
         model = mock(Model.class);
+        params = mock(Parameters.class);
         cScorer = mock(CompositionalGrammar.CompositionalInsideOutsideScorer.class);
         List<Word> defaultSentence = new ArrayList<Word>();
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {
@@ -42,11 +45,15 @@ public class AbstractDerivativeTest {
         INDArray[][] phraseMatrix = new INDArray[length][length + 1];
         float[][][] compMu = new float[length][length + 1][];
 
+        float [][][] compISplitScore = new float[length][length + 1][];
+        float [][] compIScore = new float[length][length + 1];
+
 
         for (int start = 0; start < length; start++) {
             for (int end = 0; end <= length; end++) {
                 dummyCompMatrix[start][end] = new INDArray[length];
                 compMu[start][end] = new float[length];
+                compISplitScore[start][end] = new float[length];
 
                 phraseMatrix[start][end] = Nd4j.ones(dim, 1);
                 for (int split = start + 1; split < end; split++) {
@@ -57,29 +64,71 @@ public class AbstractDerivativeTest {
 
         for (int idx = 0; idx < length; idx++) {
             compMu[idx][idx + 1][idx] = 1.0f;
+            compISplitScore[idx][idx + 1][idx] = 1.0f;
+            compIScore[idx][idx + 1] = 1.0f;
         }
 
         for (int start = 0; start < length; start++) {
             for (int end = 0; end <= length; end++) {
+                compIScore[start][end] = end - start - 1;
                 for (int split = start + 1; split < end; split++) {
-                    compMu[start][end][split] = 1;
+                    compMu[start][end][split] = 1.0f;
+                    compISplitScore[start][end][split] = 1.0f;
                 }
             }
         }
-
+        // compositionMatrix and phraseMatrix are mocked to
+        // matrices of vectors of all 1
         when(cScorer.getCompositionMatrix())
                 .thenReturn(dummyCompMatrix);
+
         when(cScorer.getPhraseMatrix())
                 .thenReturn(phraseMatrix);
+
+        // mu score is mocked to be 1 for all spans and splits
         when(cScorer.getMuScore())
                 .thenReturn(compMu);
 
+        // iSplit score is mocked to all 1
+        when(cScorer.getCompositionISplitScore())
+                .thenReturn(compISplitScore);
+
+        // inside score is mocked to keep the sanity
+        // with iSplitScore
+        when(cScorer.getInsideSpanProb())
+                .thenReturn(compIScore);
+
+        // When asked for energy derivative, mock it to 1.0f
         when(model.energyDerivative((INDArray) any()))
                 .thenReturn(1.0f);
+
+        when(params.getDimensions())
+                .thenReturn(dim);
+
+        when(params.getVocabSize())
+                .thenReturn(V);
+
+
+        // mocking W to return a diagonal matrix with 1.
+        // This will help return the child1
+        // as a result of  W.dot(c_12)
+        //INDArray W = Nd4j.zeros(dim, 2 * dim);
+        //for (int i = 0; i < dim; i++) {
+            //W.putScalar(new int[]{i, i}, 0f);
+        //}
+
+        INDArray W = mock(INDArray.class);
+        when(W.mmul((INDArray)any()))
+                .thenReturn(Nd4j.ones(dim));
+
+        when(params.getW())
+                .thenReturn(W);
+
         when(model.getParams())
-                .thenReturn(
-                        new Parameters(10, 100,
-                                Activations.linear(),
-                                Activations.linear()));
+                .thenReturn(params);
+
+        // return all ones as composition derivative
+        when(model.composeDerivative((INDArray)any(), (INDArray)any()))
+                .thenReturn(Nd4j.ones(dim, 1));
     }
 }

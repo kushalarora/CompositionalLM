@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.derivatives;
 
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
+import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -10,25 +11,31 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class dXdW extends AbstractBaseDerivativeClass {
     // d X 2d array of column vectors
+    @Getter
     INDArray[][][][][] dXdW;
+    int dim;
 
     public dXdW(Model model) {
         super(model);
-        int dim = model.params.getDimensions();
+        dim = model.getParams().getDimensions();
         dXdW = new INDArray[dim][2 * dim][][][];
+
+        for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < 2 * dim; j++) {
+                dXdW[i][j] = null;
+            }
+        }
 
     }
 
     public INDArray[][][][][] calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
         int length = scorer.getCurrentSentence().size();
-        int dim = model.params.getDimensions();
 
         // Allocate memory to hold spans and split
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 * dim; j++) {
-                dXdW[i][j] = new INDArray[length][][];
+                dXdW[i][j] = new INDArray[length][length + 1][];
                 for (int start = 0; start < length; start++) {
-                    dXdW[i][j][start] = new INDArray[length][];
                     for (int end = start + 1; end <= length; end++) {
                         dXdW[i][j][start][end] = new INDArray[length];
                     }
@@ -42,6 +49,11 @@ public class dXdW extends AbstractBaseDerivativeClass {
         float[][] compositionIScore = scorer.getInsideSpanProb();
 
         INDArray[][] dXdWij = new INDArray[length][length + 1];
+        for (int start = 0; start < length; start++) {
+            for (int end = start + 1; end <= length; end++) {
+                dXdWij[start][end] = Nd4j.zeros(dim, 1);
+            }
+        }
 
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 * dim; j++) {
@@ -62,6 +74,7 @@ public class dXdW extends AbstractBaseDerivativeClass {
                 for (int diff = 2; diff <= length; diff++) {
                     for (int start = 0; start + diff <= length; start++) {
                         int end = start + diff;
+
                         for (int split = start + 1; split < end; split++) {
 
                             // Calculate f'(c_1, c_2)
@@ -70,23 +83,27 @@ public class dXdW extends AbstractBaseDerivativeClass {
                             INDArray dC = model.composeDerivative(child1, child2);
 
                             // 1_j \dot c_12
-                            INDArray vec = Nd4j.zeros(dim);
-                            vec.putScalar(j, (j < dim ?
-                                    child1.getFloat(j) :
-                                    child2.getFloat(j - dim)));
+                            INDArray vec = Nd4j.zeros(dim, 1);
+                            vec.putScalar((j < dim ? j : j - dim),
+                                    (j < dim ?
+                                            child1.getFloat(j) :
+                                            child2.getFloat(j - dim)));
 
                             // [dc_1dW_ij dc_2dW_ij].transpose()
-                            INDArray dC12 = Nd4j.concat(0, dXdWij[start][split], dXdWij[split][end]);
+                            INDArray dC12 = Nd4j.concat(0,
+                                    dXdWij[start][split],
+                                    dXdWij[split][end]);
 
                             dXdW[i][j][start][end][split] =
-                                    // f'(c_1, c_2) \dot (
-                                    dC.muli(
+                                    // (
                                             // 1_j \dot c_12 + (
                                             vec.add(
                                                     // W *
-                                                    model.params.getW().mul(
+                                                    model.getParams().getW().mmul(
                                                             // [dc_1 dc_2]^T)) *
-                                                            dC12)));
+                                                            dC12)).muli(
+                                            // \dot  f'(c_1, c_2)
+                                            dC);
 
 
                             // weighted marginalization over split
@@ -109,12 +126,9 @@ public class dXdW extends AbstractBaseDerivativeClass {
     }
 
     public void clear() {
-        int dim = model.params.getDimensions();
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 * dim; j++) {
-                for (int k = 0; k < dim; k++) {
                     dXdW[i][j] = null;
-                }
             }
         }
     }
