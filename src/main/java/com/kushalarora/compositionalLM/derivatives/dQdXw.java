@@ -11,12 +11,12 @@ import java.util.List;
 /**
  * Created by karora on 6/21/15.
  */
-public class dEnergydXw extends AbstractBaseDerivativeClass implements IDerivative {
+public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
     private dXdXw dxdxw;
     private INDArray dEdXw;
 
 
-    public dEnergydXw(Model model, dXdXw dxdxw) {
+    public dQdXw(Model model, dXdXw dxdxw) {
         super(model);
         this.dxdxw = dxdxw;
         int dim = model.params.getDimensions();

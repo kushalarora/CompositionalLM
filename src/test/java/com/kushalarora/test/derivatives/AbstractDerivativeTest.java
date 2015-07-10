@@ -102,27 +102,29 @@ public class AbstractDerivativeTest {
         when(model.energyDerivative((INDArray) any()))
                 .thenReturn(1.0f);
 
+        when(model.energyDerivative(
+                (INDArray)any(), (INDArray)any(), (INDArray)any()))
+                .thenReturn(1.0f);
+
         when(params.getDimensions())
                 .thenReturn(dim);
 
         when(params.getVocabSize())
                 .thenReturn(V);
 
-
-        // mocking W to return a diagonal matrix with 1.
-        // This will help return the child1
-        // as a result of  W.dot(c_12)
-        //INDArray W = Nd4j.zeros(dim, 2 * dim);
-        //for (int i = 0; i < dim; i++) {
-            //W.putScalar(new int[]{i, i}, 0f);
-        //}
-
         INDArray W = mock(INDArray.class);
         when(W.mmul((INDArray)any()))
-                .thenReturn(Nd4j.ones(dim));
+                .thenReturn(Nd4j.ones(dim, 1));
 
         when(params.getW())
                 .thenReturn(W);
+
+        INDArray  u = mock(INDArray.class);
+        when(u.mmul((INDArray)any()))
+                .thenReturn(Nd4j.ones(1, 1));
+
+        when(params.getU())
+                .thenReturn(u);
 
         when(model.getParams())
                 .thenReturn(params);
