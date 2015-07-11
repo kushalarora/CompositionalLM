@@ -35,14 +35,14 @@ public class dQdXwTest extends AbstractDerivativeTest {
         when(W.mmul((INDArray) any()))
                 .thenReturn(Nd4j.eye(dim));
 
-        when(params.getW())
+        when(model.getW())
                 .thenReturn(W);
 
         INDArray  u = mock(INDArray.class);
         when(u.mmul((INDArray)any()))
                 .thenReturn(Nd4j.ones(dim, 1));
 
-        when(params.getU())
+        when(model.getU())
                 .thenReturn(u);
     }
 

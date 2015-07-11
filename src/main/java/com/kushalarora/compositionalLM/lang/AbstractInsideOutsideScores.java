@@ -1,6 +1,5 @@
 package com.kushalarora.compositionalLM.lang;
 
-import edu.stanford.nlp.ling.TaggedWord;
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.extern.slf4j.Slf4j;
 

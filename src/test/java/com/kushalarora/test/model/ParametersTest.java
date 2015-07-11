@@ -1,7 +1,6 @@
 package com.kushalarora.test.model;
 
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.model.Parameters;
 import lombok.val;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -25,7 +24,9 @@ public class ParametersTest {
     @BeforeClass
     public static void setUpClass() {
         model = new Model(
-                new Parameters(10, 100, Activations.sigmoid(), Activations.linear()));
+                10, 100,
+                Activations.sigmoid(),
+                Activations.linear());
     }
 
     @Test
@@ -43,7 +44,7 @@ public class ParametersTest {
         assertEquals(shape[1], 1);
 
         INDArray child12Vec = Nd4j.concat(0, child1Vec, child2Vec);
-        INDArray trueParentVec = sigmoid(model.params.getW().mmul(child12Vec));
+        INDArray trueParentVec = sigmoid(model.getW().mmul(child12Vec));
         assertEquals(String.format("True: %s,Model: %s", trueParentVec.toString(), modelParentVec.toString()), trueParentVec,
                 modelParentVec);
     }
@@ -53,7 +54,7 @@ public class ParametersTest {
         val vec = Nd4j.rand(10, 1);
         float modelEnergy = model.energy(vec);
 
-        float trueEnergy = identity(model.params.getU().mmul(vec)).getFloat(0, 0);
+        float trueEnergy = identity(model.getU().mmul(vec)).getFloat(0, 0);
         assertEquals(String.format("True: %f,Model: %f", trueEnergy, modelEnergy), trueEnergy,
                 modelEnergy, .0001);
     }
@@ -65,7 +66,7 @@ public class ParametersTest {
         val parentVec = model.compose(child1Vec, child2Vec);
         float modelEnergy = model.energy(parentVec, child1Vec, child2Vec);
 
-        float trueEnergy = identity(model.params.getU().mmul(parentVec)).getFloat(0, 0);
+        float trueEnergy = identity(model.getU().mmul(parentVec)).getFloat(0, 0);
         assertEquals(String.format("True: %f,Model: %f", trueEnergy, modelEnergy), trueEnergy,
                 modelEnergy, 0.0001);
     }

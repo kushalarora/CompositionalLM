@@ -5,7 +5,6 @@ import com.kushalarora.compositionalLM.lang.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.model.Parameters;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
@@ -50,10 +49,8 @@ public class CompositionalInsideOutsideScorerTest {
                 filePath, new Options());
         PropertyConfigurator.configure("log4j.properties");
 
-        model = new Model(new Parameters(10, sg.getVocabSize()));
-        dim = model.params.getDimensions();
-
-
+        model = new Model(10, sg.getVocabSize());
+        dim = model.getDimensions();
     }
 
     @Before

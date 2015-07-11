@@ -22,8 +22,8 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
     public dQdXw(Model model, dXdXw dxdxw) {
         super(model);
         this.dxdxw = dxdxw;
-        dim = model.getParams().getDimensions();
-        V = model.getParams().getVocabSize();
+        dim = model.getDimensions();
+        V = model.getVocabSize();
         dQdXw = Nd4j.zeros(dim, V);
     }
 
@@ -59,7 +59,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
 
             // diff wrt to self returns eye
             INDArray udXdXwArr =
-                    model.getParams().getU()
+                    model.getU()
                             .mmul(dcdc);
 
             int[] udXdXwShape = udXdXwArr.shape();
@@ -82,7 +82,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
                                 phraseMatrix[start][split], phraseMatrix[split][end]);
 
                         udXdXwArr =
-                                model.getParams()
+                                model
                                         .getU()
                                         .mmul(dxdxwArr[i][start][end][split]);
 
@@ -102,7 +102,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
             }
             int index = indexes[i];
             for (int d = 0; d < dim; d++) {
-                dQdXw.putScalar(new int[] {d, index}, dQdXw_i.getFloat(d));
+                dQdXw.putScalar(new int[]{d, index}, dQdXw_i.getFloat(d));
             }
             dQdXw.add(Nd4j.zeros(dim, V));
         }

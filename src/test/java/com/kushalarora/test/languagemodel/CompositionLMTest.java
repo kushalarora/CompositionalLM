@@ -1,10 +1,9 @@
 package com.kushalarora.test.languagemodel;
 
 import com.kushalarora.compositionalLM.languagemodel.CompositionalLM;
-import com.kushalarora.compositionalLM.model.Parameters;
+import com.kushalarora.compositionalLM.model.Model;
 import edu.stanford.nlp.io.IOUtils;
 import lombok.SneakyThrows;
-import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -12,8 +11,8 @@ import org.junit.Test;
 
 import java.io.ObjectOutputStream;
 
-import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by karora on 6/18/15.
@@ -21,7 +20,7 @@ import static junit.framework.TestCase.assertTrue;
 public class CompositionLMTest {
 
     public static CompositionalLM compositionalLM;
-    public static Parameters trueParameters;
+    public static Model trueModel;
     public static String TRUE_FILENAME;
 
     @BeforeClass
@@ -32,10 +31,10 @@ public class CompositionLMTest {
 
         ObjectOutputStream out = IOUtils.writeStreamFromString(TRUE_FILENAME);
 
-        trueParameters = new Parameters(10, 100);
-        out.writeObject(trueParameters);
+        trueModel = new Model(10, 100);
+        out.writeObject(trueModel);
         out.close();
-        compositionalLM = new CompositionalLM(trueParameters);
+        compositionalLM = new CompositionalLM(trueModel);
     }
 
     @Test
@@ -43,8 +42,8 @@ public class CompositionLMTest {
     public void testSaveModelSerialized() {
         compositionalLM.saveModelSerialized("/tmp/model.gz");
 
-        Parameters openedModel = compositionalLM.loadModelSerialized("/tmp/model.gz");
-        assertEquals(trueParameters, openedModel);
+        Model openedModel = compositionalLM.loadModelSerialized("/tmp/model.gz");
+        assertEquals(trueModel, openedModel);
     }
 
     @Test
@@ -56,8 +55,8 @@ public class CompositionLMTest {
     @Test
     // TODO:: Write test in a proper way
     public void testLoadModelSerialized() {
-        Parameters model = compositionalLM.loadModelSerialized(TRUE_FILENAME);
-        assertEquals(trueParameters, model);
+        Model model = compositionalLM.loadModelSerialized(TRUE_FILENAME);
+        assertEquals(trueModel, model);
     }
 
     @Test

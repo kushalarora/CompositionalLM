@@ -2,12 +2,10 @@ package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dQdu;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 /**

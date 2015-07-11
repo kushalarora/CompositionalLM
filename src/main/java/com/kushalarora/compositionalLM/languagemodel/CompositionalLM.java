@@ -1,7 +1,7 @@
 package com.kushalarora.compositionalLM.languagemodel;
 
 
-import com.kushalarora.compositionalLM.model.Parameters;
+import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.ParserOptions;
 import com.kushalarora.compositionalLM.utils.ArgUtils;
 import edu.stanford.nlp.io.IOUtils;
@@ -18,10 +18,10 @@ import java.io.ObjectOutputStream;
 @Slf4j
 public class CompositionalLM {
 
-    private Parameters parameters;
+    private Model model;
 
-    public CompositionalLM(Parameters parameters) {
-        this.parameters = parameters;
+    public CompositionalLM(Model model) {
+        this.model = model;
     }
 
     /**
@@ -33,7 +33,7 @@ public class CompositionalLM {
         try {
             log.info("Writing model in serialized format to file: {}", filename);
             ObjectOutputStream out = IOUtils.writeStreamFromString(filename);
-            out.writeObject(parameters);
+            out.writeObject(model);
             out.close();
         } catch (IOException e) {
             log.error("Filename {} couldn't be opened for writing", filename);
@@ -55,13 +55,13 @@ public class CompositionalLM {
      *
      * @param filename Model serialized file
      */
-    public Parameters loadModelSerialized(String filename) {
+    public Model loadModelSerialized(String filename) {
         log.info("Loading model from serialized file: {}", filename);
         try {
             ObjectInputStream in = IOUtils.readStreamFromString(filename);
             Object o = in.readObject();
-            if (o instanceof Parameters) {
-                return (Parameters) o;
+            if (o instanceof Model) {
+                return (Model) o;
             }
             throw new ClassCastException(
                     String.format("Wanted class Model, got %s", o.getClass().toString()));
@@ -79,7 +79,7 @@ public class CompositionalLM {
      *
      * @param filename Model text file
      */
-    public Parameters loadModelText(String filename) {
+    public Model loadModelText(String filename) {
         // TODO:: Load model once figured out.
         return null;
     }

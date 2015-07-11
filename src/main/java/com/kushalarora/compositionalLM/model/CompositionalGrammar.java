@@ -134,7 +134,7 @@ public class CompositionalGrammar {
         // TODO:: Either remove length as argument here
         // and in considerCreatingMatrices or add dimension as argument
         public void createMatrices(int length) {
-            int dim = model.params.getDimensions();
+            int dim = model.getDimensions();
             phraseMatrix = new INDArray[length][length + 1];
 
             compositionMatrix = new INDArray[length][length + 1][];
@@ -182,7 +182,7 @@ public class CompositionalGrammar {
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
 
-                    for (int d = 0; d < model.params.getDimensions(); d++) {
+                    for (int d = 0; d < model.getDimensions(); d++) {
                         phraseMatrix[start][end].putScalar(d, 0);
                     }
 
@@ -197,7 +197,7 @@ public class CompositionalGrammar {
                         compositionScore[start][end][split] = 0;
                         compositionalMu[start][end][split] = 0f;
                         compositionISplitScore[start][end][split] = 0f;
-                        for (int d = 0; d < model.params.getDimensions(); d++) {
+                        for (int d = 0; d < model.getDimensions(); d++) {
                             compositionMatrix[start][end][split].putScalar(d, 0);
                         }
                     }

@@ -28,7 +28,7 @@ public class dXdWTest extends AbstractDerivativeTest {
         when(W.mmul((INDArray)any()))
                 .thenReturn(Nd4j.ones(dim, 1));
 
-        when(params.getW())
+        when(model.getW())
                 .thenReturn(W);
     }
 

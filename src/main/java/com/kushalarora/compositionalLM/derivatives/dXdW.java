@@ -17,7 +17,7 @@ public class dXdW extends AbstractBaseDerivativeClass {
 
     public dXdW(Model model) {
         super(model);
-        dim = model.getParams().getDimensions();
+        dim = model.getDimensions();
         dXdW = new INDArray[dim][2 * dim][][][];
 
         for (int i = 0; i < dim; i++) {
@@ -99,7 +99,7 @@ public class dXdW extends AbstractBaseDerivativeClass {
                                             // 1_j \dot c_12 + (
                                             vec.add(
                                                     // W *
-                                                    model.getParams().getW().mmul(
+                                                    model.getW().mmul(
                                                             // [dc_1 dc_2]^T)) *
                                                             dC12)).muli(
                                             // \dot  f'(c_1, c_2)

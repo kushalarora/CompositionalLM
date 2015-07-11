@@ -1,18 +1,15 @@
 package com.kushalarora.test.lang;
 
-import static com.kushalarora.compositionalLM.lang.GrammarFactory.*;
-
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.IInsideOutsideScores;
 import com.kushalarora.compositionalLM.lang.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
-import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;
 
 /**
  * Created by karora on 6/25/15.

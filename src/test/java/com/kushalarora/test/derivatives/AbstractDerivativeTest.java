@@ -3,16 +3,12 @@ package com.kushalarora.test.derivatives;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.model.Parameters;
 import org.junit.BeforeClass;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jblas.NDArray;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -24,7 +20,6 @@ import static org.mockito.Mockito.when;
 public class AbstractDerivativeTest {
 
     protected static Model model;
-    protected static Parameters params;
     protected static int dim = 10;
     protected static int V = 100;
     protected static CompositionalGrammar.CompositionalInsideOutsideScorer cScorer;
@@ -32,7 +27,6 @@ public class AbstractDerivativeTest {
     @BeforeClass
     public static void setUpClass() {
         model = mock(Model.class);
-        params = mock(Parameters.class);
         cScorer = mock(CompositionalGrammar.CompositionalInsideOutsideScorer.class);
         List<Word> defaultSentence = new ArrayList<Word>();
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {
@@ -108,14 +102,11 @@ public class AbstractDerivativeTest {
                 (INDArray) any(), (INDArray) any(), (INDArray) any()))
                 .thenReturn(1.0f);
 
-        when(params.getDimensions())
+        when(model.getDimensions())
                 .thenReturn(dim);
 
-        when(params.getVocabSize())
+        when(model.getVocabSize())
                 .thenReturn(V);
-
-        when(model.getParams())
-                .thenReturn(params);
 
         // return all ones as composition derivative
         when(model.composeDerivative((INDArray)any(), (INDArray)any()))

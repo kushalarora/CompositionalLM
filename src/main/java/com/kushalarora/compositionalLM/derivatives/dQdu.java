@@ -20,12 +20,12 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
 
     public dQdu(Model model) {
         super(model);
-        dQdu = Nd4j.zeros(model.getParams().getDimensions());
+        dQdu = Nd4j.zeros(model.getDimensions());
     }
 
     public void clear() {
         // Wipe cleaern
-        for (int i = 0; i < model.getParams().getDimensions(); i++) {
+        for (int i = 0; i < model.getDimensions(); i++) {
             dQdu.putScalar(i, 0);
         }
     }

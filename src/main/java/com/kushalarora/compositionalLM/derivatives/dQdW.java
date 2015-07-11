@@ -16,7 +16,7 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
     public dQdW(Model model, dXdW dxdw) {
         super(model);
         this.dxdw = dxdw;
-        dim = model.getParams().getDimensions();
+        dim = model.getDimensions();
         this.dEdW = Nd4j.zeros(dim, 2 * dim);
     }
 
@@ -36,7 +36,7 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
                         for (int split = start + 1; split < end; split++) {
                             float dE = model.energyDerivative(compositionMatrix[start][end][split],
                                     phraseMatrix[start][split], phraseMatrix[split][end]);
-                            INDArray udXdWArr = model.getParams().getU().mmul(
+                            INDArray udXdWArr = model.getU().mmul(
                                     dxdwArr[i][j][start][end][split]);
 
                             int[] udXdWShape = udXdWArr.shape();
