@@ -3,6 +3,7 @@ package com.kushalarora.compositionalLM.derivatives;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
+import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -13,15 +14,17 @@ import java.util.List;
  */
 public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
     private dXdXw dxdxw;
-    private INDArray dEdXw;
-
+    @Getter
+    private INDArray dQdXw;
+    private int dim;
+    private int V;
 
     public dQdXw(Model model, dXdXw dxdxw) {
         super(model);
         this.dxdxw = dxdxw;
-        int dim = model.params.getDimensions();
-        int V = model.params.getVocabSize();
-        dEdXw = Nd4j.zeros(V, dim);
+        dim = model.getParams().getDimensions();
+        V = model.getParams().getVocabSize();
+        dQdXw = Nd4j.zeros(dim, V);
     }
 
     public INDArray calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
@@ -29,6 +32,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
         List<Word> sentence = scorer.getCurrentSentence();
         int length = sentence.size();
 
+        // Save indexes
         int[] indexes = new int[length];
         for (int i = 0; i < length; i++) {
             indexes[i] = sentence.get(i).getIndex();
@@ -39,35 +43,79 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
         float[][][] compositionalMu = scorer.getMuScore();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
 
-        int V = model.params.getVocabSize();
-        int dim = model.params.getDimensions();
 
+        INDArray dcdc = Nd4j.eye(dim);
+        INDArray dQdXw_i = Nd4j.zeros(dim, 1);
         for (int i = 0; i < length; i++) {
-            int index = indexes[i];
-            INDArray dEdXw_i = Nd4j.zeros(dim);
 
-            for (int start = 0; start < length; start++) {
-                for (int end = start + 1; end <= length; end++) {
+            // wipe the array clean
+            for (int d = 0; d < dim; d++) {
+                dQdXw_i.putScalar(d, 0f);
+            }
+
+            // handle leaf node
+            INDArray vector = phraseMatrix[i][i + 1];
+            float dE = model.energyDerivative(vector);
+
+            // diff wrt to self returns eye
+            INDArray udXdXwArr =
+                    model.getParams().getU()
+                            .mmul(dcdc);
+
+            int[] udXdXwShape = udXdXwArr.shape();
+            if (udXdXwShape.length != 2 ||
+                    udXdXwShape[0] != dim ||
+                    udXdXwShape[1] != 1) {
+                throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
+            }
+
+            dQdXw_i = dQdXw_i.add(udXdXwArr
+                    .muli(compositionalMu[i][i + 1][i]))
+                    .muli(dE);
+
+            // handle the composition case
+            for (int diff = 2; diff <= length; diff++) {
+                for (int start = 0; start + diff <= length; start++) {
+                    int end = start + diff;
                     for (int split = start + 1; split < end; split++) {
-                        float dE = model.energyDerivative(compositionMatrix[start][end][split],
+                        dE = model.energyDerivative(compositionMatrix[start][end][split],
                                 phraseMatrix[start][split], phraseMatrix[split][end]);
 
-                        INDArray udXdWArr = model.params.getU().mmul(
-                                dxdxwArr[i][start][end][split]);
+                        udXdXwArr =
+                                model.getParams()
+                                        .getU()
+                                        .mmul(dxdxwArr[i][start][end][split]);
 
-                        dEdXw_i.add(
-                                udXdWArr.muli(
-                                        compositionalMu[start][end][split]));
+
+                        udXdXwShape = udXdXwArr.shape();
+                        if (udXdXwShape.length != 2 ||
+                                udXdXwShape[0] != dim ||
+                                udXdXwShape[1] != 1) {
+                            throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
+                        }
+
+                        dQdXw_i = dQdXw_i.add(udXdXwArr
+                                .muli(compositionalMu[start][end][split]))
+                                .muli(dE);
                     }
                 }
             }
-
-            dEdXw.put(index, dEdXw_i);
+            int index = indexes[i];
+            for (int d = 0; d < dim; d++) {
+                dQdXw.putScalar(new int[] {d, index}, dQdXw_i.getFloat(d));
+            }
+            dQdXw.add(Nd4j.zeros(dim, V));
         }
-        return dEdXw;
+        return dQdXw;
     }
 
     public void clear() {
+        // wipe the array
+        for (int d = 0; d < dim; d++) {
+            for (int v = 0; v < V; v++) {
+                dQdXw.putScalar(new int[]{d, v}, 0f);
+            }
+        }
 
     }
 }

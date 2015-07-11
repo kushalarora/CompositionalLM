@@ -2,6 +2,7 @@ package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dXdW;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,6 +10,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Created by karora on 7/9/15.
@@ -16,6 +20,17 @@ import static org.junit.Assert.assertEquals;
 public class dXdWTest extends AbstractDerivativeTest {
 
     protected dXdW dxdw;
+
+    @BeforeClass
+    public static void setUpClass() {
+        AbstractDerivativeTest.setUpClass();
+        INDArray W = mock(INDArray.class);
+        when(W.mmul((INDArray)any()))
+                .thenReturn(Nd4j.ones(dim, 1));
+
+        when(params.getW())
+                .thenReturn(W);
+    }
 
     @Before
     public void setUp() {

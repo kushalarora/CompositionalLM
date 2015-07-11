@@ -7,14 +7,16 @@ import edu.stanford.nlp.ling.HasWord;
  */
 public class Word implements HasWord, edu.berkeley.nlp.io.HasWord{
     String word;
+    int index;
 
-    public Word(String word) {
+    public Word(String word, int index) {
         this.word = word;
+        this.index = index;
     }
 
     public int getIndex() {
         // TODO:: Implement word class
-        return 0;
+        return index;
     }
 
 

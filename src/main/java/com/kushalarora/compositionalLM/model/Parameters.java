@@ -64,11 +64,25 @@ public class Parameters implements Serializable {
 
         if (dimensions != that.dimensions) return false;
         if (vocabSize != that.vocabSize) return false;
-        if (W != null ? W.neq(that.W).sum(Integer.MAX_VALUE).getFloat(0) != 0 : that.W != null) return false;
-        if (u != null ? u.neq(that.u).sum(Integer.MAX_VALUE).getFloat(0) != 0 : that.u != null) return false;
-        if (X != null ? X.neq(that.X).sum(Integer.MAX_VALUE).getFloat(0) != 0 : that.X != null) return false;
-        if (f != null ? !f.getClass().equals(that.f.getClass()) : that.f != null) return false;
-        return !(g != null ? !g.getClass().equals(that.g.getClass()) : that.g != null);
+        if (W != null ?
+                (W.neq(that.W).sum(Integer.MAX_VALUE).getFloat(0) != 0) :
+                that.W != null)
+            return false;
+        if (u != null ?
+                u.neq(that.u).sum(Integer.MAX_VALUE).getFloat(0) != 0 :
+                that.u != null)
+            return false;
+        if (X != null ?
+                X.neq(that.X).sum(Integer.MAX_VALUE).getFloat(0) != 0 :
+                that.X != null)
+            return false;
+        if (f != null ?
+                !f.getClass().equals(that.f.getClass()) :
+                that.f != null)
+            return false;
+        return !(g != null ?
+                !g.getClass().equals(that.g.getClass()) :
+                that.g != null);
     }
 
     @Override

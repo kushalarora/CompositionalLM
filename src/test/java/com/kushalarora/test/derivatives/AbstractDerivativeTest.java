@@ -12,6 +12,7 @@ import org.nd4j.linalg.jblas.NDArray;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -35,7 +36,8 @@ public class AbstractDerivativeTest {
         cScorer = mock(CompositionalGrammar.CompositionalInsideOutsideScorer.class);
         List<Word> defaultSentence = new ArrayList<Word>();
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {
-            defaultSentence.add(new Word(str));
+            int index = (int)Math.floor(Math.random()* (V + 1));
+            defaultSentence.add(new Word(str, index));
         }
         length = defaultSentence.size();
 
@@ -103,7 +105,7 @@ public class AbstractDerivativeTest {
                 .thenReturn(1.0f);
 
         when(model.energyDerivative(
-                (INDArray)any(), (INDArray)any(), (INDArray)any()))
+                (INDArray) any(), (INDArray) any(), (INDArray) any()))
                 .thenReturn(1.0f);
 
         when(params.getDimensions())
@@ -111,20 +113,6 @@ public class AbstractDerivativeTest {
 
         when(params.getVocabSize())
                 .thenReturn(V);
-
-        INDArray W = mock(INDArray.class);
-        when(W.mmul((INDArray)any()))
-                .thenReturn(Nd4j.ones(dim, 1));
-
-        when(params.getW())
-                .thenReturn(W);
-
-        INDArray  u = mock(INDArray.class);
-        when(u.mmul((INDArray)any()))
-                .thenReturn(Nd4j.ones(1, 1));
-
-        when(params.getU())
-                .thenReturn(u);
 
         when(model.getParams())
                 .thenReturn(params);

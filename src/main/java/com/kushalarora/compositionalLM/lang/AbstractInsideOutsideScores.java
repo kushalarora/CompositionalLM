@@ -35,7 +35,9 @@ public abstract class AbstractInsideOutsideScores implements IInsideOutsideScore
 
         // Adding boundary symbol to the sentence
         // as grammar needs it
-        this.sentence.add(new Word(Lexicon.BOUNDARY));
+
+        // TODO:: Figure out how to give index
+        this.sentence.add(new Word(Lexicon.BOUNDARY, length));
         this.length = sentence.size();
     }
 

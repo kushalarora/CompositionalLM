@@ -34,7 +34,8 @@ public class StanfordGrammarTest {
 
         String[] sent = {"This", "is", "just", "a", "test", "."};
         for (String str : sent) {
-            defaultSentence.add(new Word(str));
+            int index = (int)Math.random() * (sg.getVocabSize() + 1);
+            defaultSentence.add(new Word(str, index));
         }
     }
 
