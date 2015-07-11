@@ -1,5 +1,8 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.kushalarora.compositionalLM.derivatives.dQdW;
+import com.kushalarora.compositionalLM.derivatives.dQdXw;
+import com.kushalarora.compositionalLM.derivatives.dQdu;
 import com.kushalarora.compositionalLM.lang.Word;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -22,12 +25,12 @@ public class Model implements Serializable {
 
     private int dimensions;
     private int vocabSize;
-    @Setter(AccessLevel.PACKAGE)
     private INDArray W;
-    @Setter(AccessLevel.PACKAGE)
+    private dQdW dqdw;
     private INDArray u;
-    @Setter(AccessLevel.PACKAGE)
+    private dQdu dqdu;
     private INDArray X;
+    private dQdXw dqdxw;
     private ActivationFunction f;
     private ActivationFunction g;
 
@@ -39,6 +42,10 @@ public class Model implements Serializable {
         X = Nd4j.rand(dimensions, vocabSize);         // d X V matrix
         f = composition;                                // default composition activation
         g = output;                         // default output activation
+
+        dqdu = new dQdu(this);
+        dqdw = new dQdW(this);
+        dqdxw = new dQdXw(this);
     }
 
     public Model(int dimensions, int vocabSize) {
@@ -125,7 +132,7 @@ public class Model implements Serializable {
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
         INDArray valObj = g.apply(u.mmul(node));
-        int [] valShape = valObj.shape();
+        int[] valShape = valObj.shape();
         if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
         }
@@ -141,7 +148,7 @@ public class Model implements Serializable {
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
         INDArray valObj = g.applyDerivative(u.mmul(node));
-        int [] valShape = valObj.shape();
+        int[] valShape = valObj.shape();
         if (valShape.length != 2 || valShape[0] != 1 || valShape[1] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
         }
@@ -161,6 +168,24 @@ public class Model implements Serializable {
      */
     public float energy(@NonNull INDArray node) {
         return this.energy(node, null, null);
+    }
+
+    /**
+     * Calculate derivative and update the parameter W,u and X.
+     *
+     * @param learningRate Learning rate for update
+     * @param scorer       Compositional scores used in calculating derivatives
+     */
+    public void update(double learningRate, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+        W = W.sub(
+                dqdw.calcDerivative(scorer)
+                        .mul(learningRate));
+        u = u.sub(
+                dqdu.calcDerivative(scorer)
+                        .mul(learningRate));
+        X = X.sub(
+                dqdxw.calcDerivative(scorer)
+                        .mul(learningRate));
     }
 
 

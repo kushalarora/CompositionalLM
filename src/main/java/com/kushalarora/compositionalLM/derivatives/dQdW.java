@@ -20,6 +20,11 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
         this.dEdW = Nd4j.zeros(dim, 2 * dim);
     }
 
+    public dQdW(Model model) {
+        this(model, new dXdW(model));
+    }
+
+
     public INDArray calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
         INDArray[][][][][] dxdwArr = dxdw.calcDerivative(scorer);
         int length = scorer.getCurrentSentence().size();
