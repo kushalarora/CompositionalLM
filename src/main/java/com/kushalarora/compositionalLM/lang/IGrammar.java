@@ -16,4 +16,8 @@ public interface IGrammar {
      * @param sentence sentence to process
      */
     public IInsideOutsideScores computeInsideOutsideProb(List<Word> sentence);
+
+    public List<Word> getVocab();
+
+    public int getVocabSize();
 }

@@ -22,12 +22,10 @@ public class CompositionalGrammar {
     private final Options op;
     List<Word> sentence;
     private Model model;
-    private IGrammar grammar;
     private int myMaxLength;
 
-    public CompositionalGrammar(IGrammar grammar, Model model, Options op) {
+    public CompositionalGrammar(Model model, Options op) {
         this.model = model;
-        this.grammar = grammar;
         this.op = op;
         myMaxLength = Integer.MAX_VALUE;
     }
@@ -399,7 +397,7 @@ public class CompositionalGrammar {
             arraySize = 0;
             this.sentence = sentence;
             length = sentence.size();
-            preScores = grammar.computeInsideOutsideProb(sentence);
+            preScores = model.getGrammar().computeInsideOutsideProb(sentence);
         }
 
         public float[][] getInsideSpanProb() {

@@ -1,16 +1,26 @@
 package com.kushalarora.compositionalLM.languagemodel;
 
 
+import com.kushalarora.compositionalLM.lang.*;
+import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.options.ParserOptions;
+import com.kushalarora.compositionalLM.options.ArgParser;
+import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.ArgUtils;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
+import edu.stanford.nlp.process.DocumentPreprocessor;
+import edu.stanford.nlp.process.DocumentProcessor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.StringReader;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by karora on 6/12/15.
@@ -18,10 +28,48 @@ import java.io.ObjectOutputStream;
 @Slf4j
 public class CompositionalLM {
 
-    private Model model;
+    private final Options op;
+    private final CompositionalGrammar compGrammar;
+    private final DocumentProcessorFactory docProcessorFactory;
 
-    public CompositionalLM(Model model) {
-        this.model = model;
+    public CompositionalLM(Model model, Options op) {
+        this.compGrammar = new CompositionalGrammar(model, op);
+        this.op = op;
+        docProcessorFactory = new DocumentProcessorFactory(op, new TokenizerFactory(op));
+    }
+
+
+    public void train() {
+        for (String filename : op.trainOp.trainFiles) {
+            DocumentProcessorWrapper docProcessor =  docProcessorFactory
+                    .getDocumentProcessor(new StringReader(filename));
+            for (List<Word> sentence : docProcessor) {
+                compGrammar.train(sentence);
+            }
+        }
+
+    }
+
+    public void parse() {
+        for (String filename : op.testOp.parseFiles) {
+            DocumentProcessorWrapper docProcessor =  docProcessorFactory
+                    .getDocumentProcessor(new StringReader(filename));
+            for (List<Word> sentence : docProcessor) {
+                compGrammar.parse(sentence);
+            }
+
+        }
+
+    }
+
+    public void nbestList() {
+        for (String filename : op.testOp.nbestFiles) {
+            DocumentProcessorWrapper docProcessor =  docProcessorFactory
+                    .getDocumentProcessor(new StringReader(filename));
+            // TODO:: Figure this out
+
+        }
+
     }
 
     /**
@@ -33,7 +81,7 @@ public class CompositionalLM {
         try {
             log.info("Writing model in serialized format to file: {}", filename);
             ObjectOutputStream out = IOUtils.writeStreamFromString(filename);
-            out.writeObject(model);
+            out.writeObject(compGrammar);
             out.close();
         } catch (IOException e) {
             log.error("Filename {} couldn't be opened for writing", filename);
@@ -55,7 +103,7 @@ public class CompositionalLM {
      *
      * @param filename Model serialized file
      */
-    public Model loadModelSerialized(String filename) {
+    public static Model loadModelSerialized(String filename) {
         log.info("Loading model from serialized file: {}", filename);
         try {
             ObjectInputStream in = IOUtils.readStreamFromString(filename);
@@ -79,11 +127,22 @@ public class CompositionalLM {
      *
      * @param filename Model text file
      */
-    public Model loadModelText(String filename) {
+    public static Model loadModelText(String filename) {
         // TODO:: Load model once figured out.
         return null;
     }
 
+    public static Model loadModel(Options op) {
+        val type = op.modelOp.inType;
+        String filename = op.modelOp.inFilename;
+        Model model = null;
+        if (type.equals(Options.FILE_TYPE.TEXT)) {
+            model = loadModelText(filename);
+        } else if (type.equals(Options.FILE_TYPE.SERIALIZED)) {
+            model = loadModelSerialized(filename);
+        }
+        return model;
+    }
 
     /**
      * TODO:: Explain the usage as done by  parser
@@ -91,112 +150,26 @@ public class CompositionalLM {
      * @param args
      */
     public static void main(String[] args) {
-        int argIndex = 0;
-        ParserOptions op = new ParserOptions();
-        if (args.length < 1) {
-            log.error("TODO: Write Error message about too few arguments");
+
+        Options op = ArgParser.parseArgs(args);
+
+        Model model = loadModel(op);
+        if (model == null) {
+            if (!op.train) {
+                throw new RuntimeException("You must specify model file using -model argument");
+            }
+
+            @NonNull IGrammar grammar = GrammarFactory.getGrammar(op);
+            model = new Model(op.modelOp.dimensions, grammar);
         }
-
-        while (argIndex < args.length) {
-            if (args[argIndex].equalsIgnoreCase("-train")) {
-                // Must be followed by a training file
-                op.train = true;
-                op.trainFiles = ArgUtils.getFileNameFromArg(args, argIndex);
-                argIndex = ArgUtils.numSubArgs(args, argIndex);
-
-            } else if (args[argIndex].equalsIgnoreCase("-nbest")) {
-                // Must be followed by a text file with n best list generated from
-                // lattice decoder to be reranked
-                op.nbestRescore = true;
-                op.nbestFiles = ArgUtils.getFileNameFromArg(args, argIndex);
-                argIndex += ArgUtils.numSubArgs(args, argIndex);
-
-            } else if (args[argIndex].equalsIgnoreCase("-validationFile")) {
-                // Ignored if only testing.
-                // If training must be followed by validation File
-                op.validationFiles = ArgUtils.getFileNameFromArg(args, argIndex);
-                argIndex += ArgUtils.numSubArgs(args, argIndex);
-
-            } else if (args[argIndex].equalsIgnoreCase("-parse")) {
-                // Followed by file to be parsed.
-                op.parse = true;
-                op.parseFiles = ArgUtils.getFileNameFromArg(args, argIndex);
-                argIndex += ArgUtils.numSubArgs(args, argIndex);
-
-            } else if (args[argIndex].equalsIgnoreCase("-grammarTextFile")) {
-                // load grammar from text file.
-                // following argument should be a path to text file
-                op.grammarTypeFile = ParserOptions.FILE_TYPE.TEXT;
-                String[] files = ArgUtils.getFileNameFromArg(args, argIndex);
-                if (files.length > 1) {
-                    throw new RuntimeException("Can't have multiple grammar files.");
-                }
-                op.grammarFilePath = files[0];
-                argIndex++;
-
-            } else if (args[argIndex].equalsIgnoreCase("-grammarSerializedFile")) {
-                // load grammar from a serialized stanford parser file
-                // following argument should be name of the parser file.
-                op.grammarTypeFile = ParserOptions.FILE_TYPE.SERIALIZED;
-                String[] files = ArgUtils.getFileNameFromArg(args, argIndex);
-                if (files.length > 1) {
-                    throw new RuntimeException("Can't have multiple grammar files.");
-                }
-                op.grammarFilePath = files[0];
-                argIndex++;
-
-            } else if (args[argIndex].equalsIgnoreCase("-saveOutputModelSerialized")) {
-                // save output model as a serialized file
-                op.outputTypeFile = ParserOptions.FILE_TYPE.SERIALIZED;
-                String[] files = ArgUtils.getFileNameFromArg(args, argIndex);
-                if (files.length > 1) {
-                    throw new RuntimeException("Can't save multiple output files.");
-                }
-                op.outputFilePath = files[0];
-                argIndex++;
-
-            } else if (args[argIndex].equalsIgnoreCase("-saveOutputModelText")) {
-                // set output model file as a text file
-                op.outputTypeFile = ParserOptions.FILE_TYPE.TEXT;
-                String[] files = ArgUtils.getFileNameFromArg(args, argIndex);
-                if (files.length > 1) {
-                    throw new RuntimeException("Can't save multiple output files.");
-                }
-                op.outputFilePath = files[0];
-                argIndex++;
-
-            } else if (args[argIndex].equalsIgnoreCase("-modelSerialized")) {
-                // Serialized model file to be loaded, if testing
-                op.modelTypeFile = ParserOptions.FILE_TYPE.SERIALIZED;
-                String[] files = ArgUtils.getFileNameFromArg(args, argIndex);
-                if (files.length > 1) {
-                    throw new RuntimeException("Can't have multiple model files.");
-                }
-                op.modelFilePath = files[0];
-                argIndex++;
-
-            } else if (args[argIndex].equalsIgnoreCase("-modelText")) {
-                // Text model file to be loaded if testing
-                op.modelTypeFile = ParserOptions.FILE_TYPE.TEXT;
-                String[] files = ArgUtils.getFileNameFromArg(args, argIndex);
-                if (files.length > 1) {
-                    throw new RuntimeException("Can't have multiple model files.");
-                }
-                op.modelFilePath = files[0];
-                argIndex++;
-            } else {
-                // TODO: Additional arguments yet to be figured out
-
-            }   // end arg parsing if statement
-        }   // end while loop
+        CompositionalLM cLM = new CompositionalLM(model, op);
 
         if (op.train) {
-            // TODO:: Train weights and embeddings
+            cLM.train();
         } else if (op.nbestRescore) {
-            // TODO:: load model and re-rank files with options
+            cLM.nbestList();
         } else if (op.parse) {
-            // TODO:: parse the files and generate the trees and return the score.
-
+            cLM.parse();
         } // end processing if statement
     }   // end of main
 

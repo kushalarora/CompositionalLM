@@ -3,11 +3,10 @@ package com.kushalarora.compositionalLM.model;
 import com.kushalarora.compositionalLM.derivatives.dQdW;
 import com.kushalarora.compositionalLM.derivatives.dQdXw;
 import com.kushalarora.compositionalLM.derivatives.dQdu;
+import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Activations;
@@ -33,39 +32,36 @@ public class Model implements Serializable {
     private dQdXw dqdxw;
     private ActivationFunction f;
     private ActivationFunction g;
+    private IGrammar grammar;
 
-    public Model(int dimensions, int vocabSize, ActivationFunction composition, ActivationFunction output) {
+    public Model(@NonNull int dimensions,
+                 @NonNull IGrammar iGrammar,
+                 @NonNull ActivationFunction composition,
+                 @NonNull ActivationFunction output) {
+
+        this.grammar = iGrammar;
         this.dimensions = dimensions;
-        this.vocabSize = vocabSize;
-        W = Nd4j.rand(dimensions, 2 * dimensions);    // d X 2d matrix
-        u = Nd4j.rand(1, dimensions);                // row vector with d entries
-        X = Nd4j.rand(dimensions, vocabSize);         // d X V matrix
-        f = composition;                                // default composition activation
-        g = output;                         // default output activation
+        this.vocabSize = iGrammar.getVocabSize();
 
+
+        W = Nd4j.rand(dimensions, 2 * dimensions);      // d X 2d matrix
+        u = Nd4j.rand(1, dimensions);                   // row vector with d entries
+        X = Nd4j.rand(dimensions, vocabSize);           // d X V matrix
+        f = composition;                                // default composition activation
+        g = output;                                     // default output activation
+
+        // IMPORTANT::The order must be preserved here
+        // all derivatives should be the last one to be
+        // initialized
         dqdu = new dQdu(this);
         dqdw = new dQdW(this);
         dqdxw = new dQdXw(this);
     }
 
-    public Model(int dimensions, int vocabSize) {
-        this(dimensions, vocabSize, Activations.tanh(), Activations.linear());
+    public Model(@NonNull int dimensions,
+                 @NonNull IGrammar iGrammar) {
+        this(dimensions, iGrammar, Activations.tanh(), Activations.linear());
     }
-
-    public Model(@NonNull INDArray X, @NonNull ActivationFunction composition, @NonNull ActivationFunction output) {
-        this.dimensions = X.size(0);
-        this.vocabSize = X.size(1);
-        this.X = X;
-        W = Nd4j.create(dimensions, 2 * dimensions);    // d X 2d matrix
-        u = Nd4j.create(dimensions, 1);                 // row vector with d entries
-        f = composition;                                // default composition activation
-        g = output;                                    // default output activation
-    }
-
-    public Model(@NonNull INDArray X) {
-        this(X, Activations.hardTanh(), Activations.linear());
-    }
-
 
     /**
      * Returns the continuous space embedding of the word

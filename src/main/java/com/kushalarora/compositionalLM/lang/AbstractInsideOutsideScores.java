@@ -24,7 +24,7 @@ public abstract class AbstractInsideOutsideScores implements IInsideOutsideScore
     // start idx, end idx, state -> logProb
     protected float[][][] oScore;
 
-    List<Word> sentence;
+    protected List<Word> sentence;
     protected int length;
     protected int arraySize = 0;
     protected int myMaxLength = Integer.MAX_VALUE;

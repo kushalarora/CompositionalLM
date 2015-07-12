@@ -1,6 +1,8 @@
 package com.kushalarora.test.model;
 
+import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.options.Options;
 import lombok.val;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -23,8 +25,10 @@ public class ParametersTest {
 
     @BeforeClass
     public static void setUpClass() {
+        Options op = new Options();
+        op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         model = new Model(
-                10, 100,
+                10, GrammarFactory.getGrammar(op),
                 Activations.sigmoid(),
                 Activations.linear());
     }

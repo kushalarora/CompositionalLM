@@ -5,4 +5,8 @@ package com.kushalarora.compositionalLM.options;
  */
 public class TestOptions {
     public boolean lengthNormalization;
+    public boolean nbestRescore;
+    public boolean parse;
+    public String[] nbestFiles;
+    public String[] parseFiles;
 }

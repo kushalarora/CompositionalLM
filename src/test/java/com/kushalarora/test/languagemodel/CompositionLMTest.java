@@ -1,7 +1,11 @@
 package com.kushalarora.test.languagemodel;
 
+import com.kushalarora.compositionalLM.lang.GrammarFactory;
+import com.kushalarora.compositionalLM.lang.IGrammar;
+import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.languagemodel.CompositionalLM;
 import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.io.IOUtils;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
@@ -11,8 +15,10 @@ import org.junit.Test;
 
 import java.io.ObjectOutputStream;
 
+import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 /**
  * Created by karora on 6/18/15.
@@ -30,11 +36,11 @@ public class CompositionLMTest {
                 .getAbsolutePath();
 
         ObjectOutputStream out = IOUtils.writeStreamFromString(TRUE_FILENAME);
-
-        trueModel = new Model(10, 100);
+        Options op = new Options();
+        trueModel = new Model(10, mock(IGrammar.class));
         out.writeObject(trueModel);
         out.close();
-        compositionalLM = new CompositionalLM(trueModel);
+        compositionalLM = new CompositionalLM(trueModel, op);
     }
 
     @Test

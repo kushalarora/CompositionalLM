@@ -13,12 +13,12 @@ public class ArgUtils {
      * @param argIndex index of the current argument being processed.
      * @return An array of filenames.
      */
-    public static String[] getFileNameFromArg(String[] args, int argIndex) {
+    public static String[] getStringFromArg(String[] args, int argIndex) {
         val numSubArgs = ArgUtils.numSubArgs(args, argIndex);
         String[] filenames = new String[numSubArgs];
 
         for (int i = 0; i < numSubArgs; i++) {
-            filenames[i] = args[argIndex + i];
+            filenames[i] = args[argIndex + 1 + i];
         }
         return filenames;
     }

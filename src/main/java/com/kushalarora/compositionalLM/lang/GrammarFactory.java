@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.berkeley.nlp.PCFGLA.Grammar;
 import edu.berkeley.nlp.PCFGLA.Lexicon;
@@ -13,33 +14,54 @@ import lombok.val;
  */
 
 //TODO: There are various grammars and then
-    // there are various other techniques like
-    // markovization and parent annotation etc
-    // that these parsers employ
-    // See how to handle all that shit
+// there are various other techniques like
+// markovization and parent annotation etc
+// that these parsers employ
+// See how to handle all that shit
 
 public class GrammarFactory {
-    public static enum GrammarType {
-        BERKELEY_GRAMMAR,
-        STANFORD_GRAMMAR
+    public enum GrammarType {
+        BERKELEY_GRAMMAR("berkeley"),
+        STANFORD_GRAMMAR("stanford");
+
+        private String text;
+
+        GrammarType(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return this.text;
+        }
+
+        public static GrammarType fromString(String text) {
+            if (text != null) {
+                for (GrammarType b : GrammarType.values()) {
+                    if (text.equalsIgnoreCase(b.text)) {
+                        return b;
+                    }
+                }
+            }
+            return null;
+        }
     }
 
-    public static IGrammar getGrammar(GrammarType type, String filename, Options op) {
-        switch (type) {
+    public static IGrammar getGrammar(Options op) {
+        switch (op.grammarOp.grammarType) {
             case BERKELEY_GRAMMAR:
-                @NonNull ParserData parserData = ParserData.Load(filename);
+                @NonNull ParserData parserData = ParserData.Load(op.grammarOp.filename);
                 @NonNull Grammar gr = parserData.getGrammar();
                 @NonNull Lexicon lexicon = parserData.getLexicon();
                 // return berkeley parser
                 return null;
             case STANFORD_GRAMMAR:
                 // TODO: Do similar thing for stanford grammar
-                @NonNull val model = LexicalizedParser.loadModel(filename);
+                @NonNull val model = LexicalizedParser.loadModel(op.grammarOp.filename);
                 return new StanfordGrammar(model.bg, model.ug, model.lex, op,
                         model.getOp(), model.stateIndex, model.wordIndex,
                         model.tagIndex);
             default:
-                throw new RuntimeException("Invalid Grammar Type: " + type);
+                throw new RuntimeException("Invalid Grammar Type: " + op.grammarOp.grammarType);
         }
     }
 }

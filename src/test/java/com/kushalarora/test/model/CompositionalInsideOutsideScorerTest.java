@@ -1,7 +1,7 @@
 package com.kushalarora.test.model;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.StanfordGrammar;
+import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -44,12 +45,13 @@ public class CompositionalInsideOutsideScorerTest {
     public static void setUpClass() {
         val filePath = FileUtils.getFile("src/test/resources/wsjPCFG.ser.gz")
                 .getAbsolutePath();
-        sg = (StanfordGrammar) GrammarFactory.getGrammar(
-                GrammarFactory.GrammarType.STANFORD_GRAMMAR,
-                filePath, new Options());
+        Options op = new Options();
+        op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
+        op.grammarOp.filename =  filePath;
+        sg = (StanfordGrammar)getGrammar(op);
         PropertyConfigurator.configure("log4j.properties");
 
-        model = new Model(10, sg.getVocabSize());
+        model = new Model(10, sg);
         dim = model.getDimensions();
     }
 
@@ -66,7 +68,7 @@ public class CompositionalInsideOutsideScorerTest {
         length = defaultSentence.size();
 
 
-        cg = new CompositionalGrammar(sg, model, new Options());
+        cg = new CompositionalGrammar(model, new Options());
         scorer = cg.getScorer(defaultSentence);
     }
 

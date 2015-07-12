@@ -2,7 +2,7 @@ package com.kushalarora.test.lang;
 
 import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScores;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.StanfordGrammar;
+import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -40,9 +41,10 @@ public class StanfordInsideOutsideScoresTest {
         val filePath = FileUtils.getFile("src/test/resources/wsjPCFG.ser.gz")
                 .getAbsolutePath();
 
-        sg = (StanfordGrammar) GrammarFactory.getGrammar(
-                GrammarFactory.GrammarType.STANFORD_GRAMMAR,
-                filePath, new Options());
+        Options op = new Options();
+        op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
+        op.grammarOp.filename =  filePath;
+        sg = (StanfordGrammar)getGrammar(op);
         numStates = sg.getNumStates();
         PropertyConfigurator.configure("log4j.properties");
     }

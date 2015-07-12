@@ -1,7 +1,7 @@
 package com.kushalarora.test.lang;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.StanfordGrammar;
+import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import org.apache.commons.io.FileUtils;
@@ -26,8 +26,9 @@ public class StanfordGrammarTest {
                 .getFile(GRAMMAR_RELATIVE_FILE_PATH)
                 .getAbsolutePath();
         Options op = new Options();
-        sg = (StanfordGrammar)getGrammar(GrammarFactory.GrammarType.STANFORD_GRAMMAR,
-                                         absoluteFilePath, op);
+        op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
+        op.grammarOp.filename =  absoluteFilePath;
+        sg = (StanfordGrammar)getGrammar(op);
 
         String[] sent = {"This", "is", "just", "a", "test", "."};
         for (String str : sent) {

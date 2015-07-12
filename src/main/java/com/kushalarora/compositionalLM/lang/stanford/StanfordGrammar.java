@@ -1,5 +1,9 @@
-package com.kushalarora.compositionalLM.lang;
+package com.kushalarora.compositionalLM.lang.stanford;
 
+import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScores;
+import com.kushalarora.compositionalLM.lang.IGrammar;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScores;
+import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.GrammarOptions;
 import edu.stanford.nlp.ling.HasContext;
 import edu.stanford.nlp.parser.lexparser.*;
@@ -700,7 +704,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
 
                             for (int split = start + 1; split < end; split++) {
                                 // the left endpoint of  right span is split.
-                                int  rStart = split;
+                                int rStart = split;
 
                                 // If iScore of the left span is zero, so is the
                                 // oScore of left span
@@ -759,7 +763,6 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                         continue;
                     }
                     oS = log(oS);
-
 
 
                     double tot;
@@ -896,8 +899,8 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         }
     }
 
-
     com.kushalarora.compositionalLM.options.Options op;
+    List<Word> vocab;
 
     public StanfordGrammar(BinaryGrammar bg, UnaryGrammar ug, Lexicon lex,
                            com.kushalarora.compositionalLM.options.Options op,
@@ -906,8 +909,12 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                            Index<String> tagIndex) {
         super(bg, ug, lex, defaultOp, stateIndex, wordIndex, tagIndex);
         this.op = op;
+        vocab = new ArrayList<Word>();
+        for (int index = 0; index < wordIndex.size(); index++) {
+            String word = wordIndex.get(index);
+            vocab.add(new Word(word, index));
+        }
     }
-
 
     /**
      * Compute inside and outside score for the sentence.
@@ -935,13 +942,17 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         return insideOutsideScore;
     }
 
-
     public IInsideOutsideScores getInsideOutsideObject(List<Word> sentence) {
         return new StanfordInsideOutsideScore(sentence);
     }
 
     public int getNumStates() {
         return numStates;
+    }
+
+
+    public List<Word> getVocab() {
+        return vocab;
     }
 
     public int getVocabSize() {
