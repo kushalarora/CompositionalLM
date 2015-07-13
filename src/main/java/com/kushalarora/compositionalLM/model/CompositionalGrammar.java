@@ -298,7 +298,8 @@ public class CompositionalGrammar {
 
                     }
                     // normalize weights to get them sum to 1.
-                    phraseMatrix[start][end].div(compositionalIScore[start][end]);
+                    phraseMatrix[start][end] =
+                            phraseMatrix[start][end].div(compositionalIScore[start][end]);
                 }
             }
         }
@@ -425,7 +426,6 @@ public class CompositionalGrammar {
         }
 
         public float computeCompInsideOutsideScores() {
-            int length = sentence.size();
             considerCreatingMatrices(length);
             initializeMatrices(length);
             doInsideScore();
@@ -445,7 +445,7 @@ public class CompositionalGrammar {
         // Step 2: Optimize
         // Step 2a Initialize matrices to be used in computation.
         val scorer = new CompositionalInsideOutsideScorer(sentence);
-
+        int iterCount = 0;
         // While iter or tolerance
         // TODO:: Add condition for stopping optimization
         do {
@@ -457,7 +457,7 @@ public class CompositionalGrammar {
             // calculate posterior inside, outside probability and
             // muSpanSplitScore.
             float score = scorer.computeCompInsideOutsideScores();
-
+            log.info("score iter {}: {}", iterCount++, score);
 
             // Step 2b:
             // Step 2b1: If scorer diff from previous scorer less than tolerance
@@ -469,7 +469,7 @@ public class CompositionalGrammar {
             // Let them handle derivative computation
             // Step 2b2b: Do SGD on params
             // Figure out how to do SGD
-        } while (true);     // add threshold or tolerance condition
+        } while (iterCount < 10);     // add threshold or tolerance condition
     }
 
     public void parse(List<Word> sentence) {
