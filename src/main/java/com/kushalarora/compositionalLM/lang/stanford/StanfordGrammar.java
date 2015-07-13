@@ -958,5 +958,28 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
     public int getVocabSize() {
         return wordIndex.size();
     }
-}
 
+    public Word getToken(String str, int loc) {
+        int index = -1;
+        String signature = str;
+        if (op.grammarOp.lowerCase) {
+            signature = str.toLowerCase(Locale.ENGLISH);
+        }
+
+        if (!wordIndex.contains(signature)) {
+                    signature = lex.getUnknownWordModel().getSignature(str, loc);
+        }
+
+        index = wordIndex.indexOf(signature);
+
+        if (index == -1) {
+            // Ideally this should be
+            // newline or something that
+            // shouldn't show up at the end
+            // In any case, the program would crash
+            log.warn("word({}) or signature({}) not found in grammar",
+                    str, signature);
+        }
+        return new Word(str, index, signature);
+    }
+}

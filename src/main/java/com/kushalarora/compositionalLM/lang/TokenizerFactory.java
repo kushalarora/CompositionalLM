@@ -2,24 +2,24 @@ package com.kushalarora.compositionalLM.lang;
 
 import com.kushalarora.compositionalLM.lang.stanford.WordTokenFactory;
 import com.kushalarora.compositionalLM.options.Options;
-import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.Tokenizer;
-import lombok.val;
+import edu.stanford.nlp.process.WhitespaceTokenizer;
 
-import javax.el.MethodNotFoundException;
 import java.io.Reader;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Created by karora on 7/12/15.
  */
-public class TokenizerFactory implements edu.stanford.nlp.process.TokenizerFactory<Word>  {
+public class TokenizerFactory implements edu.stanford.nlp.process.TokenizerFactory<Word> {
 
+    private final IGrammar grammar;
     Options op;
-    public TokenizerFactory(Options  op) {
+
+    public TokenizerFactory(Options op, IGrammar grammar) {
         this.op = op;
+        this.grammar = grammar;
     }
 
     public Iterator<Word> getIterator(Reader r) {
@@ -52,19 +52,19 @@ public class TokenizerFactory implements edu.stanford.nlp.process.TokenizerFacto
         }
     }
 
-    public TokenizerWrapper getTokenizer(Reader reader) {
+    public TokenizerWrapper getTokenizer(Reader reader, String extraOptions) {
         switch (op.grammarOp.tokenizerType) {
             case STANFORD_PTB_TOKENIZER:
                 final PTBTokenizer ptbTokenizer =
                         new PTBTokenizer<Word>(
-                        reader, new WordTokenFactory(), "");
+                                reader, new WordTokenFactory(grammar, op), extraOptions);
 
                 return new TokenizerWrapper() {
                     @Override
                     public boolean hasNext() {
                         return ptbTokenizer.hasNext();
                     }
-                    
+
                     @Override
                     public Word next() {
                         return (Word) ptbTokenizer.next();
@@ -72,14 +72,31 @@ public class TokenizerFactory implements edu.stanford.nlp.process.TokenizerFacto
                 };
 
             case STANFORD_WORD_TOKENIZER:
+                final WhitespaceTokenizer.WhitespaceTokenizerFactory factory =
+                        new WhitespaceTokenizer.WhitespaceTokenizerFactory(
+                                new WordTokenFactory(grammar, op), extraOptions);
+
+                final Tokenizer tokenizer = factory.getTokenizer(reader);
+
+                return new TokenizerWrapper() {
+                    @Override
+                    public boolean hasNext() {
+                        return tokenizer.hasNext();
+                    }
+
+                    @Override
+                    public Word next() {
+                        return (Word) tokenizer.next();
+                    }
+                };
 
             default:
                 throw new RuntimeException("Invalid Tokenizer Type: " + op.grammarOp.tokenizerType);
         }
     }
 
-    public Tokenizer<Word> getTokenizer(Reader r, String extraOptions) {
-        return null;
+    public Tokenizer<Word> getTokenizer(Reader r) {
+        return getTokenizer(r, "");
     }
 
     public void setOptions(String options) {

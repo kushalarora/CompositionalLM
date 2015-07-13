@@ -32,12 +32,19 @@ public class CompositionLMTest {
     @BeforeClass
     @SneakyThrows
     public static void setUpClass() {
-        TRUE_FILENAME = FileUtils.getFile("src/test/resources/model.gz")
+        TRUE_FILENAME = FileUtils.getFile("src/resources/model.gz")
+                .getAbsolutePath();
+        String absoluteFilePath = FileUtils
+                .getFile("src/resources/englishPCFG.ser.gz")
                 .getAbsolutePath();
 
         ObjectOutputStream out = IOUtils.writeStreamFromString(TRUE_FILENAME);
         Options op = new Options();
-        trueModel = new Model(10, mock(IGrammar.class));
+
+        op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
+        op.grammarOp.filename =  absoluteFilePath;
+        StanfordGrammar sg = (StanfordGrammar)getGrammar(op);
+        trueModel = new Model(10, sg);
         out.writeObject(trueModel);
         out.close();
         compositionalLM = new CompositionalLM(trueModel, op);
@@ -69,5 +76,17 @@ public class CompositionLMTest {
     @Ignore
     public void testLoadModelText() {
         assertTrue(false);
+    }
+
+
+    @Test
+    public void testMain() {
+        String[] args =
+                new String[] {"-train", "src/resources/train",
+                        "-validate", "src/resources/valid",
+                        "-grammarType", "stanford",
+                        "-grammarFile", "src/resources/englishPCFG.ser.gz",
+                        "-lowercase"};
+        CompositionalLM.main(args);
     }
 }

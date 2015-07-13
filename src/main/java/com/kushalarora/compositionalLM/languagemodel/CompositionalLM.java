@@ -6,20 +6,16 @@ import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
-import com.kushalarora.compositionalLM.utils.ArgUtils;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
-import edu.stanford.nlp.process.DocumentPreprocessor;
-import edu.stanford.nlp.process.DocumentProcessor;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.StringReader;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -35,14 +31,19 @@ public class CompositionalLM {
     public CompositionalLM(Model model, Options op) {
         this.compGrammar = new CompositionalGrammar(model, op);
         this.op = op;
-        docProcessorFactory = new DocumentProcessorFactory(op, new TokenizerFactory(op));
+
+        docProcessorFactory =
+                new DocumentProcessorFactory(
+                        op,
+                        new TokenizerFactory(
+                                op, model.getGrammar()));
     }
 
-
+    @SneakyThrows
     public void train() {
         for (String filename : op.trainOp.trainFiles) {
-            DocumentProcessorWrapper docProcessor =  docProcessorFactory
-                    .getDocumentProcessor(new StringReader(filename));
+            DocumentProcessorWrapper docProcessor = docProcessorFactory
+                    .getDocumentProcessor(filename);
             for (List<Word> sentence : docProcessor) {
                 compGrammar.train(sentence);
             }
@@ -52,8 +53,8 @@ public class CompositionalLM {
 
     public void parse() {
         for (String filename : op.testOp.parseFiles) {
-            DocumentProcessorWrapper docProcessor =  docProcessorFactory
-                    .getDocumentProcessor(new StringReader(filename));
+            DocumentProcessorWrapper docProcessor = docProcessorFactory
+                    .getDocumentProcessor(filename);
             for (List<Word> sentence : docProcessor) {
                 compGrammar.parse(sentence);
             }
@@ -64,8 +65,8 @@ public class CompositionalLM {
 
     public void nbestList() {
         for (String filename : op.testOp.nbestFiles) {
-            DocumentProcessorWrapper docProcessor =  docProcessorFactory
-                    .getDocumentProcessor(new StringReader(filename));
+            DocumentProcessorWrapper docProcessor = docProcessorFactory
+                    .getDocumentProcessor(filename);
             // TODO:: Figure this out
 
         }
@@ -135,6 +136,12 @@ public class CompositionalLM {
     public static Model loadModel(Options op) {
         val type = op.modelOp.inType;
         String filename = op.modelOp.inFilename;
+
+        // Return null if no filename or file type specified
+        if (type == null || filename == null) {
+            return null;
+        }
+
         Model model = null;
         if (type.equals(Options.FILE_TYPE.TEXT)) {
             model = loadModelText(filename);

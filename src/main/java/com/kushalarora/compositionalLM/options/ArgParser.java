@@ -20,14 +20,14 @@ public class ArgParser {
         while (argIndex < args.length) {
             if (args[argIndex].equalsIgnoreCase("-train")) {
                 // Must be followed by a training file
-                op.trainOp.train = true;
+                op.train = true;
                 op.trainOp.trainFiles = ArgUtils.getStringFromArg(args, argIndex);
-                argIndex = ArgUtils.numSubArgs(args, argIndex);
+                argIndex += ArgUtils.numSubArgs(args, argIndex);
 
             } else if (args[argIndex].equalsIgnoreCase("-nbest")) {
                 // Must be followed by a text file with n best list generated from
                 // lattice decoder to be reranked
-                op.testOp.nbestRescore = true;
+                op.nbestRescore = true;
                 op.testOp.nbestFiles = ArgUtils.getStringFromArg(args, argIndex);
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
 
@@ -40,7 +40,7 @@ public class ArgParser {
 
             } else if (args[argIndex].equalsIgnoreCase("-parse")) {
                 // Followed by file to be parsed.
-                op.testOp.parse = true;
+                op.parse = true;
                 op.testOp.parseFiles = ArgUtils.getStringFromArg(args, argIndex);
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
 
@@ -93,6 +93,7 @@ public class ArgParser {
                 }
                 op.modelOp.inFilename = files[0];
                 argIndex++;
+
             } else if (args[argIndex].equalsIgnoreCase("-grammarType")) {
                 String[] grammars = ArgUtils.getStringFromArg(args, argIndex);
                 if (grammars.length > 1) {
@@ -100,15 +101,20 @@ public class ArgParser {
                 }
                 op.grammarOp.grammarType = GrammarFactory.GrammarType.fromString(grammars[0]);
                 argIndex++;
+
             } else if (args[argIndex].equalsIgnoreCase("-dimension")) {
                 String[] dimensions = ArgUtils.getStringFromArg(args, argIndex);
                 if (dimensions.length > 1) {
                     throw new RuntimeException("You can specify only one grammarType of grammar");
                 }
                 op.modelOp.dimensions = Integer.parseInt(dimensions[0]);
+                argIndex++;
+            } else if (args[argIndex].equalsIgnoreCase("-lowercase")) {
+                op.grammarOp.lowerCase = true;
             } else {
 
             }   // end arg parsing if statement
+            argIndex++;
         }   // end while loop
         return op;
     }

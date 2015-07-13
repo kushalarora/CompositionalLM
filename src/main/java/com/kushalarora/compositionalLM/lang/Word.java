@@ -5,23 +5,31 @@ import edu.stanford.nlp.ling.HasWord;
 /**
  * Created by karora on 6/18/15.
  */
-public class Word implements HasWord, edu.berkeley.nlp.io.HasWord{
+public class Word implements HasWord, edu.berkeley.nlp.io.HasWord {
     String word;
     int index;
+    String signature;
 
     public Word(String word, int index) {
+        this(word, index, word);
+    }
+
+    public Word(String word, int index, String signature) {
         this.word = word;
         this.index = index;
+        this.signature = signature;
     }
 
     public int getIndex() {
-        // TODO:: Implement word class
         return index;
     }
 
-
     public String word() {
         return word;
+    }
+
+    public String getSignature() {
+        return signature;
     }
 
     public void setWord(String word) {

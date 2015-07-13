@@ -21,11 +21,12 @@ public class DocumentProcessorFactory {
         this.tokenizerFactory = tokenizerFactory;
     }
 
-    public DocumentProcessorWrapper getDocumentProcessor(Reader reader) {
+    public DocumentProcessorWrapper getDocumentProcessor(String filename) {
         switch (op.grammarOp.grammarType) {
             case STANFORD_GRAMMAR:
                 final DocumentPreprocessor processor =
-                        new DocumentPreprocessor(reader, DocumentPreprocessor.DocType.Plain);
+                        new DocumentPreprocessor(filename,
+                                DocumentPreprocessor.DocType.Plain);
 
                 if (!tokenizerFactory.op.grammarOp.grammarType
                         .equals(op.grammarOp.grammarType)) {
@@ -34,6 +35,8 @@ public class DocumentProcessorFactory {
                             " Tokenizer: " + tokenizerFactory.op.grammarOp.grammarType);
                 }
                 processor.setTokenizerFactory(tokenizerFactory);
+                // TODO:: Don't hardcode. Figure out how to add more than one.
+                processor.setSentenceDelimiter("\n");
 
                 return new DocumentProcessorWrapper() {
                     Iterator<List<HasWord>> it = processor.iterator();

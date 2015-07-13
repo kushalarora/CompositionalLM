@@ -15,12 +15,12 @@ public class ArgUtils {
      */
     public static String[] getStringFromArg(String[] args, int argIndex) {
         val numSubArgs = ArgUtils.numSubArgs(args, argIndex);
-        String[] filenames = new String[numSubArgs];
+        String[] strings = new String[numSubArgs];
 
         for (int i = 0; i < numSubArgs; i++) {
-            filenames[i] = args[argIndex + 1 + i];
+            strings[i] = args[argIndex + 1 + i].trim();
         }
-        return filenames;
+        return strings;
     }
 
     /**
