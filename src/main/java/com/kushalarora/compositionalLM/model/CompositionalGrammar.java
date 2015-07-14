@@ -10,6 +10,7 @@ import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.Math.exp;
@@ -194,6 +195,7 @@ public class CompositionalGrammar {
                     compositionISplitScore[start][end][start] = 0f;
                     compositionalMu[start][end][start] = 0f;
 
+                    compositionScore[start][end][start] = 0;
                     for (int split = start + 1; split < end; split++) {
                         compositionScore[start][end][split] = 0;
                         compositionalMu[start][end][split] = 0f;
@@ -222,7 +224,8 @@ public class CompositionalGrammar {
                 log.info("Computing Compositional inside Score for span ({}, {})", start, end);
 
                 // Set phrase for word sentence[start]
-                phraseMatrix[start][end] = model.word2vec(sentence.get(start));
+                phraseMatrix[start][end] = phraseMatrix[start][end].add(
+                        model.word2vec(sentence.get(start)));
 
                 // For leaf nodes, the energy of the node is
                 // a function of phrase representation
@@ -259,8 +262,9 @@ public class CompositionalGrammar {
 
                         // Compose parent (start, end) from children
                         // (start, split), (split, end)
-                        compositionMatrix[start][end][split] = model.compose(
-                                child1, child2);
+                        compositionMatrix[start][end][split] =
+                                compositionMatrix[start][end][split].add(
+                                        model.compose(child1, child2));
 
                         // Composition energy of parent (start,end)
                         // by children (start, split), (split, end)
@@ -362,6 +366,7 @@ public class CompositionalGrammar {
                                     compositionScore[parentL][end][start] *
                                     cumlCompositionScore[parentL][start];
                 }
+
                 for (int parentR = end; end != length && parentR <= length; parentR++) {
                         compositionalMu[start][end][split] +=
                                 muSplitSpanScoresWParents[start][end][split][parentR] *
@@ -384,6 +389,7 @@ public class CompositionalGrammar {
                                             compositionScore[parentL][end][start] *
                                             cumlCompositionScore[parentL][start];
                         }
+
                         for (int parentR = end; end != length && parentR <= length; parentR++) {
                             compositionalMu[start][end][split] +=
                                     muSplitSpanScoresWParents[start][end][split][parentR] *
