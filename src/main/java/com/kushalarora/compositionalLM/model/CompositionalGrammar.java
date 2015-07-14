@@ -209,8 +209,8 @@ public class CompositionalGrammar {
          */
         public void doInsideScore() {
 
-            float[][] iScores = preScores.getInsideSpanProb();
-            float[][][] iSplitScores = preScores.getInsideSpanSplitProb();
+            double[][] iScores = preScores.getInsideSpanProb();
+            double[][][] iSplitScores = preScores.getInsideSpanSplitProb();
 
             // compute scores and phrasal representation for leaf nodes
             for (int start = 0; start < length; start++) {
@@ -271,14 +271,14 @@ public class CompositionalGrammar {
                         cumlCompositionScore[start][end] += score;
 
 
-                        float iSplitScore = iSplitScores[split][end][split];
+                        double iSplitScore = iSplitScores[split][end][split];
 
                         // iSplitScore consist iscore of (start, split) and
                         // (split, end), so we just need to multiply
                         // them with cuml composition score
                         // For the binary rule, we multiply with binary composition
                         // score
-                        float compISplitScore = iSplitScore * score *
+                        double compISplitScore = iSplitScore * score *
                                 cumlCompositionScore[start][split] *
                                 cumlCompositionScore[split][end];
 
@@ -308,7 +308,7 @@ public class CompositionalGrammar {
          * Calculate composition outside score
          */
         public void doOutsideScore() {
-            float[][][] oScoreWParent = preScores.getOutsideSpanWParentScore();
+            double[][][] oScoreWParent = preScores.getOutsideSpanWParentScore();
             for (int diff = 1; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
@@ -341,7 +341,7 @@ public class CompositionalGrammar {
          * Calculate compositional mu score
          */
         public void doMuScore() {
-            float[][][][] muSplitSpanScoresWParents = preScores.getMuSpanScoreWParent();
+            double[][][][] muSplitSpanScoresWParents = preScores.getMuSpanScoreWParent();
             // do leaf nodes
             for (int start = 0; start < length; start++) {
                 int end = start + 1;

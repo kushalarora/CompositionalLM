@@ -13,7 +13,7 @@ public interface IInsideOutsideScores {
      * sum of probability of all trees spanning (i,j) split at k
      * @return insideSpanSplitProb array
      */
-    public float[][][] getInsideSpanSplitProb();
+    public double[][][] getInsideSpanSplitProb();
 
     /***
      * Returns \pi(i,j), an array of shape(n,n)
@@ -21,23 +21,23 @@ public interface IInsideOutsideScores {
      * summ of probability of all trees spanning (i,j)
      * @return  insideSpanProb array
      */
-    public float[][] getInsideSpanProb();
+    public double[][] getInsideSpanProb();
 
-    public float[][][] getOutsideSpanWParentScore();
+    public double[][][] getOutsideSpanWParentScore();
     /**
      *  Returns \beta(i,j) an array of shape(n,n) where
      *  n is the length of the sentence. This represents sum of
      *  all possible trees where span (i,j) is not expanded
      *  @return outsideSpanProb array
      */
-    public float[][] getOutsideSpanProb();
+    public double[][] getOutsideSpanProb();
 
 
-    public float[][][] getMuScore();
+    public double[][][] getMuScore();
 
-    public float[][][] getMuSpanSplitScore();
+    public double[][][] getMuSpanSplitScore();
 
-    public float[][][][] getMuSpanScoreWParent();
+    public double[][][][] getMuSpanScoreWParent();
 
 
 

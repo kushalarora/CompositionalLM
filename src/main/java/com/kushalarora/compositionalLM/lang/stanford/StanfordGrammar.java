@@ -37,8 +37,8 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
      */
     public class StanfordInsideOutsideScore extends AbstractInsideOutsideScores {
 
-        private transient float[][][][] iSplitSpanStateScore;
-        private transient float[][][][] oSpanStateScoreWParent;
+        private transient double[][][][] iSplitSpanStateScore;
+        private transient double[][][][] oSpanStateScoreWParent;
 
         public StanfordInsideOutsideScore(List sentence) {
             super(sentence);
@@ -134,86 +134,86 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             // ran out of memory and are reallocating
             clearArrays();
 
-            iScore = new float[length][length + 1][];
+            iScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
-                    iScore[start][end] = new float[numStates];
+                    iScore[start][end] = new double[numStates];
                 }
             }
 
-            oScore = new float[length][length + 1][];
+            oScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
-                    oScore[start][end] = new float[numStates];
+                    oScore[start][end] = new double[numStates];
                 }
             }
 
-            iSpanScore = new float[length][length + 1];
-            oSpanScore = new float[length][length + 1];
+            iSpanScore = new double[length][length + 1];
+            oSpanScore = new double[length][length + 1];
 
-            iSpanSplitScore = new float[length][length + 1][];
+            iSpanSplitScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     // splits
-                    iSpanSplitScore[start][end] = new float[length];
+                    iSpanSplitScore[start][end] = new double[length];
                 }
             }
 
-            oSpanWParentScore = new float[length][length + 1][];
+            oSpanWParentScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     // parents
-                    oSpanWParentScore[start][end] = new float[length + 1];
+                    oSpanWParentScore[start][end] = new double[length + 1];
                 }
             }
 
-            oSpanStateScoreWParent = new float[length][length + 1][][];
+            oSpanStateScoreWParent = new double[length][length + 1][][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     // parents
-                    oSpanStateScoreWParent[start][end] = new float[length + 1][];
+                    oSpanStateScoreWParent[start][end] = new double[length + 1][];
                     for (int parent = 0; parent < start; parent++) {
                         // states
-                        oSpanStateScoreWParent[start][end][parent] = new float[numStates];
+                        oSpanStateScoreWParent[start][end][parent] = new double[numStates];
                     }
 
                     for (int parent = end; parent <= length; parent++) {
                         // states
-                        oSpanStateScoreWParent[start][end][parent] = new float[numStates];
+                        oSpanStateScoreWParent[start][end][parent] = new double[numStates];
                     }
                 }
             }
 
-            iSplitSpanStateScore = new float[length][length + 1][][];
+            iSplitSpanStateScore = new double[length][length + 1][][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
-                    iSplitSpanStateScore[start][end] = new float[length][];
+                    iSplitSpanStateScore[start][end] = new double[length][];
                     for (int split = start; split < end; split++) {
                         // states
-                        iSplitSpanStateScore[start][end][split] = new float[numStates];
+                        iSplitSpanStateScore[start][end][split] = new double[numStates];
                     }
                 }
             }
 
-            muScore = new float[length][length + 1][];
-            muSpanSplitScore = new float[length][length + 1][];
+            muScore = new double[length][length + 1][];
+            muSpanSplitScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     // splits
-                    muSpanSplitScore[start][end] = new float[length];
+                    muSpanSplitScore[start][end] = new double[length];
                     // states
-                    muScore[start][end] = new float[numStates];
+                    muScore[start][end] = new double[numStates];
                 }
             }
 
-            muSpanScoreWParent = new float[length][length + 1][][];
+            muSpanScoreWParent = new double[length][length + 1][][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     // splits
-                    muSpanScoreWParent[start][end] = new float[length][];
+                    muSpanScoreWParent[start][end] = new double[length][];
                     for (int split = start; split < end; split++) {
                         // parents
-                        muSpanScoreWParent[start][end][split] = new float[length + 1];
+                        muSpanScoreWParent[start][end][split] = new double[length + 1];
                     }
                 }
             }
@@ -304,7 +304,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 int end = start + 1;
                 Arrays.fill(tags[start], false);
 
-                float[] iScore_start_end = iScore[start][end];
+                double[] iScore_start_end = iScore[start][end];
 
                 //Word context (e.g., morphosyntactic info)
                 // TODO:: Figure out how to use this to advantage
@@ -328,10 +328,10 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     IntTaggedWord tagging = taggingI.next();
                     int state = stateIndex.indexOf(tagIndex.get(tagging.tag));
                     // score the cell according to P(word|tag) in the lexicon
-                    float lexScore = lex.score(tagging, start,
+                    double lexScore = lex.score(tagging, start,
                             wordIndex.get(tagging.word), wordContextStr);
 
-                    if (lexScore > Float.NEGATIVE_INFINITY) {
+                    if (lexScore > Double.NEGATIVE_INFINITY) {
                         assignedSomeTag = true;
                         double tot = exp(lexScore);
                         iScore_start_end[state] += tot;
@@ -358,12 +358,12 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     // not just seen or specified taggings
 
                     for (int state = 0; state < numStates; state++) {
-                        if (isTag[state] && iScore_start_end[state] == Float.NEGATIVE_INFINITY) {
+                        if (isTag[state] && iScore_start_end[state] == Double.NEGATIVE_INFINITY) {
 
-                            float lexScore = lex.score(new IntTaggedWord(word,
+                            double lexScore = lex.score(new IntTaggedWord(word,
                                             tagIndex.indexOf(stateIndex.get(state))),
                                     start, wordIndex.get(word), wordContextStr);
-                            if (lexScore > Float.NEGATIVE_INFINITY) {
+                            if (lexScore > Double.NEGATIVE_INFINITY) {
                                 double tot = exp(lexScore);
                                 iScore_start_end[state] += tot;
 
@@ -399,7 +399,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                         // different intermediate tags, so adding to
                         // previous instead of overwriting
 
-                        iScore_start_end[parentState] += ((float) tot);
+                        iScore_start_end[parentState] += tot;
 
                         // in case of leaf nodes there is no node, hence
                         // we keeping the value of split at start

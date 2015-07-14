@@ -81,16 +81,16 @@ public class StanfordInsideOutsideScoresTest {
         sIOScore.initializeScoreArrays();
 
 
-        float[][][] iScore = sIOScore.getInsideScores();
-        float[][] iSpanScore = sIOScore.getInsideSpanProb();
-        float[][][] iSpanSplitScore = sIOScore.getInsideSpanSplitProb();
+        double[][][] iScore = sIOScore.getInsideScores();
+        double[][] iSpanScore = sIOScore.getInsideSpanProb();
+        double[][][] iSpanSplitScore = sIOScore.getInsideSpanSplitProb();
 
-        float[][][] oScore = sIOScore.getOutsideScores();
-        float[][] oSpanScore = sIOScore.getOutsideSpanProb();
-        float[][][] oSpanWParentScore = sIOScore.getOutsideSpanWParentScore();
+        double[][][] oScore = sIOScore.getOutsideScores();
+        double[][] oSpanScore = sIOScore.getOutsideSpanProb();
+        double[][][] oSpanWParentScore = sIOScore.getOutsideSpanWParentScore();
 
-        float[][][] muScore = sIOScore.getMuScore();
-        float[][][] muSpanScore = sIOScore.getMuSpanSplitScore();
+        double[][][] muScore = sIOScore.getMuScore();
+        double[][][] muSpanScore = sIOScore.getMuSpanSplitScore();
 
         // verify sizes
         for (int start = 0; start < length; start++) {
@@ -109,9 +109,9 @@ public class StanfordInsideOutsideScoresTest {
         }
 
         // verify all initialize to zero
-        float[] zerosNumStates = new float[numStates];
-        float[] zerosLength = new float[length];
-        float[] zerosLengthP1 = new float[length + 1];
+        double[] zerosNumStates = new double[numStates];
+        double[] zerosLength = new double[length];
+        double[] zerosLengthP1 = new double[length + 1];
         Arrays.fill(zerosNumStates, 0f);
         Arrays.fill(zerosLength, 0f);
         Arrays.fill(zerosLengthP1, 0f);
@@ -143,8 +143,8 @@ public class StanfordInsideOutsideScoresTest {
 
         sIOScore.doLexScores();
 
-        float[][] iSpanScores = sIOScore.getInsideSpanProb();
-        float[][][] iScores = sIOScore.getInsideScores();
+        double[][] iSpanScores = sIOScore.getInsideSpanProb();
+        double[][][] iScores = sIOScore.getInsideScores();
 
         for (int start = 0; start < length; start++) {
             for (int end = start + 1; end <= length; end++) {
@@ -170,9 +170,9 @@ public class StanfordInsideOutsideScoresTest {
 
         sIOScore.doInsideScores();
 
-        float[][] iSpanScores = sIOScore.getInsideSpanProb();
-        float[][][] iScores = sIOScore.getInsideScores();
-        float[][][] iSpanSplitScores = sIOScore.getInsideSpanSplitProb();
+        double[][] iSpanScores = sIOScore.getInsideSpanProb();
+        double[][][] iScores = sIOScore.getInsideScores();
+        double[][][] iSpanSplitScores = sIOScore.getInsideSpanSplitProb();
 
         for (int start = 0; start < length; start++) {
             for (int end = start + 2; end < length; end++) {
@@ -208,9 +208,9 @@ public class StanfordInsideOutsideScoresTest {
         sIOScore.doInsideScores();
         sIOScore.doOutsideScores();
 
-        float[][] oSpanScores = sIOScore.getOutsideSpanProb();
-        float[][][] oScores = sIOScore.getOutsideScores();
-        float[][][] oSpanWParent = sIOScore.getOutsideSpanWParentScore();
+        double[][] oSpanScores = sIOScore.getOutsideSpanProb();
+        double[][][] oScores = sIOScore.getOutsideScores();
+        double[][][] oSpanWParent = sIOScore.getOutsideSpanWParentScore();
 
         for (int diff = length; diff >= 1; diff--) {
             for (int start = 0; start + diff <= length; start++) {
@@ -243,9 +243,9 @@ public class StanfordInsideOutsideScoresTest {
         sIOScore.doOutsideScores();
         sIOScore.computeMuSpanScore();
 
-        float[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
-        float[][][] muSpanStateScore = sIOScore.getMuScore();
-        float [][][][] muSpanSplitWParent = sIOScore.getMuSpanScoreWParent();
+        double[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
+        double[][][] muSpanStateScore = sIOScore.getMuScore();
+        double [][][][] muSpanSplitWParent = sIOScore.getMuSpanScoreWParent();
         for (int start = 0; start < length; start++) {
             int end = start + 1;
             int split = start;

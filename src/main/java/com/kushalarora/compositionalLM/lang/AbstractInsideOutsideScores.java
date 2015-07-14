@@ -10,19 +10,19 @@ import java.util.List;
  */
 @Slf4j
 public abstract class AbstractInsideOutsideScores implements IInsideOutsideScores {
-    protected float[][][] iSpanSplitScore;
-    protected float[][] iSpanScore;
-    protected float[][][] oSpanWParentScore;
-    protected float[][] oSpanScore;
-    protected float[][][] muSpanSplitScore;
-    protected float[][][] muScore;
-    protected float[][][][] muSpanScoreWParent;
+    protected double[][][] iSpanSplitScore;
+    protected double[][] iSpanScore;
+    protected double[][][] oSpanWParentScore;
+    protected double[][] oSpanScore;
+    protected double[][][] muSpanSplitScore;
+    protected double[][][] muScore;
+    protected double[][][][] muSpanScoreWParent;
     // inside scores
     // start idx, end idx, state -> logProb (ragged; null for end <= start)
-    protected float[][][] iScore;
+    protected double[][][] iScore;
     // outside scores
     // start idx, end idx, state -> logProb
-    protected float[][][] oScore;
+    protected double[][][] oScore;
 
     protected List<Word> sentence;
     protected int length;
@@ -40,27 +40,27 @@ public abstract class AbstractInsideOutsideScores implements IInsideOutsideScore
         this.length = sentence.size();
     }
 
-    public float[][][] getInsideScores() {
+    public double[][][] getInsideScores() {
         return iScore;
     }
 
-    public float[][][] getOutsideScores() {
+    public double[][][] getOutsideScores() {
         return oScore;
     }
 
-    public float[][][] getInsideSpanSplitProb() {
+    public double[][][] getInsideSpanSplitProb() {
         return iSpanSplitScore;
     }
 
-    public float[][] getInsideSpanProb() {
+    public double[][] getInsideSpanProb() {
         return iSpanScore;
     }
 
-    public float[][][] getOutsideSpanWParentScore() {
+    public double[][][] getOutsideSpanWParentScore() {
         return oSpanWParentScore;
     }
 
-    public float[][] getOutsideSpanProb() {
+    public double[][] getOutsideSpanProb() {
         return oSpanScore;
     }
 
@@ -68,15 +68,15 @@ public abstract class AbstractInsideOutsideScores implements IInsideOutsideScore
         return sentence;
     }
 
-    public float[][][] getMuScore() {
+    public double[][][] getMuScore() {
         return muScore;
     }
 
-    public float[][][] getMuSpanSplitScore() {
+    public double[][][] getMuSpanSplitScore() {
         return muSpanSplitScore;
     }
 
-    public float[][][][] getMuSpanScoreWParent() { return muSpanScoreWParent; }
+    public double[][][][] getMuSpanScoreWParent() { return muSpanScoreWParent; }
 
     public abstract void clearArrays();
 
