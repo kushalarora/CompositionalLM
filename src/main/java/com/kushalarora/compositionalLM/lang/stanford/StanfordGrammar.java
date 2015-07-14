@@ -94,7 +94,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         // Kushal::Method private in base class
         private void considerCreatingArrays(int length) {
             // maxLength + 1 as we added boundary symbol to sentence
-            if (length > GrammarOptions.maxLength + 1
+            if (length > op.grammarOp.maxLength + 1
                     // myMaxLength if greater than zero,
                     // then it is max memory size
                     || length >= myMaxLength) {
@@ -118,7 +118,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     throw e;
                 }
                 arraySize = length;
-                log.debug("Created PCFG parser arrays of size " + arraySize);
+                log.info("Created arrays of size " + arraySize);
             }
         }
 
@@ -133,7 +133,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             // zero out some stuff first in case we recently
             // ran out of memory and are reallocating
             clearArrays();
-
+            log.info("Starting array allocation");
             iScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -217,12 +217,12 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                     }
                 }
             }
-            log.debug("Finished allocating inside, outside and mu score arrays");
+            log.info("Finished allocating arrays of length {}", length);
         }
 
         @Override
         public void initializeScoreArrays() {
-            log.info("Computing Inside Outside Score for {}", sentence);
+            log.info("Intializing Inside Outside Arrays");
             if (length > arraySize) {
                 considerCreatingArrays(length);
             }
@@ -303,7 +303,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 int word = words[start];
                 int end = start + 1;
                 Arrays.fill(tags[start], false);
-
+                log.info("Doing lex score lookup for index {}", start);
                 double[] iScore_start_end = iScore[start][end];
 
                 //Word context (e.g., morphosyntactic info)
@@ -439,6 +439,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
          * @param end   end index of span
          */
         private void doInsideChartCell(final int start, final int end) {
+            log.info("Doing iScore for span {} - {}", start, end);
             boolean[][] stateSplit = new boolean[numStates][length];
             Set<BinaryRule> binaryRuleSet = new HashSet<BinaryRule>();
             for (int leftState = 0; leftState < numStates; leftState++) {
@@ -594,7 +595,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
 
-                    log.info("Computing oScore for span ({}, {})", start, end);
+                    log.info("Doing oScore for span ({}, {})", start, end);
                     // do unaries
                     for (int parentState = 0; parentState < numStates; parentState++) {
                         // As this is unary rule and parent span is same as child,
@@ -748,6 +749,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
+                log.info("Doing muScore for span {} - {}", start, end);
                 for (int state = 0; state < numStates; state++) {
 
                     // If iScore or oScore is zero, the mu score is zero
@@ -825,6 +827,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
             for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
+                    log.info("Doing muScore for span {} - {}", start, end);
                     for (int state = 0; state < numStates; state++) {
 
                         // If iScore or oScore is zero, the mu score is zero
@@ -927,16 +930,15 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
 
         insideOutsideScore.initializeScoreArrays();
 
+        log.info("Starting inside score computation");
         insideOutsideScore.doLexScores();
 
-        log.debug("Starting inside score computation");
         insideOutsideScore.doInsideScores();
 
-
-        log.debug("Start outside score computation");
+        log.info("Start outside score computation");
         insideOutsideScore.doOutsideScores();
 
-        log.debug("Start mu score computation");
+        log.info("Start mu score computation");
         insideOutsideScore.computeMuSpanScore();
 
         return insideOutsideScore;

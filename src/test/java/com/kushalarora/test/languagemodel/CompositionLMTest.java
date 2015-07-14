@@ -9,6 +9,7 @@ import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.io.IOUtils;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.PropertyConfigurator;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,6 +49,9 @@ public class CompositionLMTest {
         out.writeObject(trueModel);
         out.close();
         compositionalLM = new CompositionalLM(trueModel, op);
+
+        PropertyConfigurator.configure("log4j.properties");
+
     }
 
     @Test

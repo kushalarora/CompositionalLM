@@ -104,13 +104,13 @@ public class CompositionalGrammar {
          * @param length length of the current sentence
          */
         private void considerCreatingMatrices(int length) {
-            if (length > GrammarOptions.maxLength ||
+            if (length > op.grammarOp.maxLength ||
                     // myMaxLength if greater than zero,
                     // then it is max memory size
                     length >= myMaxLength) {
                 throw new OutOfMemoryError("Refusal to create such large arrays.");
             } else if (arraySize < length) {
-                clearMatrices();
+
                 try {
                     createMatrices(length);
                     arraySize = length;
@@ -132,6 +132,8 @@ public class CompositionalGrammar {
         // TODO:: Either remove length as argument here
         // and in considerCreatingMatrices or add dimension as argument
         public void createMatrices(int length) {
+            clearMatrices();
+            log.info("Creating Compositional matrices for length {}", length);
             int dim = model.getDimensions();
             phraseMatrix = new INDArray[length][length + 1];
 
@@ -177,6 +179,7 @@ public class CompositionalGrammar {
          * @param length length of the current sentence
          */
         public void initializeMatrices(int length) {
+            log.info("Initializing Compositional matrices");
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
 
@@ -216,6 +219,7 @@ public class CompositionalGrammar {
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
+                log.info("Computing Compositional inside Score for span ({}, {})", start, end);
 
                 // Set phrase for word sentence[start]
                 phraseMatrix[start][end] = model.word2vec(sentence.get(start));
@@ -241,6 +245,7 @@ public class CompositionalGrammar {
             for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start <= length - diff; start++) {
                     int end = start + diff;
+                    log.info("Computing Compositional inside Score for span ({}, {})", start, end);
 
                     // if grammar iScores is 0, so will be comp score
                     if (iScores[start][end] == 0) {
@@ -312,7 +317,7 @@ public class CompositionalGrammar {
             for (int diff = 1; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
-
+                    log.info("Computing Compositional oScore for span ({}, {})", start, end);
                     // Composition oScore is calculated using the grammar outside score by
                     // multiplying cumlComposition score for expanded child and composition
                     // score for binary rule.
@@ -346,7 +351,7 @@ public class CompositionalGrammar {
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
-
+                log.info("Computing Compositional mu Score for span ({}, {})", start, end);
                 // muScore is computed as  iScore * oScore.
                 // To compute compositional mu score, we need to compute
                 // TODO:: Will this always be zero?
@@ -357,22 +362,19 @@ public class CompositionalGrammar {
                                     compositionScore[parentL][end][start] *
                                     cumlCompositionScore[parentL][start];
                 }
-                for (int parentR = end; parentR <= length; parentR++) {
-                    try {
+                for (int parentR = end; end != length && parentR <= length; parentR++) {
                         compositionalMu[start][end][split] +=
                                 muSplitSpanScoresWParents[start][end][split][parentR] *
                                         cumlCompositionScore[start][end] *
                                         compositionScore[start][parentR][end] *
                                         cumlCompositionScore[end][parentR];
-                    } catch (Exception e) {
-                        log.error("Nothing");
-                    }
                 }
 
             }
             for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
+                    log.info("Computing Compositional mu Score for span ({}, {})", start, end);
                     for (int split = start + 1; split < end; split++) {
 
                         for (int parentL = 0; parentL < start; parentL++) {

@@ -16,6 +16,7 @@ import lombok.val;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -42,9 +43,13 @@ public class CompositionalLM {
     @SneakyThrows
     public void train() {
         for (String filename : op.trainOp.trainFiles) {
+            int sentenceCount = 0;
             DocumentProcessorWrapper docProcessor = docProcessorFactory
                     .getDocumentProcessor(filename);
             for (List<Word> sentence : docProcessor) {
+                log.info("Processing sentence {}:{}",
+                        sentenceCount++,
+                        Arrays.toString(sentence.toArray()));
                 compGrammar.train(sentence);
             }
         }
@@ -159,6 +164,7 @@ public class CompositionalLM {
     public static void main(String[] args) {
 
         Options op = ArgParser.parseArgs(args);
+        log.info("Options: {}", op);
 
         Model model = loadModel(op);
         if (model == null) {
@@ -172,6 +178,7 @@ public class CompositionalLM {
         CompositionalLM cLM = new CompositionalLM(model, op);
 
         if (op.train) {
+            log.info("starting training");
             cLM.train();
         } else if (op.nbestRescore) {
             cLM.nbestList();
