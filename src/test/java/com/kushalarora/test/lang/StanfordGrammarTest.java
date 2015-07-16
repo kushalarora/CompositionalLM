@@ -16,7 +16,7 @@ import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;
  */
 public class StanfordGrammarTest {
 
-    public static String GRAMMAR_RELATIVE_FILE_PATH = "src/test/resources/englishPCFG.ser.gz";
+    public static String GRAMMAR_RELATIVE_FILE_PATH = "src/resources/englishPCFG.ser.gz";
     public static StanfordGrammar sg;
     public static List<Word> defaultSentence;
 

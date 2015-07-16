@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.derivatives;
 
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
+import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -10,14 +11,15 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
     private final dXdW dxdw;
-    private INDArray dEdW;
+    @Getter
+    private INDArray dQdW;
     private int dim;
 
     public dQdW(Model model, dXdW dxdw) {
         super(model);
         this.dxdw = dxdw;
         dim = model.getDimensions();
-        this.dEdW = Nd4j.zeros(dim, 2 * dim);
+        this.dQdW = Nd4j.zeros(dim, 2 * dim);
     }
 
     public dQdW(Model model) {
@@ -41,7 +43,7 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
                         for (int split = start + 1; split < end; split++) {
                             float dE = model.energyDerivative(compositionMatrix[start][end][split],
                                     phraseMatrix[start][split], phraseMatrix[split][end]);
-                            INDArray udXdWArr = model.getU().mmul(
+                            INDArray udXdWArr = model.getParams().getU().mmul(
                                     dxdwArr[i][j][start][end][split]);
 
                             int[] udXdWShape = udXdWArr.shape();
@@ -56,18 +58,28 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
                     }
                 }
 
-                dEdW.putScalar(new int[]{i, j}, dEdW_ij);
+                dQdW.putScalar(new int[]{i, j}, dEdW_ij);
             }
         }
-        return dEdW;
+        return dQdW;
     }
 
     public void clear() {
         dxdw.clear();
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 * dim; j++) {
-                dEdW.putScalar(new int[]{i, j}, 0f);
+                dQdW.putScalar(new int[]{i, j}, 0f);
             }
         }
+    }
+
+    public IDerivative add(IDerivative other) {
+        dQdW = dQdW.add(((dQdW)other).getDQdW());
+        return this;
+    }
+
+    public IDerivative mul(double learningRate) {
+        dQdW = dQdW.mul(learningRate);
+        return this;
     }
 }

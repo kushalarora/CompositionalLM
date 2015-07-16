@@ -3,10 +3,12 @@ package com.kushalarora.test.derivatives;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.model.Parameters;
 import org.junit.BeforeClass;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,9 +26,11 @@ public class AbstractDerivativeTest {
     protected static int V = 100;
     protected static CompositionalGrammar.CompositionalInsideOutsideScorer cScorer;
     protected static int length;
+    protected static Parameters params;
     @BeforeClass
     public static void setUpClass() {
         model = mock(Model.class);
+        params = new Parameters(dim, V);
         cScorer = mock(CompositionalGrammar.CompositionalInsideOutsideScorer.class);
         List<Word> defaultSentence = new ArrayList<Word>();
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {
@@ -108,8 +112,12 @@ public class AbstractDerivativeTest {
         when(model.getVocabSize())
                 .thenReturn(V);
 
+        when(model.getParams())
+                .thenReturn(params);
+
         // return all ones as composition derivative
-        when(model.composeDerivative((INDArray)any(), (INDArray)any()))
+        when(model.composeDerivative((INDArray) any(), (INDArray) any()))
                 .thenReturn(Nd4j.ones(dim, 1));
+
     }
 }

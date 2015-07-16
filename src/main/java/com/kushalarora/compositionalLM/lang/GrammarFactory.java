@@ -57,9 +57,7 @@ public class GrammarFactory {
             case STANFORD_GRAMMAR:
                 // TODO: Do similar thing for stanford grammar
                 @NonNull val model = LexicalizedParser.loadModel(op.grammarOp.filename);
-                return new StanfordGrammar(model.bg, model.ug, model.lex, op,
-                        model.getOp(), model.stateIndex, model.wordIndex,
-                        model.tagIndex);
+                return new StanfordGrammar(op, model);
             default:
                 throw new RuntimeException("Invalid Grammar Type: " + op.grammarOp.grammarType);
         }

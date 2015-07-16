@@ -63,7 +63,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
 
             // diff wrt to self returns eye
             INDArray udXdXwArr =
-                    model.getU()
+                    model.getParams().getU()
                             .mmul(dcdc);
 
             int[] udXdXwShape = udXdXwArr.shape();
@@ -87,6 +87,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
 
                         udXdXwArr =
                                 model
+                                        .getParams()
                                         .getU()
                                         .mmul(dxdxwArr[i][start][end][split]);
 
@@ -121,5 +122,15 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
             }
         }
 
+    }
+
+    public IDerivative add(IDerivative other) {
+        dQdXw = dQdXw.add(((dQdXw) other).getDQdXw());
+        return this;
+    }
+
+    public IDerivative mul(double learningRate) {
+        dQdXw = dQdXw.mul(learningRate);
+        return this;
     }
 }

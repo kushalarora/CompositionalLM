@@ -3,7 +3,10 @@ package com.kushalarora.compositionalLM.languagemodel;
 
 import com.kushalarora.compositionalLM.lang.*;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
+import com.kushalarora.compositionalLM.model.IParameter;
+import com.kushalarora.compositionalLM.model.IParameterDerivatives;
 import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.optimizer.SGDOptimizer;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.io.IOUtils;
@@ -28,8 +31,9 @@ public class CompositionalLM {
     private final Options op;
     private final CompositionalGrammar compGrammar;
     private final DocumentProcessorFactory docProcessorFactory;
-
+    private final Model model;
     public CompositionalLM(Model model, Options op) {
+        this.model = model;
         this.compGrammar = new CompositionalGrammar(model, op);
         this.op = op;
 
@@ -50,8 +54,31 @@ public class CompositionalLM {
                 log.info("Processing sentence {}:{}",
                         sentenceCount++,
                         Arrays.toString(sentence.toArray()));
-                compGrammar.train(sentence);
             }
+            SGDOptimizer<List<Word>> optimizer =
+                    new SGDOptimizer<List<Word>>(op) {
+                        @Override
+                        public double getValidationScore(List<Word> data) {
+                            return 0;
+                        }
+
+                        @Override
+                        public void saveModel() {
+
+                        }
+
+                        public IParameterDerivatives calcDerivative(Object sample) {
+                            return null;
+                        }
+
+                        public void updateParams(IParameter parameter) {
+
+                        }
+
+                        public IParameter getParams() {
+                            return null;
+                        }
+                    };
         }
 
     }
@@ -87,7 +114,7 @@ public class CompositionalLM {
         try {
             log.info("Writing model in serialized format to file: {}", filename);
             ObjectOutputStream out = IOUtils.writeStreamFromString(filename);
-            out.writeObject(compGrammar);
+            out.writeObject(model);
             out.close();
         } catch (IOException e) {
             log.error("Filename {} couldn't be opened for writing", filename);

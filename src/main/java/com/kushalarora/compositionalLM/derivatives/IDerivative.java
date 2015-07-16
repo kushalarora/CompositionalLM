@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public interface IDerivative {
     public INDArray calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer);
     public void clear();
+    public IDerivative add(IDerivative other);
+    public IDerivative mul(double learningRate);
 }
 
 

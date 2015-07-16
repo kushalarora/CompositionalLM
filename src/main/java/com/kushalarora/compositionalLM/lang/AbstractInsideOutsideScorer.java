@@ -9,7 +9,7 @@ import java.util.List;
  * Created by karora on 6/24/15.
  */
 @Slf4j
-public abstract class AbstractInsideOutsideScores implements IInsideOutsideScores {
+public abstract class AbstractInsideOutsideScorer implements IInsideOutsideScorer {
     protected double[][][] iSpanSplitScore;
     protected double[][] iSpanScore;
     protected double[][][] oSpanWParentScore;
@@ -28,17 +28,6 @@ public abstract class AbstractInsideOutsideScores implements IInsideOutsideScore
     protected int length;
     protected int arraySize = 0;
     protected int myMaxLength = Integer.MAX_VALUE;
-
-    public AbstractInsideOutsideScores(List<Word> sentence) {
-        this.sentence = sentence;
-
-        // Adding boundary symbol to the sentence
-        // as grammar needs it
-
-        // TODO:: Figure out how to give index
-        this.sentence.add(new Word(Lexicon.BOUNDARY, length));
-        this.length = sentence.size();
-    }
 
     public double[][][] getInsideScores() {
         return iScore;
@@ -80,27 +69,29 @@ public abstract class AbstractInsideOutsideScores implements IInsideOutsideScore
 
     public abstract void clearArrays();
 
-    public abstract void initializeScoreArrays();
+    public abstract void considerCreatingArrays(int length);
+
+    public abstract void initializeScoreArrays(int length);
 
     /**
      * Intialize charts with lexicons.
      * Implemented by the derived class using
      * the specific grammar
      */
-    public abstract void doLexScores();
+    public abstract void doLexScores(List<Word> sentence);
 
     /**
      * Compute the inside scores, insideSpanSplit,
      * insideSpan scores.
      */
-    public abstract void doInsideScores();
+    public abstract void doInsideScores(List<Word> sentence);
 
     /**
      * Compute outside, outside span and
      * outside span with parent scores
      */
-    public abstract void doOutsideScores();
+    public abstract void doOutsideScores(List<Word> sentence);
 
 
-    public abstract void computeMuSpanScore();
+    public abstract void computeMuSpanScore(List<Word> sentence);
 }

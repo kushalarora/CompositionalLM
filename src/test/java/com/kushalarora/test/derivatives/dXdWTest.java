@@ -1,6 +1,7 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dXdW;
+import com.kushalarora.compositionalLM.model.Parameters;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,8 +29,7 @@ public class dXdWTest extends AbstractDerivativeTest {
         when(W.mmul((INDArray)any()))
                 .thenReturn(Nd4j.ones(dim, 1));
 
-        when(model.getW())
-                .thenReturn(W);
+        params.setW(W);
     }
 
     @Before

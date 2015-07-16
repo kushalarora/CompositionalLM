@@ -1,16 +1,14 @@
 package com.kushalarora.compositionalLM.model;
 
-import com.kushalarora.compositionalLM.lang.IGrammar;
-import com.kushalarora.compositionalLM.lang.IInsideOutsideScores;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.Word;
-import com.kushalarora.compositionalLM.options.GrammarOptions;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
+import java.io.Serializable;
 import java.util.List;
 
 import static java.lang.Math.exp;
@@ -19,20 +17,22 @@ import static java.lang.Math.exp;
  * Created by karora on 6/21/15.
  */
 @Slf4j
-public class CompositionalGrammar {
+public class CompositionalGrammar implements Serializable {
     private final Options op;
     List<Word> sentence;
     private Model model;
     private int myMaxLength;
+    private IInsideOutsideScorer preScorer;
 
     public CompositionalGrammar(Model model, Options op) {
         this.model = model;
         this.op = op;
         myMaxLength = Integer.MAX_VALUE;
+        preScorer = model.getGrammar().getScorer();
     }
 
     public class CompositionalInsideOutsideScorer {
-        private final int length;
+        private int length;
         // Averaged representation of phrases in sentence
         private transient INDArray[][] phraseMatrix;
 
@@ -67,12 +67,12 @@ public class CompositionalGrammar {
 
         // Inside outside score object for grammar
         // being used
-        IInsideOutsideScores preScores;
+        IInsideOutsideScorer preScorer;
 
         /**
          * Clear all matrices.
          */
-        private void clearMatrices() {
+        public void clearMatrices() {
             // IndArray [start][end]
             phraseMatrix = null;
 
@@ -104,7 +104,7 @@ public class CompositionalGrammar {
          *
          * @param length length of the current sentence
          */
-        private void considerCreatingMatrices(int length) {
+        public void considerCreatingMatrices(int length) {
             if (length > op.grammarOp.maxLength ||
                     // myMaxLength if greater than zero,
                     // then it is max memory size
@@ -132,7 +132,7 @@ public class CompositionalGrammar {
          */
         // TODO:: Either remove length as argument here
         // and in considerCreatingMatrices or add dimension as argument
-        public void createMatrices(int length) {
+        private void createMatrices(int length) {
             clearMatrices();
             log.info("Creating Compositional matrices for length {}", length);
             int dim = model.getDimensions();
@@ -212,7 +212,8 @@ public class CompositionalGrammar {
          * Calculate compositional iScore, composition scores,
          * cumulative composition score and phrase and composition matrix.
          */
-        public void doInsideScore() {
+        public void doInsideScore(List<Word> sentence,
+                                  int length, IInsideOutsideScorer preScores) {
 
             double[][] iScores = preScores.getInsideSpanProb();
             double[][][] iSplitScores = preScores.getInsideSpanSplitProb();
@@ -316,7 +317,7 @@ public class CompositionalGrammar {
         /**
          * Calculate composition outside score
          */
-        public void doOutsideScore() {
+        public void doOutsideScore(int length, IInsideOutsideScorer preScores) {
             double[][][] oScoreWParent = preScores.getOutsideSpanWParentScore();
             for (int diff = 1; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
@@ -349,7 +350,7 @@ public class CompositionalGrammar {
         /**
          * Calculate compositional mu score
          */
-        public void doMuScore() {
+        public void doMuScore(int length, IInsideOutsideScorer preScores) {
             double[][][][] muSplitSpanScoresWParents = preScores.getMuSpanScoreWParent();
             // do leaf nodes
             for (int start = 0; start < length; start++) {
@@ -402,11 +403,8 @@ public class CompositionalGrammar {
             }
         }
 
-        public CompositionalInsideOutsideScorer(List<Word> sentence) {
+        public CompositionalInsideOutsideScorer() {
             arraySize = 0;
-            this.sentence = sentence;
-            length = sentence.size();
-            preScores = model.getGrammar().computeInsideOutsideProb(sentence);
         }
 
         public float[][] getInsideSpanProb() {
@@ -433,52 +431,33 @@ public class CompositionalGrammar {
             return sentence;
         }
 
-        public float computeCompInsideOutsideScores() {
+        public float score(List<Word> sentence) {
+            float score = -1;
+            if (!sentence.equals(this.sentence)) {
+                this.sentence = sentence;
+                computeCompInsideOutsideScores(sentence);
+            }
+            return getScore();
+        }
+
+        public float getScore() {
+            return compositionalIScore[0][length];
+        }
+
+        public float computeCompInsideOutsideScores(List<Word> sentence) {
+            length = sentence.size();
             considerCreatingMatrices(length);
             initializeMatrices(length);
-            doInsideScore();
-            doOutsideScore();
-            doMuScore();
-            return compositionalIScore[0][length];
+
+            // IMPORTANT: Length must be calculated before this
+            preScorer.computeInsideOutsideProb(sentence);
+            doInsideScore(sentence, length, preScorer);
+            doOutsideScore(length, preScorer);
+            doMuScore(length, preScorer);
+            return getScore();
         }
     }
 
-
-    public void train(List<Word> sentence) {
-
-
-        float previousScore = Float.POSITIVE_INFINITY;
-        //Step 1:  Calculate priors \pi, \beta and \muSpanSplitScore
-
-        // Step 2: Optimize
-        // Step 2a Initialize matrices to be used in computation.
-        val scorer = new CompositionalInsideOutsideScorer(sentence);
-        int iterCount = 0;
-        // While iter or tolerance
-        // TODO:: Add condition for stopping optimization
-        do {
-            //Step 2b:  Calculate scorer for the sentence
-            // Step 2ba: Get continuous vectors for word and Initialize the leaf nodes
-
-            // Step 2bb: Iterate over inside scorer and build
-            // compositional matrix and phrasal representation matrix
-            // calculate posterior inside, outside probability and
-            // muSpanSplitScore.
-            float score = scorer.computeCompInsideOutsideScores();
-            log.info("score iter {}: {}", iterCount++, score);
-
-            // Step 2b:
-            // Step 2b1: If scorer diff from previous scorer less than tolerance
-            // return
-            // Step 2b2: Else
-            // Step 2b2a: Calculate derivatives
-
-            // Pass compositionalMu to derivate computation functions
-            // Let them handle derivative computation
-            // Step 2b2b: Do SGD on params
-            // Figure out how to do SGD
-        } while (iterCount < 10);     // add threshold or tolerance condition
-    }
 
     public void parse(List<Word> sentence) {
 
@@ -488,8 +467,8 @@ public class CompositionalGrammar {
 
     }
 
-    public CompositionalInsideOutsideScorer getScorer(List<Word> sentence) {
-        return new CompositionalInsideOutsideScorer(sentence);
+    public CompositionalInsideOutsideScorer getScorer() {
+        return new CompositionalInsideOutsideScorer();
     }
 
 }

@@ -10,15 +10,7 @@ import java.util.List;
  */
 public interface IGrammar extends Serializable {
 
-    /**
-     * Use the grammar to compute the inside and outside probability
-     * and return the IInsideOutsideScores object.
-     *
-     * @param sentence sentence to process
-     */
-    public IInsideOutsideScores computeInsideOutsideProb(List<Word> sentence);
-
-    public List<Word> getVocab();
+    public IInsideOutsideScorer getScorer();
 
     public int getVocabSize();
 

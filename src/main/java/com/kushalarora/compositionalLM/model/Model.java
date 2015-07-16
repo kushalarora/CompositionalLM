@@ -24,12 +24,8 @@ public class Model implements Serializable {
 
     private int dimensions;
     private int vocabSize;
-    private INDArray W;
-    private dQdW dqdw;
-    private INDArray u;
-    private dQdu dqdu;
-    private INDArray X;
-    private dQdXw dqdxw;
+    Parameters params;
+    Derivatives derivatives;
     private ActivationFunction f;
     private ActivationFunction g;
     private IGrammar grammar;
@@ -39,28 +35,30 @@ public class Model implements Serializable {
                  @NonNull ActivationFunction composition,
                  @NonNull ActivationFunction output) {
 
+
         this.grammar = iGrammar;
         this.dimensions = dimensions;
         this.vocabSize = iGrammar.getVocabSize();
+        this.params = new Parameters(dimensions, vocabSize);
 
-
-        W = Nd4j.rand(dimensions, 2 * dimensions);      // d X 2d matrix
-        u = Nd4j.rand(1, dimensions);                   // row vector with d entries
-        X = Nd4j.rand(dimensions, vocabSize);           // d X V matrix
         f = composition;                                // default composition activation
         g = output;                                     // default output activation
 
-        // IMPORTANT::The order must be preserved here
-        // all derivatives should be the last one to be
-        // initialized
-        dqdu = new dQdu(this);
-        dqdw = new dQdW(this);
-        dqdxw = new dQdXw(this);
     }
 
     public Model(@NonNull int dimensions,
                  @NonNull IGrammar iGrammar) {
         this(dimensions, iGrammar, Activations.tanh(), Activations.linear());
+    }
+
+    public Model(@NonNull Parameters params, @NonNull IGrammar iGrammar) {
+        this.grammar = iGrammar;
+        this.dimensions = params.getDimensions();
+        this.vocabSize = iGrammar.getVocabSize();
+        this.params = params;
+
+        f = Activations.tanh();                                // default composition activation
+        g = Activations.linear();
     }
 
     /**
@@ -75,7 +73,7 @@ public class Model implements Serializable {
             throw new RuntimeException(String.format("Word index must be between 0 to %d. " +
                     "Word::Index %s::%d", vocabSize, word.toString(), word.getIndex()));
         }
-        return X.getColumn(index);
+        return params.getX().getColumn(index);
     }
 
     /**
@@ -95,7 +93,7 @@ public class Model implements Serializable {
                     child1.size(0), child2.size(0)));
         }
         INDArray child12 = Nd4j.concat(0, child1, child2);
-        return f.apply(W.mmul(child12));
+        return f.apply(params.getW().mmul(child12));
     }
 
 
@@ -109,7 +107,7 @@ public class Model implements Serializable {
                     child1.size(0), child2.size(0)));
         }
         INDArray child12 = Nd4j.concat(0, child1, child2);
-        return f.applyDerivative(W.mmul(child12));
+        return f.applyDerivative(params.getW().mmul(child12));
     }
 
     /**
@@ -127,7 +125,7 @@ public class Model implements Serializable {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
-        INDArray valObj = g.apply(u.mmul(node));
+        INDArray valObj = g.apply(params.getU().mmul(node));
         int[] valShape = valObj.shape();
         if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
@@ -143,7 +141,7 @@ public class Model implements Serializable {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
-        INDArray valObj = g.applyDerivative(u.mmul(node));
+        INDArray valObj = g.applyDerivative(params.getU().mmul(node));
         int[] valShape = valObj.shape();
         if (valShape.length != 2 || valShape[0] != 1 || valShape[1] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
@@ -173,15 +171,7 @@ public class Model implements Serializable {
      * @param scorer       Compositional scores used in calculating derivatives
      */
     public void update(double learningRate, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
-        W = W.sub(
-                dqdw.calcDerivative(scorer)
-                        .mul(learningRate));
-        u = u.sub(
-                dqdu.calcDerivative(scorer)
-                        .mul(learningRate));
-        X = X.sub(
-                dqdxw.calcDerivative(scorer)
-                        .mul(learningRate));
+
     }
 
 
@@ -191,21 +181,9 @@ public class Model implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
 
         Model that = (Model) o;
-
         if (dimensions != that.dimensions) return false;
         if (vocabSize != that.vocabSize) return false;
-        if (W != null ?
-                (W.neq(that.getW()).sum(Integer.MAX_VALUE).getFloat(0) != 0) :
-                that.W != null)
-            return false;
-        if (u != null ?
-                u.neq(that.u).sum(Integer.MAX_VALUE).getFloat(0) != 0 :
-                that.u != null)
-            return false;
-        if (X != null ?
-                X.neq(that.X).sum(Integer.MAX_VALUE).getFloat(0) != 0 :
-                that.X != null)
-            return false;
+        if (!params.equals(params)) return false;
         if (f != null ?
                 !f.getClass().equals(that.f.getClass()) :
                 that.f != null)
@@ -219,9 +197,7 @@ public class Model implements Serializable {
     public int hashCode() {
         int result = dimensions;
         result = 31 * result + vocabSize;
-        result = 31 * result + (W != null ? W.hashCode() : 0);
-        result = 31 * result + (u != null ? u.hashCode() : 0);
-        result = 31 * result + (X != null ? X.hashCode() : 0);
+        result = 31 * result + (params != null ? params.hashCode() : 0);
         result = 31 * result + (f != null ? f.hashCode() : 0);
         result = 31 * result + (g != null ? g.hashCode() : 0);
         return result;

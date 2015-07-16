@@ -1,11 +1,17 @@
 package com.kushalarora.compositionalLM.optimizer;
 
+import com.kushalarora.compositionalLM.derivatives.IDerivative;
+import com.kushalarora.compositionalLM.model.IParameter;
+import com.kushalarora.compositionalLM.model.IParameterDerivatives;
+
 /**
  * Created by karora on 7/7/15.
  */
-public interface IOptimizer {
+public interface IOptimizer<T> {
 
-    boolean done();
+    public IParameterDerivatives calcDerivative(T sample);
 
-    void calcDerivativeAndUpdate();
+    public void updateParams(IParameter parameter);
+
+    public IParameter getParams();
 }

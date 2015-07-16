@@ -1,15 +1,14 @@
 package com.kushalarora.compositionalLM.lang.stanford;
 
-import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScores;
+import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.IGrammar;
-import com.kushalarora.compositionalLM.lang.IInsideOutsideScores;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.Word;
-import com.kushalarora.compositionalLM.options.GrammarOptions;
+import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.ling.HasContext;
 import edu.stanford.nlp.parser.lexparser.*;
 import edu.stanford.nlp.util.Index;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
 import java.util.*;
 
@@ -31,19 +30,17 @@ import static java.lang.Math.log;
 // of the common code with arguments start, end, split
 
 @Slf4j
-public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
+public class StanfordGrammar implements IGrammar {
+    private final LexicalizedParser model;
+
     /**
      * Created by karora on 6/24/15.
      */
-    public class StanfordInsideOutsideScore extends AbstractInsideOutsideScores {
+
+    public class StanfordInsideOutsideScorer extends AbstractInsideOutsideScorer {
 
         private transient double[][][][] iSplitSpanStateScore;
         private transient double[][][][] oSpanStateScoreWParent;
-
-        public StanfordInsideOutsideScore(List sentence) {
-            super(sentence);
-        }
-
 
         /**
          * Deallocate all the arrays.
@@ -92,7 +89,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
          */
 
         // Kushal::Method private in base class
-        private void considerCreatingArrays(int length) {
+        public void considerCreatingArrays(int length) {
             // maxLength + 1 as we added boundary symbol to sentence
             if (length > op.grammarOp.maxLength + 1
                     // myMaxLength if greater than zero,
@@ -221,7 +218,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         }
 
         @Override
-        public void initializeScoreArrays() {
+        public void initializeScoreArrays(int length) {
             log.info("Intializing Inside Outside Arrays");
             if (length > arraySize) {
                 considerCreatingArrays(length);
@@ -290,9 +287,10 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         // Kushal::Removed all node for narrow, wide caching
         // Kushal::Added code to fill span arrays for words using unary rules
         // TODO:: Currently span and split span are unnormalized as we get p(word|tag)
-        public void doLexScores() {
+        public void doLexScores(List<Word> sentence) {
+            int length = sentence.size();
             words = new int[length];
-            tags = new boolean[length][numStates];
+            boolean[][] tags = new boolean[length][numStates];
 
             for (int i = 0; i < length; i++) {
                 String s = sentence.get(i).word();
@@ -420,13 +418,14 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
          * Fills in the iScore array of each category over each span
          * of length 2 or more.
          */
-        public void doInsideScores() {
+        public void doInsideScores(List<Word> sentence) {
+            int length = sentence.size();
             for (int diff = 2; diff <= length; diff++) {
                 // usually stop one short because boundary symbol only combines
                 // with whole sentence span. So for 3 word sentence + boundary = 4,
                 // length == 4, and do [0,2], [1,3]; [0,3]; [0,4]
                 for (int start = 0; start < ((diff == length) ? 1 : length - diff); start++) {
-                    doInsideChartCell(start, start + diff);
+                    doInsideChartCell(length,  start, start + diff);
                 } // for start
             } // for diff (i.e., span)
         } // end doInsideScores()
@@ -438,7 +437,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
          * @param start start index of span
          * @param end   end index of span
          */
-        private void doInsideChartCell(final int start, final int end) {
+        private void doInsideChartCell(final int length, final int start, final int end) {
             log.info("Doing iScore for span {} - {}", start, end);
             boolean[][] stateSplit = new boolean[numStates][length];
             Set<BinaryRule> binaryRuleSet = new HashSet<BinaryRule>();
@@ -581,7 +580,8 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         /**
          * Populate outside score related arrays.
          */
-        public void doOutsideScores() {
+        public void doOutsideScores(List<Word> sentence) {
+            int length = sentence.size();
             int initialParentIdx = length;
             int initialStart = 0;
             int initialEnd = length;
@@ -741,11 +741,12 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         /**
          * Populate mu score arrays
          */
-        public void computeMuSpanScore() {
+        public void computeMuSpanScore(List<Word> sentence) {
 
             // Handle lead node case.
             // There is no split here and span value
             // is stored at start
+            int length = sentence.size();
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
@@ -900,61 +901,97 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
                 }   // end for diff
             }
         }
-    }
 
-    com.kushalarora.compositionalLM.options.Options op;
-    List<Word> vocab;
+        /**
+         * Compute inside and outside score for the sentence.
+         * Also computes span and span split score we need.
+         *
+         * @param sentence Sentence being processed.
+         */
+        public void computeInsideOutsideProb(List<Word> sentence) {
+            sentence.add(new Word(Lexicon.BOUNDARY, length));
 
-    public StanfordGrammar(BinaryGrammar bg, UnaryGrammar ug, Lexicon lex,
-                           com.kushalarora.compositionalLM.options.Options op,
-                           Options defaultOp,   // TODO:: Deprecate this
-                           Index<String> stateIndex, Index<String> wordIndex,
-                           Index<String> tagIndex) {
-        super(bg, ug, lex, defaultOp, stateIndex, wordIndex, tagIndex);
-        this.op = op;
-        vocab = new ArrayList<Word>();
-        for (int index = 0; index < wordIndex.size(); index++) {
-            String word = wordIndex.get(index);
-            vocab.add(new Word(word, index));
+            this.sentence = sentence;
+            length = sentence.size();
+
+            considerCreatingArrays(length);
+
+            initializeScoreArrays(length);
+
+            log.info("Starting inside score computation");
+            doLexScores(sentence);
+
+            doInsideScores(sentence);
+
+            log.info("Start outside score computation");
+            doOutsideScores(sentence);
+
+            log.info("Start mu score computation");
+            computeMuSpanScore(sentence);
         }
     }
 
-    /**
-     * Compute inside and outside score for the sentence.
-     * Also computes span and span split score we need.
-     *
-     * @param sentence Sentence being processed.
-     */
-    public IInsideOutsideScores computeInsideOutsideProb(List<Word> sentence) {
-        val insideOutsideScore = new StanfordInsideOutsideScore(sentence);
+    Options op;
+    StanfordInsideOutsideScorer scorer;
 
-        insideOutsideScore.initializeScoreArrays();
+    protected final String goalStr;
+    protected final Index<String> stateIndex;
+    protected final Index<String> wordIndex;
+    protected final Index<String> tagIndex;
 
-        log.info("Starting inside score computation");
-        insideOutsideScore.doLexScores();
+    protected final BinaryGrammar bg;
+    protected final UnaryGrammar ug;
+    protected final Lexicon lex;
 
-        insideOutsideScore.doInsideScores();
+    protected int length; // one larger than true length of sentence; includes boundary symbol in count
+    protected float bestScore;
 
-        log.info("Start outside score computation");
-        insideOutsideScore.doOutsideScores();
 
-        log.info("Start mu score computation");
-        insideOutsideScore.computeMuSpanScore();
+    protected int myMaxLength = -0xDEADBEEF;
+    protected int[] words;  // words of sentence being parsed as word Numberer ints
+    protected final int numStates;
+    protected int arraySize = 0;
+    protected final boolean[] isTag;
 
-        return insideOutsideScore;
+
+    public StanfordGrammar(Options op,
+                           LexicalizedParser model) {
+
+        this.op = op;
+        this.model = model;
+
+        stateIndex = model.stateIndex;
+        wordIndex = model.wordIndex;
+        tagIndex = model.tagIndex;
+
+        goalStr = model.treebankLanguagePack().startSymbol();
+        bg = model.bg;
+        ug = model.ug;
+        lex = model.lex;
+        numStates = model.stateIndex.size();
+
+        isTag = new boolean[numStates];
+        // tag index is smaller, so we fill by iterating over the tag index
+        // rather than over the state index
+        for (String tag : tagIndex.objectsList()) {
+            int state = stateIndex.indexOf(tag);
+            if (state < 0) {
+                continue;
+            }
+            isTag[state] = true;
+        }
+
+        scorer = new StanfordInsideOutsideScorer();
     }
 
-    public IInsideOutsideScores getInsideOutsideObject(List<Word> sentence) {
-        return new StanfordInsideOutsideScore(sentence);
+
+
+    public IInsideOutsideScorer getScorer() {
+        return scorer;
     }
 
     public int getNumStates() {
         return numStates;
-    }
-
-
-    public List<Word> getVocab() {
-        return vocab;
     }
 
     public int getVocabSize() {
@@ -969,7 +1006,7 @@ public class StanfordGrammar extends ExhaustivePCFGParser implements IGrammar {
         }
 
         if (!wordIndex.contains(signature)) {
-                    signature = lex.getUnknownWordModel().getSignature(str, loc);
+            signature = lex.getUnknownWordModel().getSignature(str, loc);
         }
 
         index = wordIndex.indexOf(signature);

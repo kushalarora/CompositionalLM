@@ -88,7 +88,9 @@ public class dXdXw extends AbstractBaseDerivativeClass {
                                 // f'(c1, c2) \dot
                                 dC.muli(
                                 // W *
-                                model.getW().mmul(
+                                model
+                                        .getParams()
+                                        .getW().mmul(
                                         // [dc_1 dc_2]^T))
                                         dC12));
 

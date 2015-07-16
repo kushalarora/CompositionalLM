@@ -1,11 +1,12 @@
 package com.kushalarora.compositionalLM.lang;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Created by karora on 6/24/15.
  */
-public interface IInsideOutsideScores {
+public interface IInsideOutsideScorer extends Serializable {
     /**
      *
      * Returns \pi(i,j,k), an array of shape (n, n, n)
@@ -46,4 +47,6 @@ public interface IInsideOutsideScores {
      * @return sentence
      */
     public List<Word> getCurrentSentence();
+
+    public void computeInsideOutsideProb(List<Word> sentence);
 }

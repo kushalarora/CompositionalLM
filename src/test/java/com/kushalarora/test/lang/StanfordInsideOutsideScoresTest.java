@@ -1,10 +1,11 @@
 package com.kushalarora.test.lang;
 
-import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScores;
+import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
+import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
@@ -29,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class StanfordInsideOutsideScoresTest {
 
-    public AbstractInsideOutsideScores sIOScore;
+    public static AbstractInsideOutsideScorer sIOScore;
     private static int numStates;
     private static int length;
     private static List<Word> defaultSentence;
@@ -38,7 +39,7 @@ public class StanfordInsideOutsideScoresTest {
 
     @BeforeClass
     public static void setUpClass() {
-        val filePath = FileUtils.getFile("src/test/resources/wsjPCFG.ser.gz")
+        val filePath = FileUtils.getFile("src/resources/wsjPCFG.ser.gz")
                 .getAbsolutePath();
 
         Options op = new Options();
@@ -47,26 +48,24 @@ public class StanfordInsideOutsideScoresTest {
         sg = (StanfordGrammar)getGrammar(op);
         numStates = sg.getNumStates();
         PropertyConfigurator.configure("log4j.properties");
-    }
 
-    @Before
-    public void setUp() {
         defaultSentence = new ArrayList<Word>();
         String[] sent = {"This", "is", "just", "a", "test", "."};
         for (String str : sent) {
             int index = (int)Math.random() * (sg.getVocabSize() + 1);
             defaultSentence.add(new Word(str, index));
         }
-        sIOScore = (StanfordGrammar.StanfordInsideOutsideScore)
-                sg.getInsideOutsideObject(defaultSentence);
-        length = sIOScore.getCurrentSentence().size();
+        defaultSentence.add(new Word(Lexicon.BOUNDARY, length));
+        sIOScore = (StanfordGrammar.StanfordInsideOutsideScorer)
+                sg.getScorer();
+        length = defaultSentence.size();
     }
 
     @Test
     public void testIntializeArrays() {
         // All should be null at beginning
+        sIOScore.clearArrays();
 
-        //    assertEquals(length, sIOScore.getCurrentSentence().size());
         assertEquals(null, sIOScore.getInsideScores());
         assertEquals(null, sIOScore.getInsideSpanProb());
         assertEquals(null, sIOScore.getInsideSpanSplitProb());
@@ -78,7 +77,8 @@ public class StanfordInsideOutsideScoresTest {
         assertEquals(null, sIOScore.getMuScore());
         assertEquals(null, sIOScore.getMuSpanSplitScore());
 
-        sIOScore.initializeScoreArrays();
+        sIOScore.considerCreatingArrays(length);
+        sIOScore.initializeScoreArrays(length);
 
 
         double[][][] iScore = sIOScore.getInsideScores();
@@ -139,9 +139,10 @@ public class StanfordInsideOutsideScoresTest {
      */
     public void testDoLexScore() {
 
-        sIOScore.initializeScoreArrays();
-
-        sIOScore.doLexScores();
+        sIOScore.clearArrays();
+        sIOScore.considerCreatingArrays(length);
+        sIOScore.initializeScoreArrays(length);
+        sIOScore.doLexScores(defaultSentence);
 
         double[][] iSpanScores = sIOScore.getInsideSpanProb();
         double[][][] iScores = sIOScore.getInsideScores();
@@ -165,10 +166,11 @@ public class StanfordInsideOutsideScoresTest {
      */
     public void testDoInsideScore() {
 
-        sIOScore.initializeScoreArrays();
-        sIOScore.doLexScores();
-
-        sIOScore.doInsideScores();
+        sIOScore.clearArrays();
+        sIOScore.considerCreatingArrays(length);
+        sIOScore.initializeScoreArrays(length);
+        sIOScore.doLexScores(defaultSentence);
+        sIOScore.doInsideScores(defaultSentence);
 
         double[][] iSpanScores = sIOScore.getInsideSpanProb();
         double[][][] iScores = sIOScore.getInsideScores();
@@ -203,10 +205,12 @@ public class StanfordInsideOutsideScoresTest {
      */
     public void testDoOutsideScore() {
 
-        sIOScore.initializeScoreArrays();
-        sIOScore.doLexScores();
-        sIOScore.doInsideScores();
-        sIOScore.doOutsideScores();
+        sIOScore.clearArrays();
+        sIOScore.considerCreatingArrays(length);
+        sIOScore.initializeScoreArrays(length);
+        sIOScore.doLexScores(defaultSentence);
+        sIOScore.doInsideScores(defaultSentence);
+        sIOScore.doOutsideScores(defaultSentence);
 
         double[][] oSpanScores = sIOScore.getOutsideSpanProb();
         double[][][] oScores = sIOScore.getOutsideScores();
@@ -237,11 +241,14 @@ public class StanfordInsideOutsideScoresTest {
      * Verify mu split score and mu state score are the same.
      */
     public void testDoMuScore() {
-        sIOScore.initializeScoreArrays();
-        sIOScore.doLexScores();
-        sIOScore.doInsideScores();
-        sIOScore.doOutsideScores();
-        sIOScore.computeMuSpanScore();
+
+        sIOScore.clearArrays();
+        sIOScore.considerCreatingArrays(length);
+        sIOScore.initializeScoreArrays(length);
+        sIOScore.doLexScores(defaultSentence);
+        sIOScore.doInsideScores(defaultSentence);
+        sIOScore.doOutsideScores(defaultSentence);
+        sIOScore.computeMuSpanScore(defaultSentence);
 
         double[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
         double[][][] muSpanStateScore = sIOScore.getMuScore();

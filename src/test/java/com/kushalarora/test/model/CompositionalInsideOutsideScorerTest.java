@@ -1,6 +1,7 @@
 package com.kushalarora.test.model;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
@@ -37,26 +38,24 @@ public class CompositionalInsideOutsideScorerTest {
     private static List<Word> defaultSentence;
     private static int length;
     private static CompositionalGrammar cg;
+    private static IInsideOutsideScorer preScorer;
     private CompositionalGrammar.CompositionalInsideOutsideScorer scorer;
     private static int dim;
     private static Model model;
 
     @BeforeClass
     public static void setUpClass() {
-        val filePath = FileUtils.getFile("src/test/resources/wsjPCFG.ser.gz")
+        PropertyConfigurator.configure("log4j.properties");
+        val filePath =
+                FileUtils.getFile("src/resources/wsjPCFG.ser.gz")
                 .getAbsolutePath();
         Options op = new Options();
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         op.grammarOp.filename =  filePath;
+
         sg = (StanfordGrammar)getGrammar(op);
-        PropertyConfigurator.configure("log4j.properties");
+        preScorer = sg.getScorer();
 
-        model = new Model(10, sg);
-        dim = model.getDimensions();
-    }
-
-    @Before
-    public void setUp() {
         defaultSentence = new ArrayList<Word>();
         String[] sent = {"This", "is", "just", "a", "test", "."};
 
@@ -67,13 +66,23 @@ public class CompositionalInsideOutsideScorerTest {
 
         length = defaultSentence.size();
 
+        preScorer.computeInsideOutsideProb(defaultSentence);
 
-        cg = new CompositionalGrammar(model, new Options());
-        scorer = cg.getScorer(defaultSentence);
+        model = new Model(10, sg);
+        dim = model.getDimensions();
+
+        cg = new CompositionalGrammar(model, op);
+
+    }
+
+    @Before
+    public void setUp() {
+        scorer = cg.getScorer();
     }
 
     @Test
     public void testInitializeMatrices() {
+
 
         float[][] iScore = scorer.getInsideSpanProb();
         float[][][] muScore = scorer.getMuScore();
@@ -87,7 +96,8 @@ public class CompositionalInsideOutsideScorerTest {
         assertEquals(phraseMatrix, null);
         assertEquals(iSplitScore, null);
 
-        scorer.createMatrices(length);
+        scorer.considerCreatingMatrices(length);
+        scorer.initializeMatrices(length);
 
         iScore = scorer.getInsideSpanProb();
         muScore = scorer.getMuScore();
@@ -115,13 +125,14 @@ public class CompositionalInsideOutsideScorerTest {
             }
         }
 
-
-        scorer.doInsideScore();
-        scorer.doMuScore();
+        scorer.initializeMatrices(length);
+        scorer.doInsideScore(defaultSentence, length, preScorer);
+        scorer.doMuScore(length, preScorer);
 
 
         boolean alliScoresZeros = true;
         boolean allmuScoresZeros = true;
+
         iScore = scorer.getInsideSpanProb();
         muScore = scorer.getMuScore();
         compMatrix = scorer.getCompositionMatrix();
@@ -190,9 +201,9 @@ public class CompositionalInsideOutsideScorerTest {
 
     @Test
     public void testDoInsideScores() {
-        scorer.createMatrices(length);
+        scorer.considerCreatingMatrices(length);
         scorer.initializeMatrices(length);
-        scorer.doInsideScore();
+        scorer.doInsideScore(defaultSentence,length, preScorer);
 
         // test iscore and isplitscore sanity
         float[][] iScore = scorer.getInsideSpanProb();
@@ -227,6 +238,7 @@ public class CompositionalInsideOutsideScorerTest {
                                     iSplitScore[start][end][split]
                             ));
                 }
+                compSumVec = compSumVec.div(iScore[start][end]);
                 assertEquals(phraseMatrix[start][end], compSumVec);
             }
         }

@@ -30,6 +30,16 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
         }
     }
 
+    public IDerivative add(IDerivative other) {
+        dQdu  = dQdu.add(((dQdu)other).getDQdu());
+        return this;
+    }
+
+    public IDerivative mul(double learningRate) {
+        dQdu = dQdu.mul(learningRate);
+        return this;
+    }
+
     public INDArray calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
         int length = scorer.getCurrentSentence().size();
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
