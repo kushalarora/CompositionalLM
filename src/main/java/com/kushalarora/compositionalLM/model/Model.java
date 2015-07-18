@@ -25,7 +25,6 @@ public class Model implements Serializable {
     private int dimensions;
     private int vocabSize;
     Parameters params;
-    Derivatives derivatives;
     private ActivationFunction f;
     private ActivationFunction g;
     private IGrammar grammar;
@@ -143,10 +142,10 @@ public class Model implements Serializable {
         }
         INDArray valObj = g.applyDerivative(params.getU().mmul(node));
         int[] valShape = valObj.shape();
-        if (valShape.length != 2 || valShape[0] != 1 || valShape[1] != 1) {
-            throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
+        if (valShape.length != 1 || valShape[0] != 1) {
+            throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valShape.toString());
         }
-        return valObj.getFloat(0, 0);
+        return valObj.getFloat(0);
 
     }
 

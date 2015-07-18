@@ -1,16 +1,16 @@
 package com.kushalarora.compositionalLM.optimizer;
 
+import com.google.common.collect.Lists;
 import com.kushalarora.compositionalLM.options.Options;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by karora on 7/14/15.
  */
-public abstract class AbstractOptimizer<T> implements IOptimizer {
+@Slf4j
+public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
     private final Random rand;
     protected Options op;
 
@@ -28,7 +28,7 @@ public abstract class AbstractOptimizer<T> implements IOptimizer {
         int numBatch = trainSet.size() / op.trainOp.batchSize + 1;
         int epoch = 0;
         double validationScore = 0;
-        double bestValidationScore = 0;
+        double bestValidationScore = Double.MAX_VALUE;
         while (epoch < op.trainOp.maxEpochs && !done) {
             List<T> shuffledSet = new ArrayList<T>(trainSet);
             Collections.shuffle(shuffledSet, rand);
@@ -46,14 +46,16 @@ public abstract class AbstractOptimizer<T> implements IOptimizer {
                 fitRoutine(trainSet.subList(startIdx, endIdx));
 
 
-                if (op.trainOp.validate &&
+                if (true || op.trainOp.validate &&
                         (iter + 1) % op.trainOp.validationFreq == 0) {
 
                     validationScore = 0;
                     for (T data : validationSet) {
+                        log.info("Processing Validation set for {}", data);
                         validationScore += getValidationScore(data);
                     }
                     double mean = validationScore / validationSet.size();
+                    log.info("new validation score for iter : {} ==> {}", iter, mean);
 
                     if (mean < bestValidationScore) {
                         if (mean < bestValidationScore * (1 - op.trainOp.tolerance)) {
@@ -68,6 +70,17 @@ public abstract class AbstractOptimizer<T> implements IOptimizer {
         }
     }
 
-    public abstract void fitRoutine(List<T> trainBatch);
+    public void fit(Iterable<T> trainSet, Iterable<T> validationSet) {
+        fit(Lists.<T>newArrayList(trainSet),
+                Lists.<T>newArrayList(validationSet));
 
+    }
+
+    public void fit(List<T> trainSet) {
+        fit(trainSet, new ArrayList<T>());
+    }
+
+    public void fit(Iterable<T> trainSet) {
+        fit(Lists.newArrayList(trainSet));
+    }
 }

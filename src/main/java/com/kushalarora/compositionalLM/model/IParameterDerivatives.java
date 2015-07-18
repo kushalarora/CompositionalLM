@@ -5,7 +5,8 @@ import java.io.Serializable;
 /**
  * Created by karora on 7/14/15.
  */
-public interface IParameterDerivatives extends Serializable {
-    public IParameterDerivatives add(IParameterDerivatives derivatives);
-    public IParameterDerivatives mul(double learningRate);
+public interface IParameterDerivatives<T> extends Serializable {
+    public IParameterDerivatives<T> add(IParameterDerivatives<T> derivatives);
+    public IParameterDerivatives<T> mul(double learningRate);
+    public IParameterDerivatives<T> calcDerivative(T data);
 }

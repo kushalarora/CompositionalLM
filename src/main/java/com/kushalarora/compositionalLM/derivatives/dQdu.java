@@ -1,10 +1,13 @@
 package com.kushalarora.compositionalLM.derivatives;
 
+import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.List;
 
 /**
  * Created by karora on 6/21/15.
@@ -21,6 +24,11 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
     public dQdu(Model model) {
         super(model);
         dQdu = Nd4j.zeros(model.getDimensions());
+    }
+
+    public dQdu(dQdu dqdu) {
+        super(dqdu.model);
+        dQdu = dqdu.dQdu;
     }
 
     public void clear() {
@@ -40,8 +48,8 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
         return this;
     }
 
-    public INDArray calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
-        int length = scorer.getCurrentSentence().size();
+    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+        int length = sentence.size();
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
         float[][][] compositionMu = scorer.getMuScore();

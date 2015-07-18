@@ -1,10 +1,13 @@
 package com.kushalarora.compositionalLM.derivatives;
 
+import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.List;
 
 /**
  * Created by karora on 6/21/15.
@@ -28,8 +31,9 @@ public class dXdW extends AbstractBaseDerivativeClass {
 
     }
 
-    public INDArray[][][][][] calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
-        int length = scorer.getCurrentSentence().size();
+    public INDArray[][][][][] calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer
+            scorer) {
+        int length = sentence.size();
 
         // Allocate memory to hold spans and split
         for (int i = 0; i < dim; i++) {

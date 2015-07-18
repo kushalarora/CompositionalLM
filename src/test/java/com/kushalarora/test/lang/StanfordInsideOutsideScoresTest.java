@@ -44,15 +44,15 @@ public class StanfordInsideOutsideScoresTest {
 
         Options op = new Options();
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
-        op.grammarOp.filename =  filePath;
-        sg = (StanfordGrammar)getGrammar(op);
+        op.grammarOp.filename = filePath;
+        sg = (StanfordGrammar) getGrammar(op);
         numStates = sg.getNumStates();
         PropertyConfigurator.configure("log4j.properties");
 
         defaultSentence = new ArrayList<Word>();
         String[] sent = {"This", "is", "just", "a", "test", "."};
         for (String str : sent) {
-            int index = (int)Math.random() * (sg.getVocabSize() + 1);
+            int index = (int) Math.random() * (sg.getVocabSize() + 1);
             defaultSentence.add(new Word(str, index));
         }
         defaultSentence.add(new Word(Lexicon.BOUNDARY, length));
@@ -252,7 +252,7 @@ public class StanfordInsideOutsideScoresTest {
 
         double[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
         double[][][] muSpanStateScore = sIOScore.getMuScore();
-        double [][][][] muSpanSplitWParent = sIOScore.getMuSpanScoreWParent();
+        double[][][][] muSpanSplitWParent = sIOScore.getMuSpanScoreWParent();
         for (int start = 0; start < length; start++) {
             int end = start + 1;
             int split = start;
@@ -273,15 +273,15 @@ public class StanfordInsideOutsideScoresTest {
                 mu_score_split_parent_sum += muSpanSplitWParent[start][end][split][parentR];
             }
 
-            assertEquals("Start: " + start + " End: " +  end,
+            assertEquals("Start: " + start + " End: " + end,
                     mu_score_split_sum, mu_score_state_sum, 0.00001);
 
-            assertEquals("Start: " + start + " End: " +  end,
+            assertEquals("Start: " + start + " End: " + end,
                     mu_score_split_sum, mu_score_split_parent_sum, 0.00001);
         }
 
-        for (int diff = 2; diff <= length; diff++)  {
-            for  (int start = 0; start + diff <= length; start++) {
+        for (int diff = 2; diff <= length; diff++) {
+            for (int start = 0; start + diff <= length; start++) {
                 int end = start + diff;
 
                 float mu_score_state_sum = 0.0f;
@@ -302,10 +302,10 @@ public class StanfordInsideOutsideScoresTest {
                     }
                 }
 
-                assertEquals("Start: " + start + " End: " +  end,
+                assertEquals("Start: " + start + " End: " + end,
                         mu_score_split_sum, mu_score_state_sum, 0.00001);
 
-                assertEquals("Start: " + start + " End: " +  end,
+                assertEquals("Start: " + start + " End: " + end,
                         mu_score_split_sum, mu_score_split_parent_sum, 0.00001);
             }
         }

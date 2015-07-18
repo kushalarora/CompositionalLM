@@ -9,15 +9,15 @@ import java.io.Serializable;
  */
 @ToString
 public class TrainOptions implements Serializable {
-    public String[] trainFiles = null;
+    public String[] trainFiles = new String[] {"src/resources/valid"};
     public boolean train = false;
 
     public boolean validate = false;
-    public String[] validationFiles = null;
+    public String[] validationFiles = new String[] {"src/resources/valid"};
     public int maxEpochs = 50;
     public double tolerance = 1e-3;
-    public int batchSize = 50;
-    public int validationFreq = 1000;
+    public int batchSize = 10;
+    public int validationFreq = 1;
     public double learningRate = 0.01;
 }
 

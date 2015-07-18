@@ -30,7 +30,7 @@ public class dQduTest extends AbstractDerivativeTest {
      */
     @Test
     public void testCalcDerivative() {
-        INDArray arr = dQdu.calcDerivative(cScorer);
+        INDArray arr = dQdu.calcDerivative(defaultSentence, cScorer);
 
         INDArray trueArray = Nd4j.zeros(dim, 1);
 
@@ -59,7 +59,7 @@ public class dQduTest extends AbstractDerivativeTest {
 
     @Test
     public void testClean() {
-        INDArray arr = dQdu.calcDerivative(cScorer);
+        INDArray arr = dQdu.calcDerivative(defaultSentence, cScorer);
         INDArray trueArray = Nd4j.zeros(dim, 1);
 
         // As we called calcDerivative, the arr shouldn't be all zeros

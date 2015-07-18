@@ -301,7 +301,7 @@ public class StanfordGrammar implements IGrammar {
                 int word = words[start];
                 int end = start + 1;
                 Arrays.fill(tags[start], false);
-                log.info("Doing lex score lookup for index {}", start);
+                log.debug("Doing lex score lookup for index {}", start);
                 double[] iScore_start_end = iScore[start][end];
 
                 //Word context (e.g., morphosyntactic info)
@@ -438,7 +438,7 @@ public class StanfordGrammar implements IGrammar {
          * @param end   end index of span
          */
         private void doInsideChartCell(final int length, final int start, final int end) {
-            log.info("Doing iScore for span {} - {}", start, end);
+            log.debug("Doing iScore for span {} - {}", start, end);
             boolean[][] stateSplit = new boolean[numStates][length];
             Set<BinaryRule> binaryRuleSet = new HashSet<BinaryRule>();
             for (int leftState = 0; leftState < numStates; leftState++) {
@@ -595,7 +595,7 @@ public class StanfordGrammar implements IGrammar {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
 
-                    log.info("Doing oScore for span ({}, {})", start, end);
+                    log.debug("Doing oScore for span ({}, {})", start, end);
                     // do unaries
                     for (int parentState = 0; parentState < numStates; parentState++) {
                         // As this is unary rule and parent span is same as child,
@@ -750,7 +750,7 @@ public class StanfordGrammar implements IGrammar {
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
-                log.info("Doing muScore for span {} - {}", start, end);
+                log.debug("Doing muScore for span {} - {}", start, end);
                 for (int state = 0; state < numStates; state++) {
 
                     // If iScore or oScore is zero, the mu score is zero
@@ -828,7 +828,7 @@ public class StanfordGrammar implements IGrammar {
             for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
-                    log.info("Doing muScore for span {} - {}", start, end);
+                    log.debug("Doing muScore for span {} - {}", start, end);
                     for (int state = 0; state < numStates; state++) {
 
                         // If iScore or oScore is zero, the mu score is zero
@@ -906,28 +906,30 @@ public class StanfordGrammar implements IGrammar {
          * Compute inside and outside score for the sentence.
          * Also computes span and span split score we need.
          *
-         * @param sentence Sentence being processed.
+         * @param words Sentence being processed.
          */
-        public void computeInsideOutsideProb(List<Word> sentence) {
+        public void computeInsideOutsideProb(List<Word> words) {
+            sentence = new ArrayList<Word>(words);
             sentence.add(new Word(Lexicon.BOUNDARY, length));
 
-            this.sentence = sentence;
             length = sentence.size();
 
             considerCreatingArrays(length);
-
             initializeScoreArrays(length);
 
             log.info("Starting inside score computation");
             doLexScores(sentence);
-
             doInsideScores(sentence);
+            log.info("Computed inside score computation");
+
 
             log.info("Start outside score computation");
             doOutsideScores(sentence);
+            log.info("Computed outside score computation");
 
             log.info("Start mu score computation");
             computeMuSpanScore(sentence);
+            log.info("Computed mu score computation");
         }
     }
 

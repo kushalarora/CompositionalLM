@@ -39,14 +39,14 @@ public class dQdXwTest extends AbstractDerivativeTest {
 
         INDArray  u = mock(INDArray.class);
         when(u.mmul((INDArray)any()))
-                .thenReturn(Nd4j.ones(dim, 1));
+                .thenReturn(Nd4j.ones(dim));
 
        params.setU(u);
     }
 
     @Test
     public void  testClear() {
-        dqdxw.calcDerivative(cScorer);
+        dqdxw.calcDerivative(defaultSentence, cScorer);
 
         INDArray dqdxwArr = dqdxw.getDQdXw();
 
@@ -64,7 +64,7 @@ public class dQdXwTest extends AbstractDerivativeTest {
     @Test
     public void testCalcDerivative() {
 
-        INDArray dqdxwArr  = dqdxw.calcDerivative(cScorer);
+        INDArray dqdxwArr  = dqdxw.calcDerivative(defaultSentence, cScorer);
 
         INDArray ones = Nd4j.ones(dim, 1);
 

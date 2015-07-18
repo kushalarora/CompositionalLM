@@ -1,12 +1,10 @@
 package com.kushalarora.compositionalLM.languagemodel;
 
 
+import com.google.common.collect.Lists;
 import com.kushalarora.compositionalLM.lang.*;
-import com.kushalarora.compositionalLM.model.CompositionalGrammar;
-import com.kushalarora.compositionalLM.model.IParameter;
-import com.kushalarora.compositionalLM.model.IParameterDerivatives;
-import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.optimizer.SGDOptimizer;
+import com.kushalarora.compositionalLM.model.*;
+import com.kushalarora.compositionalLM.optimizer.AbstractSGDOptimizer;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.io.IOUtils;
@@ -19,7 +17,7 @@ import lombok.val;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,39 +44,57 @@ public class CompositionalLM {
 
     @SneakyThrows
     public void train() {
-        for (String filename : op.trainOp.trainFiles) {
+        final CompositionalGrammar.CompositionalInsideOutsideScorer scorer =
+                compGrammar.getScorer();
+
+        List<List<Word>> validSentences = new ArrayList<List<Word>>();
+        for (String validFile : op.trainOp.validationFiles) {
+            DocumentProcessorWrapper docProcessor =
+                    docProcessorFactory
+                            .getDocumentProcessor(validFile);
+            validSentences.addAll(
+                    Lists.<List<Word>>newArrayList(
+                            docProcessor));
+        }
+
+        for (String trainFile : op.trainOp.trainFiles) {
             int sentenceCount = 0;
-            DocumentProcessorWrapper docProcessor = docProcessorFactory
-                    .getDocumentProcessor(filename);
-            for (List<Word> sentence : docProcessor) {
-                log.info("Processing sentence {}:{}",
-                        sentenceCount++,
-                        Arrays.toString(sentence.toArray()));
-            }
-            SGDOptimizer<List<Word>> optimizer =
-                    new SGDOptimizer<List<Word>>(op) {
+            DocumentProcessorWrapper trainDocProcessor =
+                    docProcessorFactory
+                    .getDocumentProcessor(trainFile);
+
+
+
+            AbstractSGDOptimizer<List<Word>> optimizer =
+                    new AbstractSGDOptimizer<List<Word>>(op) {
                         @Override
                         public double getValidationScore(List<Word> data) {
-                            return 0;
+                            return scorer.computeCompInsideOutsideScores(data);
                         }
 
                         @Override
                         public void saveModel() {
-
+                            saveModelSerialized(op.modelOp.outFilename);
                         }
 
-                        public IParameterDerivatives calcDerivative(Object sample) {
-                            return null;
+                        public IParameterDerivatives calcDerivative(List<Word> sample) {
+                            Derivatives dQ = new Derivatives(model, scorer);
+                            return dQ.calcDerivative(sample);
                         }
 
-                        public void updateParams(IParameter parameter) {
 
+                        public void updateParams(IParameterDerivatives derivatives) {
+                            model.getParams().update(derivatives);
                         }
 
                         public IParameter getParams() {
-                            return null;
+                            return model.getParams();
                         }
                     };
+
+            optimizer.fit(
+                    Lists.newArrayList(trainDocProcessor),
+                    validSentences);
         }
 
     }

@@ -40,7 +40,7 @@ public class dXdWTest extends AbstractDerivativeTest {
     @Test
     public void testClear() {
 
-        INDArray[][][][][] dxdwArr = dxdw.calcDerivative(cScorer);
+        INDArray[][][][][] dxdwArr = dxdw.calcDerivative(defaultSentence, cScorer);
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 * dim; j++) {
                 assertNotNull(dxdwArr);
@@ -62,7 +62,7 @@ public class dXdWTest extends AbstractDerivativeTest {
 
     @Test
     public void testCalcDerivative() {
-        INDArray[][][][][] arr = dxdw.calcDerivative(cScorer);
+        INDArray[][][][][] arr = dxdw.calcDerivative(defaultSentence, cScorer);
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 *dim; j++) {
                 INDArray j1 = Nd4j.zeros(dim, 1);

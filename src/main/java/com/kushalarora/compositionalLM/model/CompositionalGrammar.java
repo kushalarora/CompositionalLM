@@ -21,14 +21,10 @@ public class CompositionalGrammar implements Serializable {
     private final Options op;
     List<Word> sentence;
     private Model model;
-    private int myMaxLength;
-    private IInsideOutsideScorer preScorer;
 
     public CompositionalGrammar(Model model, Options op) {
         this.model = model;
         this.op = op;
-        myMaxLength = Integer.MAX_VALUE;
-        preScorer = model.getGrammar().getScorer();
     }
 
     public class CompositionalInsideOutsideScorer {
@@ -63,11 +59,13 @@ public class CompositionalGrammar implements Serializable {
         private transient int arraySize;
 
         // current sentence being processed
-        List<Word> sentence;
+        private List<Word> sentence;
 
         // Inside outside score object for grammar
         // being used
-        IInsideOutsideScorer preScorer;
+        private IInsideOutsideScorer preScorer;
+        private int myMaxLength;
+
 
         /**
          * Clear all matrices.
@@ -143,7 +141,7 @@ public class CompositionalGrammar implements Serializable {
                 for (int end = start + 1; end <= length; end++) {
                     phraseMatrix[start][end] = Nd4j.create(dim, 1);
                     compositionMatrix[start][end] = new INDArray[length];
-                    for (int split = start + 1; split < end; split++) {
+                    for (int split = start; split < end; split++) {
                         compositionMatrix[start][end][split] = Nd4j.create(dim, 1);
                     }
                 }
@@ -196,7 +194,7 @@ public class CompositionalGrammar implements Serializable {
                     compositionalMu[start][end][start] = 0f;
 
                     compositionScore[start][end][start] = 0;
-                    for (int split = start + 1; split < end; split++) {
+                    for (int split = start; split < end; split++) {
                         compositionScore[start][end][split] = 0;
                         compositionalMu[start][end][split] = 0f;
                         compositionISplitScore[start][end][split] = 0f;
@@ -222,11 +220,15 @@ public class CompositionalGrammar implements Serializable {
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
-                log.info("Computing Compositional inside Score for span ({}, {})", start, end);
+                log.debug("Computing Compositional inside Score for span ({}, {})", start, end);
 
                 // Set phrase for word sentence[start]
                 phraseMatrix[start][end] = phraseMatrix[start][end].add(
                         model.word2vec(sentence.get(start)));
+
+                compositionMatrix[start][end][split] =
+                        compositionMatrix[start][end][split].add(
+                                phraseMatrix[start][end]);
 
                 // For leaf nodes, the energy of the node is
                 // a function of phrase representation
@@ -249,7 +251,7 @@ public class CompositionalGrammar implements Serializable {
             for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start <= length - diff; start++) {
                     int end = start + diff;
-                    log.info("Computing Compositional inside Score for span ({}, {})", start, end);
+                    log.debug("Computing Compositional inside Score for span ({}, {})", start, end);
 
                     // if grammar iScores is 0, so will be comp score
                     if (iScores[start][end] == 0) {
@@ -272,6 +274,7 @@ public class CompositionalGrammar implements Serializable {
                         val energy = model.energy(
                                 compositionMatrix[start][end][split],
                                 child1, child2);
+
                         float score = ((float) exp(-energy));
 
                         compositionScore[start][end][split] += score;
@@ -322,7 +325,12 @@ public class CompositionalGrammar implements Serializable {
             for (int diff = 1; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
-                    log.info("Computing Compositional oScore for span ({}, {})", start, end);
+                    log.debug("Computing Compositional oScore for span ({}, {})", start, end);
+
+                    compositionalOScore[start][end] +=
+                            oScoreWParent[start][end][end] *
+                                    compositionScore[start][end][start];
+
                     // Composition oScore is calculated using the grammar outside score by
                     // multiplying cumlComposition score for expanded child and composition
                     // score for binary rule.
@@ -331,17 +339,21 @@ public class CompositionalGrammar implements Serializable {
                         // by children (parentL, start), (start, end).
                         // Then it is multiplied by cumilative score for (parentL, start)
                         // which was expanded
-                        compositionalOScore[start][end] += compositionScore[parentL][end][start] *
-                                cumlCompositionScore[parentL][start] * oScoreWParent[start][end][parentL];
+                        compositionalOScore[start][end] +=
+                                oScoreWParent[start][end][parentL] *
+                                        compositionScore[parentL][end][start] *
+                                        cumlCompositionScore[parentL][start];
                     }
 
-                    for (int parentR = end; end != length && parentR <= length; parentR++) {
+                    for (int parentR = end + 1; parentR <= length; parentR++) {
                         // composition o score is composition score of parent(start, parentR)
                         // by children (start, end), (end, parentR).
                         // Then it is multiplied by cumilative score for (end, parentR)
                         // which was expanded
-                        compositionalOScore[start][end] += compositionScore[start][parentR][end] *
-                                cumlCompositionScore[end][parentR] * oScoreWParent[start][end][parentR];
+                        compositionalOScore[start][end] +=
+                                oScoreWParent[start][end][parentR] *
+                                        compositionScore[start][parentR][end] *
+                                        cumlCompositionScore[end][parentR];
                     }
                 }
             }
@@ -351,8 +363,9 @@ public class CompositionalGrammar implements Serializable {
          * Calculate compositional mu score
          */
         public void doMuScore(int length, IInsideOutsideScorer preScores) {
+
             double[][][][] muSplitSpanScoresWParents = preScores.getMuSpanScoreWParent();
-            // do leaf nodes
+/*            // do leaf nodes
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
@@ -360,11 +373,14 @@ public class CompositionalGrammar implements Serializable {
                 // muScore is computed as  iScore * oScore.
                 // To compute compositional mu score, we need to compute
                 // TODO:: Will this always be zero?
+
+
+
                 for (int parentL = 0; parentL < start; parentL++) {
                     compositionalMu[start][end][split] +=
                             muSplitSpanScoresWParents[start][end][split][parentL] *
-                                    cumlCompositionScore[start][end] *
                                     compositionScore[parentL][end][start] *
+                                    cumlCompositionScore[start][end] *
                                     cumlCompositionScore[parentL][start];
                 }
 
@@ -376,26 +392,32 @@ public class CompositionalGrammar implements Serializable {
                                         cumlCompositionScore[end][parentR];
                 }
 
-            }
-            for (int diff = 2; diff <= length; diff++) {
+            }*/
+            for (int diff = 1; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
-                    log.info("Computing Compositional mu Score for span ({}, {})", start, end);
+
+                    log.debug("Computing Compositional mu Score for span ({}, {})", start, end);
+
+                    compositionalMu[start][end][start] +=
+                            muSplitSpanScoresWParents[start][end][start][end] *
+                                    compositionScore[start][end][start];
+
                     for (int split = start + 1; split < end; split++) {
 
                         for (int parentL = 0; parentL < start; parentL++) {
                             compositionalMu[start][end][split] +=
                                     muSplitSpanScoresWParents[start][end][split][parentL] *
-                                            cumlCompositionScore[start][end] *
                                             compositionScore[parentL][end][start] *
-                                            cumlCompositionScore[parentL][start];
+                                            cumlCompositionScore[parentL][start] *
+                                            cumlCompositionScore[start][end];
                         }
 
-                        for (int parentR = end; end != length && parentR <= length; parentR++) {
+                        for (int parentR = end + 1; parentR <= length; parentR++) {
                             compositionalMu[start][end][split] +=
                                     muSplitSpanScoresWParents[start][end][split][parentR] *
-                                            cumlCompositionScore[start][end] *
                                             compositionScore[start][parentR][end] *
+                                            cumlCompositionScore[start][end] *
                                             cumlCompositionScore[end][parentR];
                         }
                     }
@@ -405,6 +427,8 @@ public class CompositionalGrammar implements Serializable {
 
         public CompositionalInsideOutsideScorer() {
             arraySize = 0;
+            myMaxLength = Integer.MAX_VALUE;
+            preScorer = model.getGrammar().getScorer();
         }
 
         public float[][] getInsideSpanProb() {
@@ -451,9 +475,17 @@ public class CompositionalGrammar implements Serializable {
 
             // IMPORTANT: Length must be calculated before this
             preScorer.computeInsideOutsideProb(sentence);
+            log.info("Starting Computational inside score");
             doInsideScore(sentence, length, preScorer);
+            log.info("Computed Computational inside score");
+
+            log.info("Starting Computational outside score");
             doOutsideScore(length, preScorer);
+            log.info("Computed Computational outside score");
+
+            log.info("Starting Computational mu score");
             doMuScore(length, preScorer);
+            log.info("Starting Computational mu score");
             return getScore();
         }
     }

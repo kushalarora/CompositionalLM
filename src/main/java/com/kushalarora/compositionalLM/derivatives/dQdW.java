@@ -1,10 +1,13 @@
 package com.kushalarora.compositionalLM.derivatives;
 
+import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.List;
 
 /**
  * Created by karora on 6/21/15.
@@ -27,21 +30,28 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
     }
 
 
-    public INDArray calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
-        INDArray[][][][][] dxdwArr = dxdw.calcDerivative(scorer);
-        int length = scorer.getCurrentSentence().size();
+    public dQdW(dQdW dqdW) {
+        super(dqdW.model);
+        dxdw = dqdW.dxdw;
+        dQdW = dqdW.dQdW;
+        dim = dqdW.dim;
+    }
+
+    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+        int length = sentence.size();
+        INDArray[][][][][] dxdwArr = dxdw.calcDerivative(sentence, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         float[][][] compositionalMu = scorer.getMuScore();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
 
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 * dim; j++) {
-                float dEdW_ij = 0;
+                double dEdW_ij = 0;
 
                 for (int start = 0; start < length; start++) {
                     for (int end = start + 1; end <= length; end++) {
                         for (int split = start + 1; split < end; split++) {
-                            float dE = model.energyDerivative(compositionMatrix[start][end][split],
+                            double dE = model.energyDerivative(compositionMatrix[start][end][split],
                                     phraseMatrix[start][split], phraseMatrix[split][end]);
                             INDArray udXdWArr = model.getParams().getU().mmul(
                                     dxdwArr[i][j][start][end][split]);
@@ -52,7 +62,7 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
                                 throw new RuntimeException("udXdWArr was expected to be a matrix of shape 1 X 1");
                             }
 
-                            float udXdW = udXdWArr.getFloat(0);
+                            double udXdW = udXdWArr.getFloat(0);
                             dEdW_ij += dE * udXdW * compositionalMu[start][end][split];
                         }
                     }

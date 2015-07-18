@@ -37,7 +37,7 @@ public class dXdXwTest extends AbstractDerivativeTest {
 
     @Test
     public void testClear() {
-        dxdxw.calcDerivative(cScorer);
+        dxdxw.calcDerivative(defaultSentence, cScorer);
         assertNotNull(dxdxw.getDXdXw());
         assertNotNull(dxdxw.getDXdXwi());
 
@@ -48,7 +48,7 @@ public class dXdXwTest extends AbstractDerivativeTest {
 
     @Test
     public void testCalcDerivative() {
-        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(cScorer);
+        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(defaultSentence, cScorer);
 
         INDArray eye = Nd4j.eye(dim);
         INDArray truedxdw = Nd4j.zeros(dim, dim);

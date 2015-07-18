@@ -14,9 +14,9 @@ import org.nd4j.linalg.factory.Nd4j;
 @Getter
 @Setter
 public class Parameters implements IParameter {
-    private  INDArray W;
-    private  INDArray u;
-    private  INDArray X;
+    private INDArray W;
+    private INDArray u;
+    private INDArray X;
     private final int dimensions;
     private final int vocabSize;
 
@@ -28,10 +28,6 @@ public class Parameters implements IParameter {
         X = Nd4j.rand(dimensions, vocabSize);           // d X V matrix
     }
 
-
-    public void update(IParameterDerivatives derivatives) {
-
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -59,5 +55,28 @@ public class Parameters implements IParameter {
         result = 31 * result + (u != null ? u.hashCode() : 0);
         result = 31 * result + (X != null ? X.hashCode() : 0);
         return result;
+    }
+
+    public void update(IParameter params) {
+        Parameters parameters = (Parameters) params;
+        if (dimensions != parameters.dimensions ||
+                vocabSize != parameters.vocabSize) {
+            new RuntimeException("parameter("
+                    + dimensions + ", " + vocabSize + ") " +
+                    "and updated parameter ("
+                    + parameters.dimensions + ", " +
+                    parameters.vocabSize + ") " +
+                    "are not of same size");
+        }
+        W = parameters.W;
+        u = parameters.u;
+        X = parameters.X;
+    }
+
+    public void update(IParameterDerivatives derivatives) {
+        Derivatives dq = (Derivatives) derivatives;
+        W.add(dq.getDqdw().getDQdW());
+        u.add(dq.getDqdu().getDQdu());
+        X.add(dq.getDqdxw().getDQdXw());
     }
 }

@@ -27,13 +27,21 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
         dQdXw = Nd4j.zeros(dim, V);
     }
 
+
+    public dQdXw(dQdXw dqdxw) {
+        super(dqdxw.model);
+        dQdXw = dqdxw.getDQdXw();
+        dxdxw = dqdxw.dxdxw;
+        dim = dqdxw.dim;
+        V = dqdxw.V;
+    }
+
     public dQdXw(Model model) {
         this(model, new dXdXw(model));
     }
 
-    public INDArray calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
 
-        List<Word> sentence = scorer.getCurrentSentence();
         int length = sentence.size();
 
         // Save indexes
@@ -42,7 +50,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
             indexes[i] = sentence.get(i).getIndex();
         }
 
-        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(scorer);
+        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(sentence, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         float[][][] compositionalMu = scorer.getMuScore();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
@@ -67,10 +75,9 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
                             .mmul(dcdc);
 
             int[] udXdXwShape = udXdXwArr.shape();
-            if (udXdXwShape.length != 2 ||
-                    udXdXwShape[0] != dim ||
-                    udXdXwShape[1] != 1) {
-                throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
+            if (udXdXwShape.length != 1 ||
+                    udXdXwShape[0] != dim) {
+                throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1 " + udXdXwShape.toString());
             }
 
             dQdXw_i = dQdXw_i.add(udXdXwArr
@@ -93,9 +100,8 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
 
 
                         udXdXwShape = udXdXwArr.shape();
-                        if (udXdXwShape.length != 2 ||
-                                udXdXwShape[0] != dim ||
-                                udXdXwShape[1] != 1) {
+                        if (udXdXwShape.length != 1 ||
+                                udXdXwShape[0] != dim) {
                             throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
                         }
 

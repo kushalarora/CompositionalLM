@@ -85,12 +85,14 @@ public class CompositionLMTest {
 
 
     @Test
+    @Ignore
     public void testMain() {
         String[] args =
                 new String[] {"-train", "src/resources/train",
                         "-validate", "src/resources/valid",
                         "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
+                        "-saveOutputModelSerialized", "/home/karora/tmpmodel.ser.gz1",
                         "-lowercase"};
         CompositionalLM.main(args);
     }

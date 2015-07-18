@@ -27,12 +27,14 @@ public class AbstractDerivativeTest {
     protected static CompositionalGrammar.CompositionalInsideOutsideScorer cScorer;
     protected static int length;
     protected static Parameters params;
+    protected static List<Word> defaultSentence;
+
     @BeforeClass
     public static void setUpClass() {
         model = mock(Model.class);
         params = new Parameters(dim, V);
         cScorer = mock(CompositionalGrammar.CompositionalInsideOutsideScorer.class);
-        List<Word> defaultSentence = new ArrayList<Word>();
+        defaultSentence = new ArrayList<Word>();
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {
             int index = (int)Math.floor(Math.random()* (V + 1));
             defaultSentence.add(new Word(str, index));
