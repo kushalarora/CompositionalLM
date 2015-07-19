@@ -53,6 +53,7 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
         float[][][] compositionMu = scorer.getMuScore();
+        float[][] compositionalIScore = scorer.getInsideSpanProb();
 
         // do leaf nodes
         for (int start = 0; start < length; start++) {
@@ -96,6 +97,7 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
                 }
             }
         }
+        dQdu = dQdu.div(compositionalIScore[0][length]);
         return dQdu;
     }
 }

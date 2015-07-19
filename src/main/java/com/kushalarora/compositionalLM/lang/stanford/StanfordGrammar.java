@@ -278,7 +278,7 @@ public class StanfordGrammar implements IGrammar {
          * marginalizing by non-terminal children to given parent i.e.
          * by summing all iScore of non terminal children symbols and
          * adding it to parent score.
-         * <p/>
+         * <p>
          * iSpanSplitScore is nothing but the sum over all states and
          * iSpanScore is nothing but the same as span is of size 1 and
          * there is only one possible split
@@ -401,7 +401,7 @@ public class StanfordGrammar implements IGrammar {
 
                         // in case of leaf nodes there is no node, hence
                         // we keeping the value of split at start
-                        iSplitSpanStateScore[start][end][start][state] += tot;
+                        iSplitSpanStateScore[start][end][start][parentState] += tot;
                         iSpanSplitScore[start][end][start] += tot;
                         iSpanScore[start][end] += tot;
                         log.debug("Start:{} End:{} Unary {} iScore: {}", start, end, ur,
@@ -425,7 +425,7 @@ public class StanfordGrammar implements IGrammar {
                 // with whole sentence span. So for 3 word sentence + boundary = 4,
                 // length == 4, and do [0,2], [1,3]; [0,3]; [0,4]
                 for (int start = 0; start < ((diff == length) ? 1 : length - diff); start++) {
-                    doInsideChartCell(length,  start, start + diff);
+                    doInsideChartCell(length, start, start + diff);
                 } // for start
             } // for diff (i.e., span)
         } // end doInsideScores()
@@ -441,11 +441,12 @@ public class StanfordGrammar implements IGrammar {
             log.debug("Doing iScore for span {} - {}", start, end);
             boolean[][] stateSplit = new boolean[numStates][length];
             Set<BinaryRule> binaryRuleSet = new HashSet<BinaryRule>();
+
             for (int leftState = 0; leftState < numStates; leftState++) {
                 BinaryRule[] leftRules = bg.splitRulesWithLC(leftState);
                 for (BinaryRule rule : leftRules) {
 
-                    int rightChild = rule.rightChild;
+                    int rightState = rule.rightChild;
                     int parentState = rule.parent;
 
                     // This binary split might be able to cover the span depending upon children's coverage.
@@ -464,7 +465,7 @@ public class StanfordGrammar implements IGrammar {
                         }
                         lS = log(lS);
 
-                        double rS = iScore[split][end][rightChild];
+                        double rS = iScore[split][end][rightState];
                         if (rS == 0f) {
                             continue;
                         }
@@ -492,13 +493,13 @@ public class StanfordGrammar implements IGrammar {
                 BinaryRule[] rightRules = bg.splitRulesWithRC(rightState);
                 for (BinaryRule rule : rightRules) {
 
-                    // Rule already processed by leftstate loop
+                    // Rule already processed by left state loop
                     if (binaryRuleSet.contains(rule)) {
                         log.debug("Rule {} already processed by left child loop.Skipping", rule);
                         continue;
                     }
 
-                    int leftChild = rule.leftChild;
+                    int leftState = rule.leftChild;
                     int parentState = rule.parent;
 
                     // This binary split might be able to cover the span depending upon children's coverage.
@@ -511,7 +512,7 @@ public class StanfordGrammar implements IGrammar {
                     // (start, end - 1), (end - 1, end)
                     for (int split = start + 1; split < end; split++) {
 
-                        double lS = iScore[start][split][leftChild];
+                        double lS = iScore[start][split][leftState];
                         if (lS == 0f) {
                             continue;
                         }
@@ -619,7 +620,7 @@ public class StanfordGrammar implements IGrammar {
                                     , ur, start, end);
 
                             oSpanScore[start][end] += tot;
-                            oScore[start][end][ur.child] += tot;
+                            oScore[start][end][childState] += tot;
                             oSpanWParentScore[start][end][parent] += tot;
                             oSpanStateScoreWParent[start][end][parent][childState] += tot;
                         }   // end for unary rule iter
@@ -636,16 +637,18 @@ public class StanfordGrammar implements IGrammar {
                         int lParent = end;
                         BinaryRule[] rules = bg.splitRulesWithLC(leftState);
                         for (BinaryRule br : rules) {
-
+                            int rightState = br.rightChild;
+                            int parentState = br.parent;
                             // If paren't outside score is zero, so will be
                             // the child's
-                            double oS = oScore[start][end][br.parent];
+                            double oS = oScore[start][end][parentState];
                             if (oS == 0f) {
                                 continue;
                             }
                             oS = log(oS);
 
                             float pS = br.score;
+
 
                             for (int split = start + 1; split < end; split++) {
                                 // left span ends at end.
@@ -654,11 +657,11 @@ public class StanfordGrammar implements IGrammar {
                                 // iScore of the right child.
                                 // If the right child's iScore is zero, so
                                 // will be the oScore of left child.
-                                double rS = iScore[split][end][br.rightChild];
+                                double rS = iScore[split][end][rightState];
                                 if (rS == 0f) {
                                     log.debug("oScore[{}][{}][{}] = {} found but iScore[{}][{}][{}] = 0 for rule {}",
-                                            start, end, br.parent, oS,
-                                            split, end, br.rightChild,
+                                            start, end, parentState, oS,
+                                            split, end, rightState,
                                             br);
                                     continue;
                                 }
@@ -693,9 +696,10 @@ public class StanfordGrammar implements IGrammar {
 
                         BinaryRule[] rules = bg.splitRulesWithRC(rightState);
                         for (BinaryRule br : rules) {
-
+                            int parentState = br.parent;
+                            int leftState = br.leftChild;
                             //  if oScore of parent is zero, so is child's.
-                            double oS = oScore[start][end][br.parent];
+                            double oS = oScore[start][end][parentState];
                             if (oS == 0f) {
                                 continue;
                             }
@@ -709,7 +713,7 @@ public class StanfordGrammar implements IGrammar {
 
                                 // If iScore of the left span is zero, so is the
                                 // oScore of left span
-                                double lS = iScore[start][split][br.leftChild];
+                                double lS = iScore[start][split][leftState];
                                 if (lS == 0f) {
                                     log.debug("oScore[{}][{}][{}] = {} found but iScore[{}][{}][{}] = 0 for rule {}",
                                             start, end, br.parent, oS,
@@ -985,7 +989,6 @@ public class StanfordGrammar implements IGrammar {
 
         scorer = new StanfordInsideOutsideScorer();
     }
-
 
 
     public IInsideOutsideScorer getScorer() {

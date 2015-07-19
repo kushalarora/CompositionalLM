@@ -92,7 +92,7 @@ public class CompositionLMTest {
                         "-validate", "src/resources/valid",
                         "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
-                        "-saveOutputModelSerialized", "/home/karora/tmpmodel.ser.gz1",
+                        "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase"};
         CompositionalLM.main(args);
     }

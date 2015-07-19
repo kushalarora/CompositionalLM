@@ -54,6 +54,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         float[][][] compositionalMu = scorer.getMuScore();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
+        float[][] compositionalIScore = scorer.getInsideSpanProb();
 
 
         INDArray dcdc = Nd4j.eye(dim);
@@ -117,6 +118,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
             }
             dQdXw.add(Nd4j.zeros(dim, V));
         }
+        dQdXw = dQdXw.add(compositionalIScore[0][length]);
         return dQdXw;
     }
 
