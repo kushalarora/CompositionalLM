@@ -1,8 +1,13 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,6 +30,18 @@ public class CompositionalGrammar implements Serializable {
         this.model = model;
         this.op = op;
     }
+
+    LoadingCache<List<Word>, IInsideOutsideScorer> cache =
+            CacheBuilder.newBuilder()
+                    .initialCapacity(1000)
+                    .maximumSize(20000)
+                    .build(new CacheLoader<List<Word>, IInsideOutsideScorer>() {
+                        @Override
+                        public IInsideOutsideScorer load(List<Word> sentence) throws Exception {
+                            return model.getGrammar().computeScore(sentence);
+                        }
+                    });
+
 
     public class CompositionalInsideOutsideScorer {
         // Averaged representation of phrases in sentence
@@ -366,8 +383,8 @@ public class CompositionalGrammar implements Serializable {
 
                 double compSplitScore =
                         compositionScore[start][end][split] *
-                        cumlCompositionScore[start][split] *
-                        cumlCompositionScore[split][end];
+                                cumlCompositionScore[start][split] *
+                                cumlCompositionScore[split][end];
 
                 for (int parentL = 0; parentL < start; parentL++) {
                     compositionalMu[start][end][split] +=
@@ -383,11 +400,11 @@ public class CompositionalGrammar implements Serializable {
 
 
                 for (int parentR = end + 1; parentR <= length; parentR++) {
-                        compositionalMu[start][end][split] +=
-                                muSplitSpanScoresWParents[start][end][split][parentR] *
-                                        compositionScore[start][parentR][end] *
-                                        compSplitScore *
-                                        cumlCompositionScore[end][parentR];
+                    compositionalMu[start][end][split] +=
+                            muSplitSpanScoresWParents[start][end][split][parentR] *
+                                    compositionScore[start][parentR][end] *
+                                    compSplitScore *
+                                    cumlCompositionScore[end][parentR];
                 }
 
             }
@@ -401,8 +418,8 @@ public class CompositionalGrammar implements Serializable {
 
                         double compSplitScore =
                                 compositionScore[start][end][split] *
-                                cumlCompositionScore[start][split] *
-                                cumlCompositionScore[split][end];
+                                        cumlCompositionScore[start][split] *
+                                        cumlCompositionScore[split][end];
 
                         for (int parentL = 0; parentL < start; parentL++) {
                             compositionalMu[start][end][split] +=
@@ -455,6 +472,7 @@ public class CompositionalGrammar implements Serializable {
         }
 
 
+        @SneakyThrows
         public float computeCompInsideOutsideScores(List<Word> sentence) {
             int length = sentence.size();
             considerCreatingMatrices(length);
@@ -462,7 +480,7 @@ public class CompositionalGrammar implements Serializable {
 
             // IMPORTANT: Length must be calculated before this
             IInsideOutsideScorer preScorer =
-                    model.getGrammar().computeScore(sentence);
+                    cache.get(sentence);
 
             log.info("Starting Computational inside score");
             doInsideScore(sentence, length, preScorer);
