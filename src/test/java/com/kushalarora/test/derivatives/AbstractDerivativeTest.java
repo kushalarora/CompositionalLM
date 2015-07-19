@@ -41,8 +41,6 @@ public class AbstractDerivativeTest {
         }
         length = defaultSentence.size();
 
-        when(cScorer.getCurrentSentence()).thenReturn(defaultSentence);
-
         INDArray[][][] dummyCompMatrix = new INDArray[length][length + 1][];
         INDArray[][] phraseMatrix = new INDArray[length][length + 1];
         float[][][] compMu = new float[length][length + 1][];

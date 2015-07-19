@@ -19,7 +19,6 @@ import static java.lang.Math.exp;
 @Slf4j
 public class CompositionalGrammar implements Serializable {
     private final Options op;
-    List<Word> sentence;
     private Model model;
 
     public CompositionalGrammar(Model model, Options op) {
@@ -28,7 +27,6 @@ public class CompositionalGrammar implements Serializable {
     }
 
     public class CompositionalInsideOutsideScorer {
-        private int length;
         // Averaged representation of phrases in sentence
         private transient INDArray[][] phraseMatrix;
 
@@ -58,12 +56,6 @@ public class CompositionalGrammar implements Serializable {
         // current maximum length that we can handle
         private transient int arraySize;
 
-        // current sentence being processed
-        private List<Word> sentence;
-
-        // Inside outside score object for grammar
-        // being used
-        private IInsideOutsideScorer preScorer;
         private int myMaxLength;
 
 
@@ -118,9 +110,9 @@ public class CompositionalGrammar implements Serializable {
                             length, arraySize);
                     myMaxLength = length;
                     createMatrices(arraySize);
+                    throw new RuntimeException(e);
                 }
             }
-            initializeMatrices(length);
         }
 
         /**
@@ -440,7 +432,6 @@ public class CompositionalGrammar implements Serializable {
         public CompositionalInsideOutsideScorer() {
             arraySize = 0;
             myMaxLength = Integer.MAX_VALUE;
-            preScorer = model.getGrammar().getScorer();
         }
 
         public float[][] getInsideSpanProb() {
@@ -463,30 +454,16 @@ public class CompositionalGrammar implements Serializable {
             return compositionISplitScore;
         }
 
-        public List<Word> getCurrentSentence() {
-            return sentence;
-        }
-
-        public float score(List<Word> sentence) {
-            float score = -1;
-            if (!sentence.equals(this.sentence)) {
-                this.sentence = sentence;
-                computeCompInsideOutsideScores(sentence);
-            }
-            return getScore();
-        }
-
-        public float getScore() {
-            return compositionalIScore[0][length];
-        }
 
         public float computeCompInsideOutsideScores(List<Word> sentence) {
-            length = sentence.size();
+            int length = sentence.size();
             considerCreatingMatrices(length);
             initializeMatrices(length);
 
             // IMPORTANT: Length must be calculated before this
-            preScorer.computeInsideOutsideProb(sentence);
+            IInsideOutsideScorer preScorer =
+                    model.getGrammar().computeScore(sentence);
+
             log.info("Starting Computational inside score");
             doInsideScore(sentence, length, preScorer);
             log.info("Computed Computational inside score");
@@ -498,7 +475,8 @@ public class CompositionalGrammar implements Serializable {
             log.info("Starting Computational mu score");
             doMuScore(length, preScorer);
             log.info("Starting Computational mu score");
-            return getScore();
+
+            return compositionalIScore[0][length];
         }
     }
 

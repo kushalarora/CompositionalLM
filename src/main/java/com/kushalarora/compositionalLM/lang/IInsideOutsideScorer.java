@@ -48,5 +48,5 @@ public interface IInsideOutsideScorer extends Serializable {
      */
     public List<Word> getCurrentSentence();
 
-    public void computeInsideOutsideProb(List<Word> sentence);
+    public void computeInsideOutsideProb();
 }

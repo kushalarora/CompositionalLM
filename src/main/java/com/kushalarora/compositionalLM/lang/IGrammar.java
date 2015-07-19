@@ -10,7 +10,7 @@ import java.util.List;
  */
 public interface IGrammar extends Serializable {
 
-    public IInsideOutsideScorer getScorer();
+    public IInsideOutsideScorer computeScore(List<Word> sentence);
 
     public int getVocabSize();
 

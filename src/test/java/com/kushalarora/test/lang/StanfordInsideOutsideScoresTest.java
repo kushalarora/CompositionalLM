@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.PropertyConfigurator;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,9 +30,10 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class StanfordInsideOutsideScoresTest {
 
-    public static AbstractInsideOutsideScorer sIOScore;
+    public AbstractInsideOutsideScorer sIOScore;
+    private int length;
+
     private static int numStates;
-    private static int length;
     private static List<Word> defaultSentence;
     private static StanfordGrammar sg;
 
@@ -54,10 +56,13 @@ public class StanfordInsideOutsideScoresTest {
             int index = (int) Math.random() * (sg.getVocabSize() + 1);
             defaultSentence.add(new Word(str, index));
         }
-        defaultSentence.add(new Word(Lexicon.BOUNDARY, length));
+    }
+
+    @Before
+    public void setUp() {
         sIOScore = (StanfordGrammar.StanfordInsideOutsideScorer)
-                sg.getScorer();
-        length = defaultSentence.size();
+                sg.computeScore(defaultSentence);
+        length = sIOScore.getCurrentSentence().size();
     }
 
     @Test
@@ -76,8 +81,8 @@ public class StanfordInsideOutsideScoresTest {
         assertEquals(null, sIOScore.getMuScore());
         assertEquals(null, sIOScore.getMuSpanSplitScore());
 
-        sIOScore.considerCreatingArrays(length);
-        sIOScore.initializeScoreArrays(length);
+        sIOScore.considerCreatingArrays();
+        sIOScore.initializeScoreArrays();
 
 
         double[][][] iScore = sIOScore.getInsideScores();
@@ -139,9 +144,9 @@ public class StanfordInsideOutsideScoresTest {
     public void testDoLexScore() {
 
         sIOScore.clearArrays();
-        sIOScore.considerCreatingArrays(length);
-        sIOScore.initializeScoreArrays(length);
-        sIOScore.doLexScores(defaultSentence);
+        sIOScore.considerCreatingArrays();
+        sIOScore.initializeScoreArrays();
+        sIOScore.doLexScores();
 
         double[][] iSpanScores = sIOScore.getInsideSpanProb();
         double[][][] iScores = sIOScore.getInsideScores();
@@ -166,10 +171,10 @@ public class StanfordInsideOutsideScoresTest {
     public void testDoInsideScore() {
 
         sIOScore.clearArrays();
-        sIOScore.considerCreatingArrays(length);
-        sIOScore.initializeScoreArrays(length);
-        sIOScore.doLexScores(defaultSentence);
-        sIOScore.doInsideScores(defaultSentence);
+        sIOScore.considerCreatingArrays();
+        sIOScore.initializeScoreArrays();
+        sIOScore.doLexScores();
+        sIOScore.doInsideScores();
 
         double[][] iSpanScores = sIOScore.getInsideSpanProb();
         double[][][] iScores = sIOScore.getInsideScores();
@@ -205,11 +210,11 @@ public class StanfordInsideOutsideScoresTest {
     public void testDoOutsideScore() {
 
         sIOScore.clearArrays();
-        sIOScore.considerCreatingArrays(length);
-        sIOScore.initializeScoreArrays(length);
-        sIOScore.doLexScores(defaultSentence);
-        sIOScore.doInsideScores(defaultSentence);
-        sIOScore.doOutsideScores(defaultSentence);
+        sIOScore.considerCreatingArrays();
+        sIOScore.initializeScoreArrays();
+        sIOScore.doLexScores();
+        sIOScore.doInsideScores();
+        sIOScore.doOutsideScores();
 
         double[][] oSpanScores = sIOScore.getOutsideSpanProb();
         double[][][] oScores = sIOScore.getOutsideScores();
@@ -242,12 +247,12 @@ public class StanfordInsideOutsideScoresTest {
     public void testDoMuScore() {
 
         sIOScore.clearArrays();
-        sIOScore.considerCreatingArrays(length);
-        sIOScore.initializeScoreArrays(length);
-        sIOScore.doLexScores(defaultSentence);
-        sIOScore.doInsideScores(defaultSentence);
-        sIOScore.doOutsideScores(defaultSentence);
-        sIOScore.doMuScore(defaultSentence);
+        sIOScore.considerCreatingArrays();
+        sIOScore.initializeScoreArrays();
+        sIOScore.doLexScores();
+        sIOScore.doInsideScores();
+        sIOScore.doOutsideScores();
+        sIOScore.doMuScore();
 
         double[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
         double[][][] muSpanStateScore = sIOScore.getMuScore();

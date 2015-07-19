@@ -54,7 +54,7 @@ public class CompositionalInsideOutsideScorerTest {
         op.grammarOp.filename =  filePath;
 
         sg = (StanfordGrammar)getGrammar(op);
-        preScorer = sg.getScorer();
+
 
         defaultSentence = new ArrayList<Word>();
         String[] sent = {"This", "is", "just", "a", "test", "."};
@@ -64,9 +64,9 @@ public class CompositionalInsideOutsideScorerTest {
             defaultSentence.add(new Word(str, index));
         }
 
-        length = defaultSentence.size();
+        preScorer = sg.computeScore(defaultSentence);
 
-        preScorer.computeInsideOutsideProb(defaultSentence);
+        length = defaultSentence.size();
 
         model = new Model(10, sg);
         dim = model.getDimensions();
@@ -221,7 +221,7 @@ public class CompositionalInsideOutsideScorerTest {
                 for (int split = start + 1; split < end; split++) {
                     iSplitSum += iSplitScore[start][end][split];
                 }
-                assertEquals(iScore[start][end], iSplitSum);
+                assertEquals(1, iScore[start][end]/ iSplitSum, 0.0001);
             }
         }
 

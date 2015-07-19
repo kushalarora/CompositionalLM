@@ -118,7 +118,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
             }
             dQdXw.add(Nd4j.zeros(dim, V));
         }
-        dQdXw = dQdXw.add(compositionalIScore[0][length]);
+        dQdXw = dQdXw.div(compositionalIScore[0][length]);
         return dQdXw;
     }
 
