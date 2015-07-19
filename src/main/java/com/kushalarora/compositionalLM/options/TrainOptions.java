@@ -18,7 +18,7 @@ public class TrainOptions implements Serializable {
     public double tolerance = 1e-3;
     public int batchSize = 10;
     public int validationFreq = 1;
-    public double learningRate = 0.01;
+    public double learningRate = 0.1;
 }
 
 

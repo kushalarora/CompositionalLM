@@ -279,24 +279,22 @@ public class CompositionalGrammar implements Serializable {
 
                         compositionScore[start][end][split] += score;
 
+                        float compSplitScore = score *
+                                cumlCompositionScore[start][split] *
+                                cumlCompositionScore[split][end];
+
                         // Marginalize over split.
                         // This is composition score of span (start, end)
-                        cumlCompositionScore[start][end] += score;
-
-
-                        double iSplitScore = iSplitScores[split][end][split];
+                        cumlCompositionScore[start][end] += compSplitScore;
 
                         // iSplitScore consist iscore of (start, split) and
                         // (split, end), so we just need to multiply
                         // them with cuml composition score
                         // For the binary rule, we multiply with binary composition
                         // score
-                        double compISplitScore = iSplitScore * score *
-                                cumlCompositionScore[start][split] *
-                                cumlCompositionScore[split][end];
+                        double compISplitScore = iSplitScores[start][end][split] * compSplitScore;
 
                         compositionISplitScore[start][end][split] += compISplitScore;
-
 
                         // Composition iScore
                         // Marginalized over various splits
@@ -365,7 +363,7 @@ public class CompositionalGrammar implements Serializable {
         public void doMuScore(int length, IInsideOutsideScorer preScores) {
 
             double[][][][] muSplitSpanScoresWParents = preScores.getMuSpanScoreWParent();
-/*            // do leaf nodes
+            // do leaf nodes
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
@@ -374,50 +372,64 @@ public class CompositionalGrammar implements Serializable {
                 // To compute compositional mu score, we need to compute
                 // TODO:: Will this always be zero?
 
-
+                double compSplitScore =
+                        compositionScore[start][end][split] *
+                        cumlCompositionScore[start][split] *
+                        cumlCompositionScore[split][end];
 
                 for (int parentL = 0; parentL < start; parentL++) {
                     compositionalMu[start][end][split] +=
                             muSplitSpanScoresWParents[start][end][split][parentL] *
                                     compositionScore[parentL][end][start] *
-                                    cumlCompositionScore[start][end] *
-                                    cumlCompositionScore[parentL][start];
+                                    cumlCompositionScore[parentL][start] *
+                                    compSplitScore;
                 }
 
-                for (int parentR = end; end != length && parentR <= length; parentR++) {
+                compositionalMu[start][end][split] +=
+                        muSplitSpanScoresWParents[start][end][split][end] *
+                                compSplitScore;
+
+
+                for (int parentR = end + 1; parentR <= length; parentR++) {
                         compositionalMu[start][end][split] +=
                                 muSplitSpanScoresWParents[start][end][split][parentR] *
-                                        cumlCompositionScore[start][end] *
                                         compositionScore[start][parentR][end] *
+                                        compSplitScore *
                                         cumlCompositionScore[end][parentR];
                 }
 
-            }*/
+            }
             for (int diff = 1; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
 
                     log.debug("Computing Compositional mu Score for span ({}, {})", start, end);
 
-                    compositionalMu[start][end][start] +=
-                            muSplitSpanScoresWParents[start][end][start][end] *
-                                    compositionScore[start][end][start];
-
                     for (int split = start + 1; split < end; split++) {
+
+                        double compSplitScore =
+                                compositionScore[start][end][split] *
+                                cumlCompositionScore[start][split] *
+                                cumlCompositionScore[split][end];
 
                         for (int parentL = 0; parentL < start; parentL++) {
                             compositionalMu[start][end][split] +=
                                     muSplitSpanScoresWParents[start][end][split][parentL] *
                                             compositionScore[parentL][end][start] *
                                             cumlCompositionScore[parentL][start] *
-                                            cumlCompositionScore[start][end];
+                                            compSplitScore;
                         }
+
+                        compositionalMu[start][end][split] +=
+                                muSplitSpanScoresWParents[start][end][split][end] *
+                                        compSplitScore;
+
 
                         for (int parentR = end + 1; parentR <= length; parentR++) {
                             compositionalMu[start][end][split] +=
                                     muSplitSpanScoresWParents[start][end][split][parentR] *
                                             compositionScore[start][parentR][end] *
-                                            cumlCompositionScore[start][end] *
+                                            compSplitScore *
                                             cumlCompositionScore[end][parentR];
                         }
                     }

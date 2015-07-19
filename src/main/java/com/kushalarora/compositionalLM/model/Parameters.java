@@ -75,8 +75,8 @@ public class Parameters implements IParameter {
 
     public void update(IParameterDerivatives derivatives) {
         Derivatives dq = (Derivatives) derivatives;
-        W.add(dq.getDqdw().getDQdW());
-        u.add(dq.getDqdu().getDQdu());
-        X.add(dq.getDqdxw().getDQdXw());
+        W = W.add(dq.getDqdw().getDQdW());
+        u = u.add(dq.getDqdu().getDQdu());
+        X = X.add(dq.getDqdxw().getDQdXw());
     }
 }
