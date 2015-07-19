@@ -745,7 +745,7 @@ public class StanfordGrammar implements IGrammar {
         /**
          * Populate mu score arrays
          */
-        public void computeMuSpanScore(List<Word> sentence) {
+        public void doMuScore(List<Word> sentence) {
 
             // Handle lead node case.
             // There is no split here and span value
@@ -932,7 +932,7 @@ public class StanfordGrammar implements IGrammar {
             log.info("Computed outside score computation");
 
             log.info("Start mu score computation");
-            computeMuSpanScore(sentence);
+            doMuScore(sentence);
             log.info("Computed mu score computation");
         }
     }

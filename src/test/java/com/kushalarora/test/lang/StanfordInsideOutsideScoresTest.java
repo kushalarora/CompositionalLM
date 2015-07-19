@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.PropertyConfigurator;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -248,7 +247,7 @@ public class StanfordInsideOutsideScoresTest {
         sIOScore.doLexScores(defaultSentence);
         sIOScore.doInsideScores(defaultSentence);
         sIOScore.doOutsideScores(defaultSentence);
-        sIOScore.computeMuSpanScore(defaultSentence);
+        sIOScore.doMuScore(defaultSentence);
 
         double[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
         double[][][] muSpanStateScore = sIOScore.getMuScore();

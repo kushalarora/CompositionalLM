@@ -93,5 +93,5 @@ public abstract class AbstractInsideOutsideScorer implements IInsideOutsideScore
     public abstract void doOutsideScores(List<Word> sentence);
 
 
-    public abstract void computeMuSpanScore(List<Word> sentence);
+    public abstract void doMuScore(List<Word> sentence);
 }
