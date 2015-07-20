@@ -13,6 +13,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.log4j.PropertyConfigurator;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -205,7 +206,7 @@ public class CompositionalLM {
      * @param args
      */
     public static void main(String[] args) {
-
+        PropertyConfigurator.configure("log4j.properties");
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);
 

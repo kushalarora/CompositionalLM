@@ -21,9 +21,11 @@ public abstract class AbstractSGDOptimizer<T> extends AbstractOptimizer<T> {
         super(op);
     }
 
-    public void fitRoutine(List<T> trainBatch) {
+    public void fitRoutine(int startIdx, List<T> trainBatch) {
+        int idx = startIdx;
         IParameterDerivatives derivative = null;
         for (T sample : trainBatch) {
+            log.info("*********Training#{}: {} ************", idx++, sample);
             derivative = fitOne(sample, derivative);
         }
         IParameter params = getParams();
@@ -34,7 +36,7 @@ public abstract class AbstractSGDOptimizer<T> extends AbstractOptimizer<T> {
 
 
     public IParameterDerivatives fitOne(T data, IParameterDerivatives oldDerivative) {
-        log.info("*********Training: {} ************", data);
+
         IParameterDerivatives derivative = calcDerivative(data);
         if (oldDerivative == null) {
             oldDerivative = derivative;

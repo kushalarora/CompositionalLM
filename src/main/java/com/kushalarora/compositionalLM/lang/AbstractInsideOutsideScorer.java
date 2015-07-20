@@ -1,8 +1,10 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.google.common.collect.Lists;
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,7 +29,14 @@ public abstract class AbstractInsideOutsideScorer implements IInsideOutsideScore
     protected List<Word> sentence;
     protected int length;
     protected int arraySize = 0;
-    protected int myMaxLength = Integer.MAX_VALUE;
+    protected static int myMaxLength = Integer.MAX_VALUE;
+
+
+    public AbstractInsideOutsideScorer(List<Word> sentence) {
+        this.sentence = Lists.newArrayList(sentence);
+        this.sentence.add(new Word(Lexicon.BOUNDARY, length));
+        length = this.sentence.size();
+    }
 
     public double[][][] getInsideScores() {
         return iScore;
@@ -69,29 +78,29 @@ public abstract class AbstractInsideOutsideScorer implements IInsideOutsideScore
 
     public abstract void clearArrays();
 
-    public abstract void considerCreatingArrays(int length);
+    public abstract void considerCreatingArrays();
 
-    public abstract void initializeScoreArrays(int length);
+    public abstract void initializeScoreArrays();
 
     /**
      * Intialize charts with lexicons.
      * Implemented by the derived class using
      * the specific grammar
      */
-    public abstract void doLexScores(List<Word> sentence);
+    public abstract void doLexScores();
 
     /**
      * Compute the inside scores, insideSpanSplit,
      * insideSpan scores.
      */
-    public abstract void doInsideScores(List<Word> sentence);
+    public abstract void doInsideScores();
 
     /**
      * Compute outside, outside span and
      * outside span with parent scores
      */
-    public abstract void doOutsideScores(List<Word> sentence);
+    public abstract void doOutsideScores();
 
 
-    public abstract void computeMuSpanScore(List<Word> sentence);
+    public abstract void doMuScore();
 }

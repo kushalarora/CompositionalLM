@@ -1,9 +1,6 @@
 package com.kushalarora.compositionalLM.lang.stanford;
 
-import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
-import com.kushalarora.compositionalLM.lang.IGrammar;
-import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
-import com.kushalarora.compositionalLM.lang.Word;
+import com.kushalarora.compositionalLM.lang.*;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.ling.HasContext;
 import edu.stanford.nlp.parser.lexparser.*;
@@ -30,7 +27,7 @@ import static java.lang.Math.log;
 // of the common code with arguments start, end, split
 
 @Slf4j
-public class StanfordGrammar implements IGrammar {
+public class StanfordGrammar extends AbstractGrammar {
     private final LexicalizedParser model;
 
     /**
@@ -41,6 +38,10 @@ public class StanfordGrammar implements IGrammar {
 
         private transient double[][][][] iSplitSpanStateScore;
         private transient double[][][][] oSpanStateScoreWParent;
+
+        public StanfordInsideOutsideScorer(List<Word> sentence) {
+            super(sentence);
+        }
 
         /**
          * Deallocate all the arrays.
@@ -84,12 +85,10 @@ public class StanfordGrammar implements IGrammar {
         /**
          * Conditionally create inside, outside, [narrow|wide][R|L]Extent arrays,
          * iSpanSplitScore, oSpanScore. If unable to create array try restore the current size.
-         *
-         * @param length Length of the sentence.
          */
 
         // Kushal::Method private in base class
-        public void considerCreatingArrays(int length) {
+        public void considerCreatingArrays() {
             // maxLength + 1 as we added boundary symbol to sentence
             if (length > op.grammarOp.maxLength + 1
                     // myMaxLength if greater than zero,
@@ -122,8 +121,6 @@ public class StanfordGrammar implements IGrammar {
         /**
          * Create inside, outside, [narrow|wide][R|L]Extent arrays,
          * iSpanSplitScore, oSpanScore.
-         *
-         * @param length Length of the sentence
          */
         // Kushal::Added initialization code for span scores
         private void createArrays(int length) {
@@ -218,10 +215,10 @@ public class StanfordGrammar implements IGrammar {
         }
 
         @Override
-        public void initializeScoreArrays(int length) {
+        public void initializeScoreArrays() {
             log.info("Intializing Inside Outside Arrays");
             if (length > arraySize) {
-                considerCreatingArrays(length);
+                considerCreatingArrays();
             }
 
 
@@ -278,7 +275,7 @@ public class StanfordGrammar implements IGrammar {
          * marginalizing by non-terminal children to given parent i.e.
          * by summing all iScore of non terminal children symbols and
          * adding it to parent score.
-         * <p>
+         * <p/>
          * iSpanSplitScore is nothing but the sum over all states and
          * iSpanScore is nothing but the same as span is of size 1 and
          * there is only one possible split
@@ -287,8 +284,7 @@ public class StanfordGrammar implements IGrammar {
         // Kushal::Removed all node for narrow, wide caching
         // Kushal::Added code to fill span arrays for words using unary rules
         // TODO:: Currently span and split span are unnormalized as we get p(word|tag)
-        public void doLexScores(List<Word> sentence) {
-            int length = sentence.size();
+        public void doLexScores() {
             words = new int[length];
             boolean[][] tags = new boolean[length][numStates];
 
@@ -418,14 +414,13 @@ public class StanfordGrammar implements IGrammar {
          * Fills in the iScore array of each category over each span
          * of length 2 or more.
          */
-        public void doInsideScores(List<Word> sentence) {
-            int length = sentence.size();
+        public void doInsideScores() {
             for (int diff = 2; diff <= length; diff++) {
                 // usually stop one short because boundary symbol only combines
                 // with whole sentence span. So for 3 word sentence + boundary = 4,
                 // length == 4, and do [0,2], [1,3]; [0,3]; [0,4]
                 for (int start = 0; start < ((diff == length) ? 1 : length - diff); start++) {
-                    doInsideChartCell(length, start, start + diff);
+                    doInsideChartCell(start, start + diff);
                 } // for start
             } // for diff (i.e., span)
         } // end doInsideScores()
@@ -437,7 +432,7 @@ public class StanfordGrammar implements IGrammar {
          * @param start start index of span
          * @param end   end index of span
          */
-        private void doInsideChartCell(final int length, final int start, final int end) {
+        private void doInsideChartCell(final int start, final int end) {
             log.debug("Doing iScore for span {} - {}", start, end);
             boolean[][] stateSplit = new boolean[numStates][length];
             Set<BinaryRule> binaryRuleSet = new HashSet<BinaryRule>();
@@ -581,8 +576,7 @@ public class StanfordGrammar implements IGrammar {
         /**
          * Populate outside score related arrays.
          */
-        public void doOutsideScores(List<Word> sentence) {
-            int length = sentence.size();
+        public void doOutsideScores() {
             int initialParentIdx = length;
             int initialStart = 0;
             int initialEnd = length;
@@ -745,12 +739,11 @@ public class StanfordGrammar implements IGrammar {
         /**
          * Populate mu score arrays
          */
-        public void computeMuSpanScore(List<Word> sentence) {
+        public void doMuScore() {
 
             // Handle lead node case.
             // There is no split here and span value
             // is stored at start
-            int length = sentence.size();
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
@@ -909,36 +902,29 @@ public class StanfordGrammar implements IGrammar {
         /**
          * Compute inside and outside score for the sentence.
          * Also computes span and span split score we need.
-         *
-         * @param words Sentence being processed.
          */
-        public void computeInsideOutsideProb(List<Word> words) {
-            sentence = new ArrayList<Word>(words);
-            sentence.add(new Word(Lexicon.BOUNDARY, length));
+        public void computeInsideOutsideProb() {
 
-            length = sentence.size();
-
-            considerCreatingArrays(length);
-            initializeScoreArrays(length);
+            considerCreatingArrays();
+            initializeScoreArrays();
 
             log.info("Starting inside score computation");
-            doLexScores(sentence);
-            doInsideScores(sentence);
+            doLexScores();
+            doInsideScores();
             log.info("Computed inside score computation");
 
 
             log.info("Start outside score computation");
-            doOutsideScores(sentence);
+            doOutsideScores();
             log.info("Computed outside score computation");
 
             log.info("Start mu score computation");
-            computeMuSpanScore(sentence);
+            doMuScore();
             log.info("Computed mu score computation");
         }
     }
 
     Options op;
-    StanfordInsideOutsideScorer scorer;
 
     protected final String goalStr;
     protected final Index<String> stateIndex;
@@ -950,13 +936,10 @@ public class StanfordGrammar implements IGrammar {
     protected final Lexicon lex;
 
     protected int length; // one larger than true length of sentence; includes boundary symbol in count
-    protected float bestScore;
 
 
-    protected int myMaxLength = -0xDEADBEEF;
     protected int[] words;  // words of sentence being parsed as word Numberer ints
     protected final int numStates;
-    protected int arraySize = 0;
     protected final boolean[] isTag;
 
 
@@ -986,23 +969,34 @@ public class StanfordGrammar implements IGrammar {
             }
             isTag[state] = true;
         }
-
-        scorer = new StanfordInsideOutsideScorer();
     }
 
-
-    public IInsideOutsideScorer getScorer() {
-        return scorer;
-    }
 
     public int getNumStates() {
         return numStates;
     }
 
+    @Override
+    protected AbstractInsideOutsideScorer getScore(List<Word> sentence) {
+        return new StanfordInsideOutsideScorer(sentence);
+    }
+
+    /**
+     * Return the vocabulary size
+     *
+     * @return vocab size
+     */
     public int getVocabSize() {
         return wordIndex.size();
     }
 
+    /**
+     * Generate a word object from string by doing lex look up
+     *
+     * @param str String for the word
+     * @param loc location of word in sentence
+     * @return Returns a word object
+     */
     public Word getToken(String str, int loc) {
         int index = -1;
         String signature = str;

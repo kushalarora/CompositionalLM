@@ -43,19 +43,20 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                     endIdx = trainSet.size();
                 }
 
-                fitRoutine(trainSet.subList(startIdx, endIdx));
+                fitRoutine(startIdx, trainSet.subList(startIdx, endIdx));
 
 
                 if (true || op.trainOp.validate &&
                         (iter + 1) % op.trainOp.validationFreq == 0) {
 
                     validationScore = 0;
+                    int idx = 0;
                     for (T data : validationSet) {
-                        log.info("Processing Validation set for {}", data);
+                        log.info("Validation#{}: {}",idx++, data);
                         validationScore += getValidationScore(data);
                     }
                     double mean = validationScore / validationSet.size();
-                    log.info("new validation score for iter : {} ==> {}", iter, mean);
+                    log.info("Mean validation score iter#{}: {}", iter, mean);
 
                     if (mean < bestValidationScore) {
                         if (mean < bestValidationScore * (1 - op.trainOp.tolerance)) {

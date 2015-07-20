@@ -13,6 +13,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,6 +47,7 @@ public class dQdXwTest extends AbstractDerivativeTest {
 
     @Test
     public void  testClear() {
+
         dqdxw.calcDerivative(defaultSentence, cScorer);
 
         INDArray dqdxwArr = dqdxw.getDQdXw();
@@ -68,6 +70,8 @@ public class dQdXwTest extends AbstractDerivativeTest {
 
         INDArray ones = Nd4j.ones(dim, 1);
 
+        double[][] compIScore = cScorer.getInsideSpanProb();
+
         for (int idx = 0; idx < length; idx++) {
             INDArray truedQdxwi = Nd4j.ones(dim, 1);
             for (int diff = 2; diff <= length; diff++) {
@@ -78,7 +82,10 @@ public class dQdXwTest extends AbstractDerivativeTest {
                     }
                 }
             }
-            List<Word> sentence = cScorer.getCurrentSentence();
+
+            truedQdxwi = truedQdxwi.div(compIScore[0][length]);
+
+            List<Word> sentence = defaultSentence;
             assertEquals(dim ,
                     truedQdxwi.eq(
                             dqdxwArr

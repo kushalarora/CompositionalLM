@@ -50,8 +50,8 @@ public class dXdW extends AbstractBaseDerivativeClass {
 
 
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        float[][][] compositionISplitScore = scorer.getCompositionISplitScore();
-        float[][] compositionIScore = scorer.getInsideSpanProb();
+        double[][][] compositionISplitScore = scorer.getCompositionISplitScore();
+        double[][] compositionIScore = scorer.getInsideSpanProb();
 
         INDArray[][] dXdWij = new INDArray[length][length + 1];
         for (int start = 0; start < length; start++) {
