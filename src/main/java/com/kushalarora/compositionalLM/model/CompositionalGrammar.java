@@ -490,11 +490,6 @@ public class CompositionalGrammar implements Serializable {
             considerCreatingMatrices();
             initializeMatrices();
 
-            // IMPORTANT: Length must be calculated before this
-            IInsideOutsideScore preScorer =
-                 ///   cache.get(sentence);
-                 model.getGrammar().computeScore(sentence);
-
             log.info("Starting Computational inside score");
             doInsideScore();
             log.info("Computed Computational inside score");

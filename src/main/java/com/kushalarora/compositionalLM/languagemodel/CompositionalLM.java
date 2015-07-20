@@ -69,7 +69,7 @@ public class CompositionalLM {
                         @Override
                         public double getValidationScore(List<Word> data) {
                             CompositionalGrammar.CompositionalInsideOutsideScore score =
-                                    compGrammar.getScore(data,
+                                    compGrammar.computeScore(data,
                                             model.getGrammar().computeScore(data));
                             return score.getSentenceScore();
                         }
