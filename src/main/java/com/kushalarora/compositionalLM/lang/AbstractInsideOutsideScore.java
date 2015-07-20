@@ -10,7 +10,7 @@ import java.util.List;
  * Created by karora on 6/24/15.
  */
 @Slf4j
-public abstract class AbstractInsideOutsideScorer implements IInsideOutsideScorer {
+public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore {
     protected double[][][] iSpanSplitScore;
     protected double[][] iSpanScore;
     protected double[][][] oSpanWParentScore;
@@ -31,7 +31,7 @@ public abstract class AbstractInsideOutsideScorer implements IInsideOutsideScore
     protected static int myMaxLength = Integer.MAX_VALUE;
 
 
-    public AbstractInsideOutsideScorer(List<Word> sentence) {
+    public AbstractInsideOutsideScore(List<Word> sentence) {
         this.sentence = Lists.newArrayList(sentence);
         this.sentence.add(new Word(Lexicon.BOUNDARY, length));
         length = this.sentence.size();
@@ -102,4 +102,5 @@ public abstract class AbstractInsideOutsideScorer implements IInsideOutsideScore
 
 
     public abstract void doMuScore();
+
 }

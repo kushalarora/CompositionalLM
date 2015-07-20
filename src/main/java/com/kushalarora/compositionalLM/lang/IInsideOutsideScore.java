@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * Created by karora on 6/24/15.
  */
-public interface IInsideOutsideScorer extends Serializable {
+public interface IInsideOutsideScore extends Serializable {
     /**
      *
      * Returns \pi(i,j,k), an array of shape (n, n, n)
@@ -49,4 +49,5 @@ public interface IInsideOutsideScorer extends Serializable {
     public List<Word> getCurrentSentence();
 
     public void computeInsideOutsideProb();
+
 }

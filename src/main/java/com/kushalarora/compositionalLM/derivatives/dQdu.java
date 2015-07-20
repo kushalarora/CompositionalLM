@@ -48,7 +48,7 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
         return this;
     }
 
-    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
         int length = sentence.size();
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();

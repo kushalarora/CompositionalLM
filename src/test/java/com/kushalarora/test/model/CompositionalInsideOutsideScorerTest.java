@@ -1,7 +1,7 @@
 package com.kushalarora.test.model;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
@@ -38,8 +38,8 @@ public class CompositionalInsideOutsideScorerTest {
     private static List<Word> defaultSentence;
     private static int length;
     private static CompositionalGrammar cg;
-    private static IInsideOutsideScorer preScorer;
-    private CompositionalGrammar.CompositionalInsideOutsideScorer scorer;
+    private static IInsideOutsideScore preScorer;
+    private CompositionalGrammar.CompositionalInsideOutsideScore score;
     private static int dim;
     private static Model model;
 
@@ -77,18 +77,19 @@ public class CompositionalInsideOutsideScorerTest {
 
     @Before
     public void setUp() {
-        scorer = cg.getScorer();
+        score = cg.getScore(defaultSentence, preScorer);
     }
 
     @Test
     public void testInitializeMatrices() {
 
+        score.clearMatrices();
 
-        double[][] iScore = scorer.getInsideSpanProb();
-        double[][][] muScore = scorer.getMuScore();
-        INDArray[][][] compMatrix = scorer.getCompositionMatrix();
-        INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        double[][][] iSplitScore = scorer.getCompositionISplitScore();
+        double[][] iScore = score.getInsideSpanProb();
+        double[][][] muScore = score.getMuScore();
+        INDArray[][][] compMatrix = score.getCompositionMatrix();
+        INDArray[][] phraseMatrix = score.getPhraseMatrix();
+        double[][][] iSplitScore = score.getCompositionISplitScore();
 
         assertEquals(iScore, null);
         assertEquals(muScore, null);
@@ -96,14 +97,14 @@ public class CompositionalInsideOutsideScorerTest {
         assertEquals(phraseMatrix, null);
         assertEquals(iSplitScore, null);
 
-        scorer.considerCreatingMatrices(length);
-        scorer.initializeMatrices(length);
+        score.considerCreatingMatrices();
+        score.initializeMatrices();
 
-        iScore = scorer.getInsideSpanProb();
-        muScore = scorer.getMuScore();
-        compMatrix = scorer.getCompositionMatrix();
-        phraseMatrix = scorer.getPhraseMatrix();
-        iSplitScore = scorer.getCompositionISplitScore();
+        iScore = score.getInsideSpanProb();
+        muScore = score.getMuScore();
+        compMatrix = score.getCompositionMatrix();
+        phraseMatrix = score.getPhraseMatrix();
+        iSplitScore = score.getCompositionISplitScore();
 
         assertEquals(iScore.length, length);
         assertEquals(muScore.length, length);
@@ -125,19 +126,18 @@ public class CompositionalInsideOutsideScorerTest {
             }
         }
 
-        scorer.initializeMatrices(length);
-        scorer.doInsideScore(defaultSentence, length, preScorer);
-        scorer.doMuScore(length, preScorer);
+        score.doInsideScore();
+        score.doMuScore();
 
 
         boolean alliScoresZeros = true;
         boolean allmuScoresZeros = true;
 
-        iScore = scorer.getInsideSpanProb();
-        muScore = scorer.getMuScore();
-        compMatrix = scorer.getCompositionMatrix();
-        phraseMatrix = scorer.getPhraseMatrix();
-        iSplitScore = scorer.getCompositionISplitScore();
+        iScore = score.getInsideSpanProb();
+        muScore = score.getMuScore();
+        compMatrix = score.getCompositionMatrix();
+        phraseMatrix = score.getPhraseMatrix();
+        iSplitScore = score.getCompositionISplitScore();
 
         // verify all initialize to zero
         double[] zerosLength = new double[length];
@@ -169,7 +169,7 @@ public class CompositionalInsideOutsideScorerTest {
         assertFalse(alliScoresZeros);
         assertFalse(allmuScoresZeros);
 
-        scorer.initializeMatrices(length);
+        score.initializeMatrices();
 
         alliScoresZeros  = true;
         allmuScoresZeros = true;
@@ -201,13 +201,14 @@ public class CompositionalInsideOutsideScorerTest {
 
     @Test
     public void testDoInsideScores() {
-        scorer.considerCreatingMatrices(length);
-        scorer.initializeMatrices(length);
-        scorer.doInsideScore(defaultSentence,length, preScorer);
+        score.clearMatrices();
+        score.considerCreatingMatrices();
+        score.initializeMatrices();
+        score.doInsideScore();
 
         // test iscore and isplitscore sanity
-        double[][] iScore = scorer.getInsideSpanProb();
-        double[][][] iSplitScore = scorer.getCompositionISplitScore();
+        double[][] iScore = score.getInsideSpanProb();
+        double[][][] iSplitScore = score.getCompositionISplitScore();
 
         for (int start = 0; start < length; start++) {
             int end = start + 1;
@@ -226,8 +227,8 @@ public class CompositionalInsideOutsideScorerTest {
         }
 
         // test phrase matrix and compositionMatrix sanity
-        INDArray[][][] compMatrix = scorer.getCompositionMatrix();
-        INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
+        INDArray[][][] compMatrix = score.getCompositionMatrix();
+        INDArray[][] phraseMatrix = score.getPhraseMatrix();
 
         for (int start = 0; start < length; start++) {
             for (int end = start + 2; end <= length; end++) {

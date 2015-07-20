@@ -90,6 +90,7 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
     }
 
     public IParameterDerivatives fitOne(T data) {
+
         return calcDerivative(data);
     }
 

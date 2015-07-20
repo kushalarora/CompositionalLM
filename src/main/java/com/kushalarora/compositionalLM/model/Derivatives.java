@@ -48,11 +48,8 @@ public class Derivatives implements IParameterDerivatives<List<Word>> {
         dqdxw.clear();
     }
 
-    public IParameterDerivatives<List<Word>> calcDerivative(List<Word> data, CompositionalGrammar
-            .CompositionalInsideOutsideScorer scorer) {
-
+    public IParameterDerivatives<List<Word>> calcDerivative(List<Word> data, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
         clear();
-        scorer.computeCompInsideOutsideScores(data);
         dqdu.calcDerivative(data, scorer);
         dqdw.calcDerivative(data, scorer);
         dqdxw.calcDerivative(data, scorer);

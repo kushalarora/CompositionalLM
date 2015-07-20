@@ -1,6 +1,6 @@
 package com.kushalarora.compositionalLM.model;
 
-import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.SneakyThrows;
@@ -44,7 +44,7 @@ public class CompositionalGrammar implements Serializable {
   //  LoadingCache<List<Word>, IInsideOutsideScorer> cache;
 
 
-    public class CompositionalInsideOutsideScorer {
+    public class CompositionalInsideOutsideScore {
         // Averaged representation of phrases in sentence
         private transient INDArray[][] phraseMatrix;
 
@@ -76,6 +76,12 @@ public class CompositionalGrammar implements Serializable {
 
         private int myMaxLength;
 
+        private List<Word> sentence;
+
+        private int length;
+
+        private IInsideOutsideScore preScores;
+
 
         /**
          * Clear all matrices.
@@ -104,15 +110,16 @@ public class CompositionalGrammar implements Serializable {
 
             // double [start][end]
             cumlCompositionScore = null;
+
+            arraySize = 0;
         }
 
         /**
          * Create matrix if the length is greater than the previous
          * matrices else use the same. Initialize them by wiping out
          *
-         * @param length length of the current sentence
          */
-        public void considerCreatingMatrices(int length) {
+        public void considerCreatingMatrices() {
             if (length > op.grammarOp.maxLength ||
                     // myMaxLength if greater than zero,
                     // then it is max memory size
@@ -185,9 +192,8 @@ public class CompositionalGrammar implements Serializable {
         /**
          * Initialize all matrices to zeros
          *
-         * @param length length of the current sentence
          */
-        public void initializeMatrices(int length) {
+        public void initializeMatrices() {
             log.info("Initializing Compositional matrices");
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -220,8 +226,7 @@ public class CompositionalGrammar implements Serializable {
          * Calculate compositional iScore, composition scores,
          * cumulative composition score and phrase and composition matrix.
          */
-        public void doInsideScore(List<Word> sentence,
-                                  int length, IInsideOutsideScorer preScores) {
+        public void doInsideScore() {
 
             double[][] iScores = preScores.getInsideSpanProb();
             double[][][] iSplitScores = preScores.getInsideSpanSplitProb();
@@ -328,7 +333,7 @@ public class CompositionalGrammar implements Serializable {
         /**
          * Calculate composition outside score
          */
-        public void doOutsideScore(int length, IInsideOutsideScorer preScores) {
+        public void doOutsideScore() {
             double[][][] oScoreWParent = preScores.getOutsideSpanWParentScore();
             for (int diff = 1; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
@@ -370,7 +375,7 @@ public class CompositionalGrammar implements Serializable {
         /**
          * Calculate compositional mu score
          */
-        public void doMuScore(int length, IInsideOutsideScorer preScores) {
+        public void doMuScore() {
 
             double[][][][] muSplitSpanScoresWParents = preScores.getMuSpanScoreWParent();
             // do leaf nodes
@@ -447,9 +452,12 @@ public class CompositionalGrammar implements Serializable {
             }
         }
 
-        public CompositionalInsideOutsideScorer() {
+        public CompositionalInsideOutsideScore(List<Word> sentence, IInsideOutsideScore preScore) {
             arraySize = 0;
-            myMaxLength = Integer.MAX_VALUE;
+            myMaxLength = op.grammarOp.maxLength;
+            this.sentence = sentence;
+            length = sentence.size();
+            this.preScores = preScore;
         }
 
         public double[][] getInsideSpanProb() {
@@ -473,27 +481,30 @@ public class CompositionalGrammar implements Serializable {
         }
 
 
+        public double getSentenceScore() {
+            return compositionalIScore[0][length];
+        }
+
         @SneakyThrows
-        public double computeCompInsideOutsideScores(List<Word> sentence) {
-            int length = sentence.size();
-            considerCreatingMatrices(length);
-            initializeMatrices(length);
+        public double computeCompInsideOutsideScores() {
+            considerCreatingMatrices();
+            initializeMatrices();
 
             // IMPORTANT: Length must be calculated before this
-            IInsideOutsideScorer preScorer =
+            IInsideOutsideScore preScorer =
                  ///   cache.get(sentence);
                  model.getGrammar().computeScore(sentence);
 
             log.info("Starting Computational inside score");
-            doInsideScore(sentence, length, preScorer);
+            doInsideScore();
             log.info("Computed Computational inside score");
 
             log.info("Starting Computational outside score");
-            doOutsideScore(length, preScorer);
+            doOutsideScore();
             log.info("Computed Computational outside score");
 
             log.info("Starting Computational mu score");
-            doMuScore(length, preScorer);
+            doMuScore();
             log.info("Starting Computational mu score");
 
             return compositionalIScore[0][length];
@@ -509,8 +520,15 @@ public class CompositionalGrammar implements Serializable {
 
     }
 
-    public CompositionalInsideOutsideScorer getScorer() {
-        return new CompositionalInsideOutsideScorer();
+    public CompositionalInsideOutsideScore getScore(
+            List<Word> sentence, IInsideOutsideScore preScores) {
+        return new CompositionalInsideOutsideScore(sentence, preScores);
     }
 
+    public CompositionalInsideOutsideScore computeScore(List<Word> sentence,
+                                                        IInsideOutsideScore preScore) {
+        CompositionalInsideOutsideScore score = getScore(sentence, preScore);
+        score.computeCompInsideOutsideScores();
+        return score;
+    }
 }

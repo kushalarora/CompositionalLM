@@ -1,6 +1,6 @@
 package com.kushalarora.test.lang;
 
-import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
+import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class StanfordInsideOutsideScoresTest {
 
-    public AbstractInsideOutsideScorer sIOScore;
+    public AbstractInsideOutsideScore sIOScore;
     private int length;
 
     private static int numStates;

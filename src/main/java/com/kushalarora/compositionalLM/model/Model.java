@@ -22,7 +22,6 @@ public class Model implements Serializable {
     private int dimensions;
     private int vocabSize;
     Parameters params;
-    Derivatives derivatives;
     private ActivationFunction f;
     private ActivationFunction g;
     private IGrammar grammar;
@@ -37,7 +36,6 @@ public class Model implements Serializable {
         this.dimensions = dimensions;
         this.vocabSize = iGrammar.getVocabSize();
         this.params = new Parameters(dimensions, vocabSize);
-        this.derivatives = new Derivatives(this);
 
         f = composition;                                // default composition activation
         g = output;                                     // default output activation
@@ -168,7 +166,7 @@ public class Model implements Serializable {
      * @param learningRate Learning rate for update
      * @param scorer       Compositional scores used in calculating derivatives
      */
-    public void update(double learningRate, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+    public void update(double learningRate, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
 
     }
 

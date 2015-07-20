@@ -10,7 +10,7 @@ import java.util.List;
  * Created by karora on 6/21/15.
  */
 public interface IDerivative {
-    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer scorer);
+    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer);
 
     public void clear();
 

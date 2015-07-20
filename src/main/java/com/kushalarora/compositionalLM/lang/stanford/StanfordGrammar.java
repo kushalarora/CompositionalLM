@@ -1,7 +1,7 @@
 package com.kushalarora.compositionalLM.lang.stanford;
 
 import com.kushalarora.compositionalLM.lang.AbstractGrammar;
-import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
+import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.ling.HasContext;
@@ -36,12 +36,12 @@ public class StanfordGrammar extends AbstractGrammar {
      * Created by karora on 6/24/15.
      */
 
-    public class StanfordInsideOutsideScorer extends AbstractInsideOutsideScorer {
+    public class StanfordInsideOutsideScore extends AbstractInsideOutsideScore {
 
         private transient double[][][][] iSplitSpanStateScore;
         private transient double[][][][] oSpanStateScoreWParent;
 
-        public StanfordInsideOutsideScorer(List<Word> sentence) {
+        public StanfordInsideOutsideScore(List<Word> sentence) {
             super(sentence);
         }
 
@@ -82,6 +82,8 @@ public class StanfordGrammar extends AbstractGrammar {
 
             // [start][end][split][parent]
             muSpanScoreWParent = null;
+
+            arraySize = 0;
         }
 
         /**
@@ -1088,14 +1090,18 @@ public class StanfordGrammar extends AbstractGrammar {
         return numStates;
     }
 
+    /**
+     * Get inside outside score for sentence
+     * @param sentence Sentence for which inside outside score is to be calculated
+     * @return InsideOutsideScore object
+     */
     @Override
-    public AbstractInsideOutsideScorer getScore(List<Word> sentence) {
-        return new StanfordInsideOutsideScorer(sentence);
+    public AbstractInsideOutsideScore getScore(List<Word> sentence) {
+        return new StanfordInsideOutsideScore(sentence);
     }
 
     /**
      * Return the vocabulary size
-     *
      * @return vocab size
      */
     public int getVocabSize() {

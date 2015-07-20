@@ -40,7 +40,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
         this(model, new dXdXw(model));
     }
 
-    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
 
         int length = sentence.size();
 

@@ -37,7 +37,7 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
         dim = dqdW.dim;
     }
 
-    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
         int length = sentence.size();
         INDArray[][][][][] dxdwArr = dxdw.calcDerivative(sentence, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();

@@ -31,7 +31,7 @@ public class dXdW extends AbstractBaseDerivativeClass {
 
     }
 
-    public INDArray[][][][][] calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScorer
+    public INDArray[][][][][] calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore
             scorer) {
         int length = sentence.size();
 

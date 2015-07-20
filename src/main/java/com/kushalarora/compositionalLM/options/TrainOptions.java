@@ -19,6 +19,8 @@ public class TrainOptions implements Serializable {
     public int batchSize = 100;
     public int validationFreq = 5;
     public double learningRate = 0.1;
+    public boolean parallel = false;
+    public int nThreads = 1;
 }
 
 
