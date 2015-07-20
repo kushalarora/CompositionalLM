@@ -89,6 +89,7 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                    <outputDirectory>./out</outputDirectory>
                 </configuration>
             </plugin>
             <plugin>
