@@ -1,8 +1,8 @@
 package com.kushalarora.test.lang;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
+import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.options.Options;
 import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;

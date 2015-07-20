@@ -1,7 +1,6 @@
 package com.kushalarora.test.languagemodel;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.languagemodel.CompositionalLM;
 import com.kushalarora.compositionalLM.model.Model;
@@ -19,7 +18,6 @@ import java.io.ObjectOutputStream;
 import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 
 /**
  * Created by karora on 6/18/15.

@@ -42,6 +42,7 @@ public class DocumentProcessorFactory {
 
                     public Iterator<List<Word>> iterator() {
                         return new Iterator<List<Word>>() {
+
                             public boolean hasNext() {
                                 return it.hasNext();
                             }
@@ -53,6 +54,9 @@ public class DocumentProcessorFactory {
                                     sentence.add((Word) word);
                                 }
                                 return sentence;
+                            }
+                            public void remove() {
+                                it.remove();
                             }
                         };
                     }

@@ -1,7 +1,6 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dXdW;
-import com.kushalarora.compositionalLM.model.Parameters;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
