@@ -17,17 +17,15 @@ public class Derivatives implements IParameterDerivatives<List<Word>> {
     private dQdW dqdw;
     private dQdu dqdu;
     private dQdXw dqdxw;
-    private CompositionalGrammar.CompositionalInsideOutsideScorer scorer;
 
 
-    public Derivatives(Model model, CompositionalGrammar.CompositionalInsideOutsideScorer scorer) {
+    public Derivatives(Model model) {
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
         // initialized
         dqdu = new dQdu(model);
         dqdw = new dQdW(model);
         dqdxw = new dQdXw(model);
-        this.scorer = scorer;
     }
 
     public IParameterDerivatives add(IParameterDerivatives derivatives) {
@@ -44,14 +42,15 @@ public class Derivatives implements IParameterDerivatives<List<Word>> {
         return this;
     }
 
-    public IParameterDerivatives clear() {
+    public void clear() {
         dqdu.clear();;
         dqdw.clear();
         dqdxw.clear();
-        return this;
     }
 
-    public IParameterDerivatives<List<Word>> calcDerivative(List<Word> data) {
+    public IParameterDerivatives<List<Word>> calcDerivative(List<Word> data, CompositionalGrammar
+            .CompositionalInsideOutsideScorer scorer) {
+
         clear();
         scorer.computeCompInsideOutsideScores(data);
         dqdu.calcDerivative(data, scorer);

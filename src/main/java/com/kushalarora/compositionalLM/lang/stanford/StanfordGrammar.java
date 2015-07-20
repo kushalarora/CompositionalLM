@@ -1,6 +1,8 @@
 package com.kushalarora.compositionalLM.lang.stanford;
 
-import com.kushalarora.compositionalLM.lang.*;
+import com.kushalarora.compositionalLM.lang.AbstractGrammar;
+import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
+import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.ling.HasContext;
 import edu.stanford.nlp.parser.lexparser.*;

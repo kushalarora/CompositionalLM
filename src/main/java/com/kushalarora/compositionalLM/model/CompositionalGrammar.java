@@ -1,10 +1,5 @@
 package com.kushalarora.compositionalLM.model;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.cache.Weigher;
-import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
@@ -30,23 +25,23 @@ public class CompositionalGrammar implements Serializable {
     public CompositionalGrammar(final Model model, final Options op) {
         this.model = model;
         this.op = op;
-        cache =
-        CacheBuilder.newBuilder()
-                .maximumWeight(50)
-                .weigher(new Weigher<List<Word>, IInsideOutsideScorer>() {
-                    public int weigh(List<Word> words, IInsideOutsideScorer iInsideOutsideScorer) {
-                        return  words.size();
-                    }
-                })
-                .build(new CacheLoader<List<Word>, IInsideOutsideScorer>() {
-                    @Override
-                    public IInsideOutsideScorer load(List<Word> sentence) throws Exception {
-                        return model.getGrammar().computeScore(sentence);
-                    }
-                });
+//        cache =
+//        CacheBuilder.newBuilder()
+//                .maximumWeight(50)
+//                .weigher(new Weigher<List<Word>, IInsideOutsideScorer>() {
+//                    public int weigh(List<Word> words, IInsideOutsideScorer iInsideOutsideScorer) {
+//                        return  words.size();
+//                    }
+//                })
+//                .build(new CacheLoader<List<Word>, IInsideOutsideScorer>() {
+//                    @Override
+//                    public IInsideOutsideScorer load(List<Word> sentence) throws Exception {
+//                        return model.getGrammar().computeScore(sentence);
+//                    }
+//                });
     }
 
-    LoadingCache<List<Word>, IInsideOutsideScorer> cache;
+  //  LoadingCache<List<Word>, IInsideOutsideScorer> cache;
 
 
     public class CompositionalInsideOutsideScorer {
@@ -486,7 +481,8 @@ public class CompositionalGrammar implements Serializable {
 
             // IMPORTANT: Length must be calculated before this
             IInsideOutsideScorer preScorer =
-                    cache.get(sentence);
+                 ///   cache.get(sentence);
+                 model.getGrammar().computeScore(sentence);
 
             log.info("Starting Computational inside score");
             doInsideScore(sentence, length, preScorer);

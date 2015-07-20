@@ -1,7 +1,6 @@
 package com.kushalarora.compositionalLM.lang;
 
 import edu.stanford.nlp.ling.HasWord;
-import lombok.ToString;
 
 /**
  * Created by karora on 6/18/15.

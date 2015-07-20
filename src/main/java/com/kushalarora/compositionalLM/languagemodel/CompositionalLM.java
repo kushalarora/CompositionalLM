@@ -65,7 +65,7 @@ public class CompositionalLM {
                     .getDocumentProcessor(trainFile);
 
 
-
+            final Derivatives dv = new Derivatives(model);
             AbstractSGDOptimizer<List<Word>> optimizer =
                     new AbstractSGDOptimizer<List<Word>>(op) {
                         @Override
@@ -79,8 +79,7 @@ public class CompositionalLM {
                         }
 
                         public IParameterDerivatives calcDerivative(List<Word> sample) {
-                            Derivatives dQ = new Derivatives(model, scorer);
-                            return dQ.calcDerivative(sample);
+                            return model.getDerivatives().calcDerivative(sample, scorer);
                         }
 
 
@@ -90,6 +89,18 @@ public class CompositionalLM {
 
                         public IParameter getParams() {
                             return model.getParams();
+                        }
+
+                        public void derivativeAccumulator(IParameterDerivatives derivatives) {
+                            dv.add(derivatives);
+                        }
+
+                        public IParameterDerivatives getAccumulatedDerivative() {
+                            return dv;
+                        }
+
+                        public void flushDerivaiveAccumulator() {
+                            dv.clear();
                         }
                     };
 

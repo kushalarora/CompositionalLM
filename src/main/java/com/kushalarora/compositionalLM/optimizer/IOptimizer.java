@@ -1,10 +1,8 @@
 package com.kushalarora.compositionalLM.optimizer;
 
-import com.kushalarora.compositionalLM.derivatives.IDerivative;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.IParameterDerivatives;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -19,4 +17,10 @@ public interface IOptimizer<T> {
     public IParameter getParams();
 
     public void fitRoutine(int startIdx, List<T> data);
+
+    public void derivativeAccumulator(IParameterDerivatives derivatives);
+
+    public IParameterDerivatives getAccumulatedDerivative();
+
+    public void flushDerivaiveAccumulator();
 }

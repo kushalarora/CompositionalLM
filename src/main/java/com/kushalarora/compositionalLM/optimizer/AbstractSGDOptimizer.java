@@ -1,12 +1,10 @@
 package com.kushalarora.compositionalLM.optimizer;
 
-import com.kushalarora.compositionalLM.derivatives.IDerivative;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.IParameterDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -26,23 +24,17 @@ public abstract class AbstractSGDOptimizer<T> extends AbstractOptimizer<T> {
         IParameterDerivatives derivative = null;
         for (T sample : trainBatch) {
             log.info("*********Training#{}: {} ************", idx++, sample);
-            derivative = fitOne(sample, derivative);
+            derivativeAccumulator(fitOne(sample));
         }
         IParameter params = getParams();
         params.update(
-                derivative.mul(
+                getAccumulatedDerivative().mul(
                         -1 * op.trainOp.learningRate));
+        flushDerivaiveAccumulator();
     }
 
 
-    public IParameterDerivatives fitOne(T data, IParameterDerivatives oldDerivative) {
-
-        IParameterDerivatives derivative = calcDerivative(data);
-        if (oldDerivative == null) {
-            oldDerivative = derivative;
-        } else {
-            oldDerivative.add(derivative);
-        }
-        return oldDerivative;
+    public IParameterDerivatives fitOne(T data) {
+        return calcDerivative(data);
     }
 }

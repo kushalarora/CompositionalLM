@@ -1,8 +1,5 @@
 package com.kushalarora.compositionalLM.model;
 
-import com.kushalarora.compositionalLM.derivatives.dQdW;
-import com.kushalarora.compositionalLM.derivatives.dQdXw;
-import com.kushalarora.compositionalLM.derivatives.dQdu;
 import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import lombok.Getter;
@@ -25,6 +22,7 @@ public class Model implements Serializable {
     private int dimensions;
     private int vocabSize;
     Parameters params;
+    Derivatives derivatives;
     private ActivationFunction f;
     private ActivationFunction g;
     private IGrammar grammar;
@@ -39,6 +37,7 @@ public class Model implements Serializable {
         this.dimensions = dimensions;
         this.vocabSize = iGrammar.getVocabSize();
         this.params = new Parameters(dimensions, vocabSize);
+        this.derivatives = new Derivatives(this);
 
         f = composition;                                // default composition activation
         g = output;                                     // default output activation
