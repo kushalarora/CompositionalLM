@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.lang;
 
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
+import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.berkeley.nlp.PCFGLA.Grammar;
 import edu.berkeley.nlp.PCFGLA.Lexicon;
@@ -56,7 +57,7 @@ public class GrammarFactory {
                 return null;
             case STANFORD_GRAMMAR:
                 // TODO: Do similar thing for stanford grammar
-                @NonNull val model = LexicalizedParser.loadModel(op.grammarOp.filename);
+                LexicalizedParser model = LexicalizedParser.loadModel(op.grammarOp.filename);
                 return new StanfordGrammar(op, model);
             default:
                 throw new RuntimeException("Invalid Grammar Type: " + op.grammarOp.grammarType);

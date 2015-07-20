@@ -1,6 +1,8 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.collect.Lists;
+import com.kushalarora.compositionalLM.model.IParameter;
+import com.kushalarora.compositionalLM.model.IParameterDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,6 +74,23 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
             }
             epoch += 1;
         }
+    }
+
+    public void fitRoutine(int startIdx, List<T> trainBatch) {
+        int idx = startIdx;
+        IParameterDerivatives derivative = null;
+        for (T sample : trainBatch) {
+            log.info("*********Training#{}: {} ************", idx++, sample);
+            IParameterDerivatives derivatives = fitOne(sample);
+            derivativeAccumulator(derivatives);
+            calcLearningRate(sample, derivatives);
+        }
+        updateParams(getAccumulatedDerivative());
+        flushDerivaiveAccumulator();
+    }
+
+    public IParameterDerivatives fitOne(T data) {
+        return calcDerivative(data);
     }
 
     public void fit(Iterable<T> trainSet, Iterable<T> validationSet) {

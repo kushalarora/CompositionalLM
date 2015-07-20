@@ -82,11 +82,6 @@ public class CompositionalLM {
                             return model.getDerivatives().calcDerivative(sample, scorer);
                         }
 
-
-                        public void updateParams(IParameterDerivatives derivatives) {
-                            model.getParams().update(derivatives);
-                        }
-
                         public IParameter getParams() {
                             return model.getParams();
                         }

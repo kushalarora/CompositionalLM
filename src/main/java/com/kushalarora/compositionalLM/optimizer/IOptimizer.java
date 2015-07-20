@@ -10,17 +10,19 @@ import java.util.List;
  */
 public interface IOptimizer<T> {
 
-    public IParameterDerivatives calcDerivative(T sample);
+    public IParameterDerivatives calcDerivative(final T sample);
 
-    public void updateParams(IParameterDerivatives derivatives);
+    public void updateParams(final IParameterDerivatives<T> derivatives);
 
     public IParameter getParams();
 
     public void fitRoutine(int startIdx, List<T> data);
 
-    public void derivativeAccumulator(IParameterDerivatives derivatives);
+    public void derivativeAccumulator(IParameterDerivatives<T> derivatives);
 
     public IParameterDerivatives getAccumulatedDerivative();
 
     public void flushDerivaiveAccumulator();
+
+    public void calcLearningRate(final T sample, final IParameterDerivatives<T> derivatives);
 }
