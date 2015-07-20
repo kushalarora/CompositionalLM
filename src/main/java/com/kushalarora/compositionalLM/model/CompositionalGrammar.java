@@ -32,8 +32,7 @@ public class CompositionalGrammar implements Serializable {
         this.op = op;
         cache =
         CacheBuilder.newBuilder()
-                .initialCapacity(100)
-                .maximumWeight(1000)
+                .maximumWeight(50)
                 .weigher(new Weigher<List<Word>, IInsideOutsideScorer>() {
                     public int weigh(List<Word> words, IInsideOutsideScorer iInsideOutsideScorer) {
                         return  words.size();

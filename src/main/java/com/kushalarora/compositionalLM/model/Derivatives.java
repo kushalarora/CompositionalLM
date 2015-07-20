@@ -44,7 +44,15 @@ public class Derivatives implements IParameterDerivatives<List<Word>> {
         return this;
     }
 
+    public IParameterDerivatives clear() {
+        dqdu.clear();;
+        dqdw.clear();
+        dqdxw.clear();
+        return this;
+    }
+
     public IParameterDerivatives<List<Word>> calcDerivative(List<Word> data) {
+        clear();
         scorer.computeCompInsideOutsideScores(data);
         dqdu.calcDerivative(data, scorer);
         dqdw.calcDerivative(data, scorer);

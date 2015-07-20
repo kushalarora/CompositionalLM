@@ -60,8 +60,7 @@ public class StanfordInsideOutsideScoresTest {
 
     @Before
     public void setUp() {
-        sIOScore = (StanfordGrammar.StanfordInsideOutsideScorer)
-                sg.computeScore(defaultSentence);
+        sIOScore = sg.getScore(defaultSentence);
         length = sIOScore.getCurrentSentence().size();
     }
 

@@ -6,7 +6,6 @@ import lombok.ToString;
 /**
  * Created by karora on 6/18/15.
  */
-@ToString(exclude = "signature")
 public class Word implements HasWord, edu.berkeley.nlp.io.HasWord {
     String word;
     int index;
@@ -36,5 +35,10 @@ public class Word implements HasWord, edu.berkeley.nlp.io.HasWord {
 
     public void setWord(String word) {
         this.word = word;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s(%d)", word, index);
     }
 }

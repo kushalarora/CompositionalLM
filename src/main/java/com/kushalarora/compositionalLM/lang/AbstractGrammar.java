@@ -7,7 +7,7 @@ import java.util.List;
  */
 public abstract class AbstractGrammar implements IGrammar {
 
-    protected abstract AbstractInsideOutsideScorer getScore(List<Word> sentence);
+    public abstract AbstractInsideOutsideScorer getScore(List<Word> sentence);
 
     public AbstractInsideOutsideScorer computeScore(List<Word> sentence) {
         AbstractInsideOutsideScorer score = getScore(sentence);
