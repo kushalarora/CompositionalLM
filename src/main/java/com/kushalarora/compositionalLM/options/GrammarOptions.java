@@ -11,7 +11,7 @@ import java.io.Serializable;
  */
 @ToString
 public class GrammarOptions implements Serializable {
-    public static int DEFAULT_MAX_LENGTH = 40;
+    public static int DEFAULT_MAX_LENGTH = 50;
 
     public int maxLength = DEFAULT_MAX_LENGTH;
 

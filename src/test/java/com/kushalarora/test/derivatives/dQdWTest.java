@@ -73,7 +73,7 @@ public class dQdWTest extends AbstractDerivativeTest {
                 }
             }
         }
-        float[][] compIScore = cScorer.getInsideSpanProb();
+        double[][] compIScore = cScorer.getInsideSpanProb();
         truedW = truedW.div(compIScore[0][length]);
 
         assertEquals(dim*dim*2,

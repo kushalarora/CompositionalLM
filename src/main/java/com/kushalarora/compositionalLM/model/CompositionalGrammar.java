@@ -3,6 +3,7 @@ package com.kushalarora.compositionalLM.model;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.cache.Weigher;
 import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScorer;
 import com.kushalarora.compositionalLM.lang.Word;
@@ -26,21 +27,27 @@ public class CompositionalGrammar implements Serializable {
     private final Options op;
     private Model model;
 
-    public CompositionalGrammar(Model model, Options op) {
+    public CompositionalGrammar(final Model model, final Options op) {
         this.model = model;
         this.op = op;
+        cache =
+        CacheBuilder.newBuilder()
+                .initialCapacity(100)
+                .maximumWeight(1000)
+                .weigher(new Weigher<List<Word>, IInsideOutsideScorer>() {
+                    public int weigh(List<Word> words, IInsideOutsideScorer iInsideOutsideScorer) {
+                        return  words.size();
+                    }
+                })
+                .build(new CacheLoader<List<Word>, IInsideOutsideScorer>() {
+                    @Override
+                    public IInsideOutsideScorer load(List<Word> sentence) throws Exception {
+                        return model.getGrammar().computeScore(sentence);
+                    }
+                });
     }
 
-    LoadingCache<List<Word>, IInsideOutsideScorer> cache =
-            CacheBuilder.newBuilder()
-                    .initialCapacity(1000)
-                    .maximumSize(20000)
-                    .build(new CacheLoader<List<Word>, IInsideOutsideScorer>() {
-                        @Override
-                        public IInsideOutsideScorer load(List<Word> sentence) throws Exception {
-                            return model.getGrammar().computeScore(sentence);
-                        }
-                    });
+    LoadingCache<List<Word>, IInsideOutsideScorer> cache;
 
 
     public class CompositionalInsideOutsideScorer {
@@ -53,22 +60,22 @@ public class CompositionalGrammar implements Serializable {
         private transient INDArray[][][] compositionMatrix;
 
         // extended mu to included compositional score
-        private transient float[][][] compositionalMu;
+        private transient double[][][] compositionalMu;
 
         // extended inside score with compositional score
-        private transient float[][] compositionalIScore;
+        private transient double[][] compositionalIScore;
 
-        private transient float[][][] compositionISplitScore;
+        private transient double[][][] compositionISplitScore;
 
         // extended outside score extended with compositional score
-        private transient float[][] compositionalOScore;
+        private transient double[][] compositionalOScore;
 
         // score for each phrase composition.
-        private transient float[][][] compositionScore;
+        private transient double[][][] compositionScore;
 
         // sum of scores all possible composition of a phrase.
         // marginalization over split
-        private transient float[][] cumlCompositionScore;
+        private transient double[][] cumlCompositionScore;
 
         // current maximum length that we can handle
         private transient int arraySize;
@@ -86,22 +93,22 @@ public class CompositionalGrammar implements Serializable {
             // IndArray [start][end][split]
             compositionMatrix = null;
 
-            // float [start][end]
+            // double [start][end]
             compositionalIScore = null;
 
-            // float  [start][end][split]
+            // double  [start][end][split]
             compositionISplitScore = null;
 
-            // float [start][end]
+            // double [start][end]
             compositionalOScore = null;
 
-            // float[start][end][split]
+            // double[start][end][split]
             compositionalMu = null;
 
-            // float [start][end][split]
+            // double [start][end][split]
             compositionScore = null;
 
-            // float [start][end]
+            // double [start][end]
             cumlCompositionScore = null;
         }
 
@@ -156,27 +163,27 @@ public class CompositionalGrammar implements Serializable {
                 }
             }
 
-            compositionalMu = new float[length][length + 1][];
+            compositionalMu = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
-                    compositionalMu[start][end] = new float[length];
+                    compositionalMu[start][end] = new double[length];
                 }
             }
 
-            compositionalIScore = new float[length][length + 1];
-            compositionalOScore = new float[length][length + 1];
-            compositionISplitScore = new float[length][length + 1][];
+            compositionalIScore = new double[length][length + 1];
+            compositionalOScore = new double[length][length + 1];
+            compositionISplitScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
-                    compositionISplitScore[start][end] = new float[length];
+                    compositionISplitScore[start][end] = new double[length];
                 }
             }
 
-            cumlCompositionScore = new float[length][length + 1];
-            compositionScore = new float[length][length + 1][];
+            cumlCompositionScore = new double[length][length + 1];
+            compositionScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
-                    compositionScore[start][end] = new float[length];
+                    compositionScore[start][end] = new double[length];
                 }
             }
         }
@@ -244,7 +251,7 @@ public class CompositionalGrammar implements Serializable {
                 val energy = model.energy(phraseMatrix[start][end]);
 
                 // un-normalized prob or score, is negative exp of energy
-                float score = ((float) exp(-energy));
+                double score = ((double) exp(-energy));
 
                 cumlCompositionScore[start][end] += score;
                 compositionScore[start][end][split] += score;
@@ -284,11 +291,11 @@ public class CompositionalGrammar implements Serializable {
                                 compositionMatrix[start][end][split],
                                 child1, child2);
 
-                        float score = ((float) exp(-energy));
+                        double score = ((double) exp(-energy));
 
                         compositionScore[start][end][split] += score;
 
-                        float compSplitScore = score *
+                        double compSplitScore = score *
                                 cumlCompositionScore[start][split] *
                                 cumlCompositionScore[split][end];
 
@@ -376,7 +383,7 @@ public class CompositionalGrammar implements Serializable {
             for (int start = 0; start < length; start++) {
                 int end = start + 1;
                 int split = start;
-                log.info("Computing Compositional mu Score for span ({}, {})", start, end);
+                log.debug("Computing Compositional mu Score for span ({}, {})", start, end);
                 // muScore is computed as  iScore * oScore.
                 // To compute compositional mu score, we need to compute
                 // TODO:: Will this always be zero?
@@ -451,11 +458,11 @@ public class CompositionalGrammar implements Serializable {
             myMaxLength = Integer.MAX_VALUE;
         }
 
-        public float[][] getInsideSpanProb() {
+        public double[][] getInsideSpanProb() {
             return compositionalIScore;
         }
 
-        public float[][][] getMuScore() {
+        public double[][][] getMuScore() {
             return compositionalMu;
         }
 
@@ -467,13 +474,13 @@ public class CompositionalGrammar implements Serializable {
             return phraseMatrix;
         }
 
-        public float[][][] getCompositionISplitScore() {
+        public double[][][] getCompositionISplitScore() {
             return compositionISplitScore;
         }
 
 
         @SneakyThrows
-        public float computeCompInsideOutsideScores(List<Word> sentence) {
+        public double computeCompInsideOutsideScores(List<Word> sentence) {
             int length = sentence.size();
             considerCreatingMatrices(length);
             initializeMatrices(length);

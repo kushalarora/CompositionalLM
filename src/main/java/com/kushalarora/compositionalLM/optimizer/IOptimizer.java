@@ -18,5 +18,5 @@ public interface IOptimizer<T> {
 
     public IParameter getParams();
 
-    public void fitRoutine(List<T> data);
+    public void fitRoutine(int startIdx, List<T> data);
 }

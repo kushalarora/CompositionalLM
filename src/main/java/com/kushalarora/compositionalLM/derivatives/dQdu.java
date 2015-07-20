@@ -52,8 +52,8 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
         int length = sentence.size();
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        float[][][] compositionMu = scorer.getMuScore();
-        float[][] compositionalIScore = scorer.getInsideSpanProb();
+        double[][][] compositionMu = scorer.getMuScore();
+        double[][] compositionalIScore = scorer.getInsideSpanProb();
 
         // do leaf nodes
         for (int start = 0; start < length; start++) {
@@ -64,7 +64,7 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
             INDArray phraseVector = phraseMatrix[start][end];
 
             // dE = g'(u.t().dot(p))
-            float dE = model.energyDerivative(phraseVector);
+            double dE = model.energyDerivative(phraseVector);
 
             // dEdu = dE * p = g'(u.t().dot(p)) * p
             INDArray dEdu = phraseVector.muli(dE);
@@ -85,7 +85,7 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
                     INDArray compositionVector = compositionMatrix[start][end][split];
 
                     // dE = g'(u.t().dot(p))
-                    float dE = model.energyDerivative(compositionVector);
+                    double dE = model.energyDerivative(compositionVector);
 
                     // dEdu = dE * p = g'(u.t().dot(p)) * p
                     INDArray dEdu = compositionVector.muli(dE);
@@ -97,7 +97,13 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
                 }
             }
         }
+
+        if (compositionalIScore[0][length] == 0) {
+            throw new RuntimeException("Z is zero for sentence " + sentence);
+        }
+
         dQdu = dQdu.div(compositionalIScore[0][length]);
+
         return dQdu;
     }
 }

@@ -52,9 +52,9 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
 
         INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(sentence, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
-        float[][][] compositionalMu = scorer.getMuScore();
+        double[][][] compositionalMu = scorer.getMuScore();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        float[][] compositionalIScore = scorer.getInsideSpanProb();
+        double[][] compositionalIScore = scorer.getInsideSpanProb();
 
 
         INDArray dcdc = Nd4j.eye(dim);
@@ -68,7 +68,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
 
             // handle leaf node
             INDArray vector = phraseMatrix[i][i + 1];
-            float dE = model.energyDerivative(vector);
+            double dE = model.energyDerivative(vector);
 
             // diff wrt to self returns eye
             INDArray udXdXwArr =
@@ -116,8 +116,12 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
             for (int d = 0; d < dim; d++) {
                 dQdXw.putScalar(new int[]{d, index}, dQdXw_i.getFloat(d));
             }
-            dQdXw.add(Nd4j.zeros(dim, V));
         }
+
+        if (compositionalIScore[0][length] == 0) {
+            throw new RuntimeException("Z is zero for sentence " + sentence);
+        }
+
         dQdXw = dQdXw.div(compositionalIScore[0][length]);
         return dQdXw;
     }

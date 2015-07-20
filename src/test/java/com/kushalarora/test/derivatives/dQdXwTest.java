@@ -70,7 +70,7 @@ public class dQdXwTest extends AbstractDerivativeTest {
 
         INDArray ones = Nd4j.ones(dim, 1);
 
-        float[][] compIScore = cScorer.getInsideSpanProb();
+        double[][] compIScore = cScorer.getInsideSpanProb();
 
         for (int idx = 0; idx < length; idx++) {
             INDArray truedQdxwi = Nd4j.ones(dim, 1);

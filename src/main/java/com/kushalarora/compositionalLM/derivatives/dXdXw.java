@@ -40,8 +40,8 @@ public class dXdXw extends AbstractBaseDerivativeClass {
         considerCreatingArrays(length);
 
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        float[][][] compositionISplitScore = scorer.getCompositionISplitScore();
-        float[][] compositionIScore = scorer.getInsideSpanProb();
+        double[][][] compositionISplitScore = scorer.getCompositionISplitScore();
+        double[][] compositionIScore = scorer.getInsideSpanProb();
 
 
         for (int i = 0; i < length; i++) {

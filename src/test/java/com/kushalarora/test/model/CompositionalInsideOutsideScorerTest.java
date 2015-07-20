@@ -84,11 +84,11 @@ public class CompositionalInsideOutsideScorerTest {
     public void testInitializeMatrices() {
 
 
-        float[][] iScore = scorer.getInsideSpanProb();
-        float[][][] muScore = scorer.getMuScore();
+        double[][] iScore = scorer.getInsideSpanProb();
+        double[][][] muScore = scorer.getMuScore();
         INDArray[][][] compMatrix = scorer.getCompositionMatrix();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        float[][][] iSplitScore = scorer.getCompositionISplitScore();
+        double[][][] iSplitScore = scorer.getCompositionISplitScore();
 
         assertEquals(iScore, null);
         assertEquals(muScore, null);
@@ -140,8 +140,8 @@ public class CompositionalInsideOutsideScorerTest {
         iSplitScore = scorer.getCompositionISplitScore();
 
         // verify all initialize to zero
-        float[] zerosLength = new float[length];
-        float[] zerosLengthP1 = new float[length + 1];
+        double[] zerosLength = new double[length];
+        double[] zerosLengthP1 = new double[length + 1];
         INDArray zerosIndArray = Nd4j.create(dim, 1);
         Arrays.fill(zerosLength, 0f);
         Arrays.fill(zerosLengthP1, 0f);
@@ -206,8 +206,8 @@ public class CompositionalInsideOutsideScorerTest {
         scorer.doInsideScore(defaultSentence,length, preScorer);
 
         // test iscore and isplitscore sanity
-        float[][] iScore = scorer.getInsideSpanProb();
-        float[][][] iSplitScore = scorer.getCompositionISplitScore();
+        double[][] iScore = scorer.getInsideSpanProb();
+        double[][][] iSplitScore = scorer.getCompositionISplitScore();
 
         for (int start = 0; start < length; start++) {
             int end = start + 1;
@@ -217,7 +217,7 @@ public class CompositionalInsideOutsideScorerTest {
 
         for (int start = 0; start < length; start++) {
             for (int end = start + 2; end <= length; end++) {
-                float iSplitSum = 0;
+                double iSplitSum = 0;
                 for (int split = start + 1; split < end; split++) {
                     iSplitSum += iSplitScore[start][end][split];
                 }

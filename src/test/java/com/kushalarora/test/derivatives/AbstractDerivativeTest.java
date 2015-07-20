@@ -43,17 +43,17 @@ public class AbstractDerivativeTest {
 
         INDArray[][][] dummyCompMatrix = new INDArray[length][length + 1][];
         INDArray[][] phraseMatrix = new INDArray[length][length + 1];
-        float[][][] compMu = new float[length][length + 1][];
+        double[][][] compMu = new double[length][length + 1][];
 
-        float [][][] compISplitScore = new float[length][length + 1][];
-        float [][] compIScore = new float[length][length + 1];
+        double [][][] compISplitScore = new double[length][length + 1][];
+        double [][] compIScore = new double[length][length + 1];
 
 
         for (int start = 0; start < length; start++) {
             for (int end = 0; end <= length; end++) {
                 dummyCompMatrix[start][end] = new INDArray[length];
-                compMu[start][end] = new float[length];
-                compISplitScore[start][end] = new float[length];
+                compMu[start][end] = new double[length];
+                compISplitScore[start][end] = new double[length];
 
                 phraseMatrix[start][end] = Nd4j.ones(dim, 1);
                 for (int split = start + 1; split < end; split++) {

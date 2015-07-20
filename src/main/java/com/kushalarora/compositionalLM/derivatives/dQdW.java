@@ -41,8 +41,8 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
         int length = sentence.size();
         INDArray[][][][][] dxdwArr = dxdw.calcDerivative(sentence, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
-        float[][][] compositionalMu = scorer.getMuScore();
-        float[][] compositionalIScore = scorer.getInsideSpanProb();
+        double[][][] compositionalMu = scorer.getMuScore();
+        double[][] compositionalIScore = scorer.getInsideSpanProb();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
 
         for (int i = 0; i < dim; i++) {
@@ -71,6 +71,10 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
 
                 dQdW.putScalar(new int[]{i, j}, dEdW_ij);
             }
+        }
+
+        if (compositionalIScore[0][length] == 0) {
+            throw new RuntimeException("Z is zero for sentence " + sentence);
         }
         dQdW = dQdW.div(compositionalIScore[0][length]);
         return dQdW;
