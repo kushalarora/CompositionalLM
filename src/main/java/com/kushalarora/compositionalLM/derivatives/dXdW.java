@@ -35,6 +35,7 @@ public class dXdW extends AbstractBaseDerivativeClass {
             scorer) {
         int length = sentence.size();
 
+        // TODO:: Can be optimizeds
         // Allocate memory to hold spans and split
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 * dim; j++) {
