@@ -17,7 +17,7 @@ public class TrainOptions implements Serializable {
     public String[] validationFiles = new String[] {"src/resources/valid"};
     public int maxEpochs = 50;
     public double tolerance = 1e-3;
-    public int batchSize = 100;
+    public int batchSize = 500;
     public int validationFreq = 5;
     public double learningRate = 0.1;
     public boolean parallel = false;

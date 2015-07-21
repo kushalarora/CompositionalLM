@@ -15,7 +15,9 @@ public abstract class CacheWrapper<K, V> {
         V value = getRoutine(input);
         if (value == null) {
             value = load(input);
-            put(input, value);
+            synchronized (this) {
+                put(input, value);
+            }
         }
         return value;
     }
