@@ -19,7 +19,7 @@ public abstract class MemcachedWrapper<K, V> extends CacheWrapper<K, V> {
     public MemcachedWrapper(Options op) throws IOException {
         memcachedClient =new MemcachedClient(
                 AddrUtil.getAddresses("localhost:3030"));
-        ;
+        memcachedClient.flush();
     }
 
     @Override
