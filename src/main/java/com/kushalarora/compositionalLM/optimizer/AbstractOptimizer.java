@@ -40,7 +40,7 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
         int numBatch = trainSet.size() / op.trainOp.batchSize + 1;
         int epoch = 0;
         double bestValidationScore = Double.MAX_VALUE;
-        while (epoch < op.trainOp.maxEpochs && !done) {
+        while (epoch < op.trainOp.maxEpochs) {
             List<T> shuffledSet = new ArrayList<T>(trainSet);
             Collections.shuffle(shuffledSet, rand);
 

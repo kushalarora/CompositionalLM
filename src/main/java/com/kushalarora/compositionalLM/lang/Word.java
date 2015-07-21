@@ -1,10 +1,13 @@
 package com.kushalarora.compositionalLM.lang;
 
 import edu.stanford.nlp.ling.HasWord;
+import lombok.EqualsAndHashCode;
 
 /**
  * Created by karora on 6/18/15.
  */
+
+@EqualsAndHashCode
 public class Word implements HasWord, edu.berkeley.nlp.io.HasWord {
     String word;
     int index;

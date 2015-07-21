@@ -13,6 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 
 import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;
@@ -84,7 +85,7 @@ public class CompositionLMTest {
 
     @Test
     @Ignore
-    public void testMain() {
+    public void testMain() throws IOException {
         String[] args =
                 new String[] {"-train", "src/resources/train10",
                         "-validate", "src/resources/valid4",
@@ -97,7 +98,7 @@ public class CompositionLMTest {
 
     @Test
     @Ignore
-    public void testMainParallel() {
+    public void testMainParallel() throws IOException {
         String[] args =
                 new String[] {"-train", "src/resources/train10",
                         "-validate", "src/resources/valid4",

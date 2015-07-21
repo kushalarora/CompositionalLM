@@ -2,6 +2,8 @@ package com.kushalarora.compositionalLM.languagemodel;
 
 
 import com.google.common.collect.Lists;
+import com.kushalarora.compositionalLM.caching.CacheFactory;
+import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.lang.*;
 import com.kushalarora.compositionalLM.model.*;
 import com.kushalarora.compositionalLM.optimizer.AbstractSGDOptimizer;
@@ -31,11 +33,14 @@ public class CompositionalLM {
     private final CompositionalGrammar compGrammar;
     private final DocumentProcessorFactory docProcessorFactory;
     private final Model model;
+    CacheWrapper<List<Word>, IInsideOutsideScore> cache;
 
-    public CompositionalLM(Model model, Options op) {
+
+    public CompositionalLM(Model model, Options op) throws IOException {
         this.model = model;
         this.compGrammar = new CompositionalGrammar(model, op);
         this.op = op;
+        cache = new CacheFactory(model).getCache(op);
 
         docProcessorFactory =
                 new DocumentProcessorFactory(
@@ -68,9 +73,10 @@ public class CompositionalLM {
                     new AbstractSGDOptimizer<List<Word>>(op) {
                         @Override
                         public double getValidationScore(List<Word> data) {
+                            IInsideOutsideScore preScore = cache.get(data);
                             CompositionalGrammar.CompositionalInsideOutsideScore score =
                                     compGrammar.computeScore(data,
-                                            model.getGrammar().computeScore(data));
+                                            preScore);
                             return score.getSentenceScore();
                         }
 
@@ -81,10 +87,10 @@ public class CompositionalLM {
 
                         public IParameterDerivatives calcDerivative(List<Word> sample) {
                             Derivatives derivatives = new Derivatives(model);
-
+                            IInsideOutsideScore preScore = cache.get(sample);
                             CompositionalGrammar.CompositionalInsideOutsideScore score =
                                     compGrammar.computeScore(sample,
-                                            model.getGrammar().computeScore(sample));
+                                           preScore);
 
                             return derivatives.calcDerivative(sample, score);
                         }
@@ -221,7 +227,7 @@ public class CompositionalLM {
      *
      * @param args
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         PropertyConfigurator.configure("log4j.properties");
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);

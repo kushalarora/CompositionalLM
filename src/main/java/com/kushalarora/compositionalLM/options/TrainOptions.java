@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.options;
 
+import com.kushalarora.compositionalLM.caching.CacheFactory;
 import lombok.ToString;
 
 import java.io.Serializable;
@@ -21,6 +22,9 @@ public class TrainOptions implements Serializable {
     public double learningRate = 0.1;
     public boolean parallel = false;
     public int nThreads = 1;
+    public String cacheServer = "http://127.0.0.1";
+    public int cachePort = 3030;
+    public CacheFactory.CacheType cacheType = CacheFactory.CacheType.MEMCACHED;
 }
 
 

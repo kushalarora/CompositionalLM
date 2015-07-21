@@ -1,15 +1,20 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.kushalarora.compositionalLM.caching.CacheFactory;
+import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import net.spy.memcached.MemcachedClient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.List;
 
 import static java.lang.Math.exp;
@@ -21,28 +26,10 @@ import static java.lang.Math.exp;
 public class CompositionalGrammar implements Serializable {
     private final Options op;
     private Model model;
-
     public CompositionalGrammar(final Model model, final Options op) {
         this.model = model;
         this.op = op;
-//        cache =
-//        CacheBuilder.newBuilder()
-//                .maximumWeight(50)
-//                .weigher(new Weigher<List<Word>, IInsideOutsideScorer>() {
-//                    public int weigh(List<Word> words, IInsideOutsideScorer iInsideOutsideScorer) {
-//                        return  words.size();
-//                    }
-//                })
-//                .build(new CacheLoader<List<Word>, IInsideOutsideScorer>() {
-//                    @Override
-//                    public IInsideOutsideScorer load(List<Word> sentence) throws Exception {
-//                        return model.getGrammar().computeScore(sentence);
-//                    }
-//                });
     }
-
-  //  LoadingCache<List<Word>, IInsideOutsideScorer> cache;
-
 
     public class CompositionalInsideOutsideScore {
         // Averaged representation of phrases in sentence
