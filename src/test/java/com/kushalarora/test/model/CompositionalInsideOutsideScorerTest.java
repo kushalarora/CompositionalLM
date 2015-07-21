@@ -8,6 +8,7 @@ import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.val;
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Before;
@@ -44,7 +45,7 @@ public class CompositionalInsideOutsideScorerTest {
     private static Model model;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException {
         PropertyConfigurator.configure("log4j.properties");
         val filePath =
                 FileUtils.getFile("src/resources/wsjPCFG.ser.gz")

@@ -3,6 +3,7 @@ package com.kushalarora.compositionalLM.options;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.utils.ArgUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.configuration.ConfigurationException;
 
 /**
  * Created by karora on 7/12/15.
@@ -10,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ArgParser {
-    public static Options parseArgs(String[] args) {
+    public static Options parseArgs(String[] args) throws ConfigurationException {
         int argIndex = 0;
         Options op = new Options();
         if (args.length < 1) {
@@ -56,7 +57,7 @@ public class ArgParser {
 
             } else if (args[argIndex].equalsIgnoreCase("-saveOutputModelSerialized")) {
                 // save output model as a serialized file
-                op.modelOp.outType = Options.FILE_TYPE.SERIALIZED;
+                op.modelOp.outType = Options.FileType.SERIALIZED;
                 String[] files = ArgUtils.getStringFromArg(args, argIndex);
                 if (files.length > 1) {
                     throw new RuntimeException("Can't save multiple output files.");
@@ -66,7 +67,7 @@ public class ArgParser {
 
             } else if (args[argIndex].equalsIgnoreCase("-saveOutputModelText")) {
                 // set output model file as a text file
-                op.modelOp.outType = Options.FILE_TYPE.TEXT;
+                op.modelOp.outType = Options.FileType.TEXT;
                 String[] files = ArgUtils.getStringFromArg(args, argIndex);
                 if (files.length > 1) {
                     throw new RuntimeException("Can't save multiple output files.");
@@ -76,7 +77,7 @@ public class ArgParser {
 
             } else if (args[argIndex].equalsIgnoreCase("-modelSerialized")) {
                 // Serialized model file to be loaded, if testing
-                op.modelOp.inType = Options.FILE_TYPE.SERIALIZED;
+                op.modelOp.inType = Options.FileType.SERIALIZED;
                 String[] files = ArgUtils.getStringFromArg(args, argIndex);
                 if (files.length > 1) {
                     throw new RuntimeException("Can't have multiple model files.");
@@ -86,7 +87,7 @@ public class ArgParser {
 
             } else if (args[argIndex].equalsIgnoreCase("-modelText")) {
                 // Text model file to be loaded if testing
-                op.modelOp.inType = Options.FILE_TYPE.TEXT;
+                op.modelOp.inType = Options.FileType.TEXT;
                 String[] files = ArgUtils.getStringFromArg(args, argIndex);
                 if (files.length > 1) {
                     throw new RuntimeException("Can't have multiple model files.");

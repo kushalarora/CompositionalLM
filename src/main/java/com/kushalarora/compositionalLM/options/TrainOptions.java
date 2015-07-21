@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.options;
 
 import com.kushalarora.compositionalLM.caching.CacheFactory;
 import lombok.ToString;
+import org.apache.commons.configuration.Configuration;
 
 import java.io.Serializable;
 
@@ -10,21 +11,36 @@ import java.io.Serializable;
  */
 @ToString
 public class TrainOptions implements Serializable {
-    public String[] trainFiles = new String[] {"src/resources/valid"};
-    public boolean train = false;
+    public String[] trainFiles;
+    public String[] validationFiles;
+    public boolean validate;
+    public int maxEpochs;
+    public double tolerance;
+    public int batchSize;
+    public int validationFreq;
+    public double learningRate;
+    public boolean parallel;
+    public int nThreads;
+    public String cacheServer;
+    public int cachePort;
+    public CacheFactory.CacheType cacheType;
 
-    public boolean validate = false;
-    public String[] validationFiles = new String[] {"src/resources/valid"};
-    public int maxEpochs = 50;
-    public double tolerance = 1e-3;
-    public int batchSize = 100;
-    public int validationFreq = 10;
-    public double learningRate = 0.1;
-    public boolean parallel = false;
-    public int nThreads = 1;
-    public String cacheServer = "http://127.0.0.1";
-    public int cachePort = 3030;
-    public CacheFactory.CacheType cacheType = CacheFactory.CacheType.MEMCACHED;
+    public TrainOptions(Configuration config) {
+        trainFiles = config.getStringArray("trainFiles");
+        validate = config.getBoolean("validate", false);
+        validationFiles = config.getStringArray("validationFiles");
+        maxEpochs = config.getInt("maxEpochs", 10);
+        tolerance = config.getDouble("tolerance", 1e-3);
+        batchSize = config.getInt("batchSize", 100);
+        validationFreq = config.getInt("validationFreq", 5);
+        parallel = config.getBoolean("parallel", false);
+        nThreads = config.getInt("nThreads", 0);
+        cacheServer = config.getString("cacheServer", "localhost");
+        cachePort = config.getInt("cachePort", 3030);
+        cacheType = CacheFactory.CacheType.fromString(
+                config.getString("cacheType", "none"));
+
+    }
 }
 
 

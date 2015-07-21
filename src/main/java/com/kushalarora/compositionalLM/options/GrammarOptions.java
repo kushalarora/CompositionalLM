@@ -3,6 +3,7 @@ package com.kushalarora.compositionalLM.options;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.TokenizerFactory;
 import lombok.ToString;
+import org.apache.commons.configuration.Configuration;
 
 import java.io.Serializable;
 
@@ -24,4 +25,26 @@ public class GrammarOptions implements Serializable {
             TokenizerFactory.TokenizerType.STANFORD_PTB_TOKENIZER;
 
     public boolean lowerCase = false;
+
+
+    public GrammarOptions(Configuration config) {
+        maxLength = config.getInt("maxLength",
+                DEFAULT_MAX_LENGTH);
+
+        grammarType =
+                GrammarFactory.GrammarType.fromString(
+                config.getString("grammarType",
+                        "stanford"));
+
+        filename = config.getString("grammarFile",
+                "src/resources/englishPCFG.ser.gz");
+
+        tokenizerType =
+                TokenizerFactory.TokenizerType.fromString(
+                        config.getString("tokenizerType",
+                                "stanfordPTB"));
+
+        lowerCase = config.getBoolean("lowercase", false);
+
+    }
 }

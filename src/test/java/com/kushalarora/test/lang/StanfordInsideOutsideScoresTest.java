@@ -7,6 +7,7 @@ import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Before;
@@ -38,7 +39,7 @@ public class StanfordInsideOutsideScoresTest {
 
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException {
         val filePath = FileUtils.getFile("src/resources/wsjPCFG.ser.gz")
                 .getAbsolutePath();
 

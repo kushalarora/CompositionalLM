@@ -7,6 +7,7 @@ import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.io.IOUtils;
 import lombok.SneakyThrows;
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.BeforeClass;
@@ -85,7 +86,7 @@ public class CompositionLMTest {
 
     @Test
     @Ignore
-    public void testMain() throws IOException {
+    public void testMain() throws IOException, ConfigurationException {
         String[] args =
                 new String[] {"-train", "src/resources/train10",
                         "-validate", "src/resources/valid4",
@@ -98,7 +99,7 @@ public class CompositionLMTest {
 
     @Test
     @Ignore
-    public void testMainParallel() throws IOException {
+    public void testMainParallel() throws IOException, ConfigurationException {
         String[] args =
                 new String[] {"-train", "src/resources/train10",
                         "-validate", "src/resources/valid4",

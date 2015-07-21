@@ -15,6 +15,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.PropertyConfigurator;
 
 import java.io.IOException;
@@ -214,9 +215,9 @@ public class CompositionalLM {
         }
 
         Model model = null;
-        if (type.equals(Options.FILE_TYPE.TEXT)) {
+        if (type.equals(Options.FileType.TEXT)) {
             model = loadModelText(filename);
-        } else if (type.equals(Options.FILE_TYPE.SERIALIZED)) {
+        } else if (type.equals(Options.FileType.SERIALIZED)) {
             model = loadModelSerialized(filename);
         }
         return model;
@@ -227,7 +228,7 @@ public class CompositionalLM {
      *
      * @param args
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, ConfigurationException {
         PropertyConfigurator.configure("log4j.properties");
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);

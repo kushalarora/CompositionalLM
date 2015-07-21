@@ -4,6 +4,7 @@ import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.options.Options;
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
 
@@ -21,7 +22,7 @@ public class StanfordGrammarTest {
     public static List<Word> defaultSentence;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException {
         String absoluteFilePath = FileUtils
                 .getFile(GRAMMAR_RELATIVE_FILE_PATH)
                 .getAbsolutePath();
