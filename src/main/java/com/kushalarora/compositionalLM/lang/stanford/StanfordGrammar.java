@@ -40,6 +40,7 @@ public class StanfordGrammar extends AbstractGrammar {
 
         private transient double[][][][] iSplitSpanStateScore;
         private transient double[][][][] oSpanStateScoreWParent;
+        protected int[] words;  // words of sentence being parsed as word Numberer ints
 
         public StanfordInsideOutsideScore(List<Word> sentence) {
             super(sentence);
@@ -1049,10 +1050,6 @@ public class StanfordGrammar extends AbstractGrammar {
     protected final UnaryGrammar ug;
     protected final Lexicon lex;
 
-    protected int length; // one larger than true length of sentence; includes boundary symbol in count
-
-
-    protected int[] words;  // words of sentence being parsed as word Numberer ints
     protected final int numStates;
     protected final boolean[] isTag;
 
@@ -1084,7 +1081,6 @@ public class StanfordGrammar extends AbstractGrammar {
             isTag[state] = true;
         }
     }
-
 
     public int getNumStates() {
         return numStates;

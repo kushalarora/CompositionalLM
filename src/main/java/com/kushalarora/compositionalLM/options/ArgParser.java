@@ -105,12 +105,23 @@ public class ArgParser {
             } else if (args[argIndex].equalsIgnoreCase("-dimension")) {
                 String[] dimensions = ArgUtils.getStringFromArg(args, argIndex);
                 if (dimensions.length > 1) {
-                    throw new RuntimeException("You can specify only one grammarType of grammar");
+                    throw new RuntimeException("You can only specify one dimension value");
                 }
                 op.modelOp.dimensions = Integer.parseInt(dimensions[0]);
                 argIndex++;
             } else if (args[argIndex].equalsIgnoreCase("-lowercase")) {
                 op.grammarOp.lowerCase = true;
+            } else if (args[argIndex].equalsIgnoreCase("-parallel")) {
+                op.trainOp.parallel = true;
+                op.trainOp.nThreads = Runtime.getRuntime().availableProcessors();
+            } else if (args[argIndex].equalsIgnoreCase("-parallel")) {
+                String[] numThreads = ArgUtils.getStringFromArg(args, argIndex);
+                if (numThreads.length > 1) {
+                    throw new RuntimeException("You can only specify one numThread value");
+                }
+                op.trainOp.parallel =  true;
+                op.trainOp.nThreads = Integer.parseInt(numThreads[0]);
+                argIndex++;
             } else {
 
             }   // end arg parsing if statement

@@ -17,7 +17,7 @@ public class Derivatives implements IParameterDerivatives<List<Word>> {
     private dQdW dqdw;
     private dQdu dqdu;
     private dQdXw dqdxw;
-
+    private List<Word> sentence;
 
     public Derivatives(Model model) {
         // IMPORTANT::The order must be preserved here
@@ -49,9 +49,14 @@ public class Derivatives implements IParameterDerivatives<List<Word>> {
     }
 
     public IParameterDerivatives<List<Word>> calcDerivative(List<Word> data, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
+        this.sentence  = sentence;
         dqdu.calcDerivative(data, scorer);
         dqdw.calcDerivative(data, scorer);
         dqdxw.calcDerivative(data, scorer);
         return this;
+    }
+
+    public List<Word> getSentence() {
+        return sentence;
     }
 }

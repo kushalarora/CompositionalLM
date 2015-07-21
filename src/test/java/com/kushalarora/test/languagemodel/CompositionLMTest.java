@@ -86,12 +86,26 @@ public class CompositionLMTest {
     @Ignore
     public void testMain() {
         String[] args =
-                new String[] {"-train", "src/resources/train",
-                        "-validate", "src/resources/valid",
+                new String[] {"-train", "src/resources/train10",
+                        "-validate", "src/resources/valid4",
                         "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase"};
+        CompositionalLM.main(args);
+    }
+
+    @Test
+    @Ignore
+    public void testMainParallel() {
+        String[] args =
+                new String[] {"-train", "src/resources/train10",
+                        "-validate", "src/resources/valid4",
+                        "-grammarType", "stanford",
+                        "-grammarFile", "src/resources/englishPCFG.ser.gz",
+                        "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
+                        "-lowercase",
+                        "-parallel", "-nThreads 2"};
         CompositionalLM.main(args);
     }
 }

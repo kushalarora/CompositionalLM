@@ -1,7 +1,6 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.collect.Lists;
-import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.IParameterDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.*;
 
 /**
  * Created by karora on 7/14/15.
@@ -18,10 +18,15 @@ import java.util.Random;
 public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
     private final Random rand;
     protected Options op;
+    protected ExecutorService executor;
 
     protected AbstractOptimizer(Options op) {
         this.op = op;
         rand = new Random();
+        if (op.trainOp.parallel) {
+            executor =
+                    Executors.newFixedThreadPool(op.trainOp.nThreads);
+        }
     }
 
     public abstract double getValidationScore(T data);
@@ -32,7 +37,6 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
         boolean done = false;
         int numBatch = trainSet.size() / op.trainOp.batchSize + 1;
         int epoch = 0;
-        double validationScore = 0;
         double bestValidationScore = Double.MAX_VALUE;
         while (epoch < op.trainOp.maxEpochs && !done) {
             List<T> shuffledSet = new ArrayList<T>(trainSet);
@@ -53,14 +57,7 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
 
                 if (true || op.trainOp.validate &&
                         (iter + 1) % op.trainOp.validationFreq == 0) {
-
-                    validationScore = 0;
-                    int idx = 0;
-                    for (T data : validationSet) {
-                        log.info("Validation#{}: {}",idx++, data);
-                        validationScore += getValidationScore(data);
-                    }
-                    double mean = validationScore / validationSet.size();
+                    double mean = validationRoutine(validationSet);
                     log.info("Mean validation score iter#{}: {}", iter, mean);
 
                     if (mean < bestValidationScore) {
@@ -76,15 +73,94 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
         }
     }
 
+    private double validationRoutine(List<T> validationSet) {
+        double validationScore = 0;
+        if (op.trainOp.parallel) {
+
+            List<Future<Double>> futureList =
+                    new ArrayList<Future<Double>> ();
+
+            int idx = 0;
+            for (final T data : validationSet) {
+                log.info("Starting Validation#{}: {}", idx++, data);
+                Callable<Double> callable =
+                        new Callable<Double>() {
+                            public Double call() throws Exception {
+                                return getValidationScore(data);
+                            }
+                        };
+                Future<Double> future = executor.submit(callable);
+                futureList.add(future);
+            }
+
+            idx = 0;
+            for (Future<Double> future : futureList) {
+                try {
+                    validationScore += future.get();
+                    log.info("*********Finished Validation#{} ************", idx++);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+        } else {
+
+            int idx = 0;
+            for (T data : validationSet) {
+                log.info("Validation#{}: {}", idx++, data);
+                validationScore += getValidationScore(data);
+            }
+        }
+        return validationScore / validationSet.size();
+    }
+
     public void fitRoutine(int startIdx, List<T> trainBatch) {
         int idx = startIdx;
         IParameterDerivatives derivative = null;
-        for (T sample : trainBatch) {
-            log.info("*********Training#{}: {} ************", idx++, sample);
-            IParameterDerivatives derivatives = fitOne(sample);
-            derivativeAccumulator(derivatives);
-            calcLearningRate(sample, derivatives);
+
+        if (op.trainOp.parallel) {
+            List<Future<IParameterDerivatives<T>>> futureList =
+                    new ArrayList<Future<IParameterDerivatives<T>>>();
+
+            for (final T sample : trainBatch) {
+                log.info("*********Started Training#{}: {} ************", idx++, sample);
+                Callable<IParameterDerivatives<T>> callable =
+                        new Callable<IParameterDerivatives<T>>() {
+                            public IParameterDerivatives<T> call() throws Exception {
+                                return fitOne(sample);
+                            }
+                        };
+                Future<IParameterDerivatives<T>> future =
+                        executor.submit(callable);
+                futureList.add(future);
+            }
+
+            idx = startIdx;
+            for (Future<IParameterDerivatives<T>> future : futureList) {
+                try {
+                    IParameterDerivatives<T> derivatives =
+                            future.get();
+                    T sample = derivatives.getSentence();
+                    calcLearningRate(sample, derivatives);
+                    derivativeAccumulator(derivatives);
+                    log.info("*********Finished Training#{} ************", idx++);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            for (T sample : trainBatch) {
+                IParameterDerivatives derivatives = fitOne(sample);
+                calcLearningRate(sample, derivatives);
+                derivativeAccumulator(derivatives);
+            }
         }
+
         updateParams(getAccumulatedDerivative());
         flushDerivaiveAccumulator();
     }
