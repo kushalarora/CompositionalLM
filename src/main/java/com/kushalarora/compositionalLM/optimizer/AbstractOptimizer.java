@@ -24,6 +24,8 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
         this.op = op;
         rand = new Random();
         if (op.trainOp.parallel) {
+            log.info("Running in parallel mode");
+            log.info("NumThreads#: {}", op.trainOp.nThreads);
             executor =
                     Executors.newFixedThreadPool(op.trainOp.nThreads);
         }
