@@ -14,16 +14,16 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
     protected double[][][] iSpanSplitScore;
     protected double[][] iSpanScore;
     protected double[][][] oSpanWParentScore;
-    protected double[][] oSpanScore;
-    protected double[][][] muSpanSplitScore;
-    protected double[][][] muScore;
+    protected transient double[][] oSpanScore;
+    protected transient double[][][] muSpanSplitScore;
+    protected transient double[][][] muScore;
     protected double[][][][] muSpanScoreWParent;
     // inside scores
     // start idx, end idx, state -> logProb (ragged; null for end <= start)
-    protected double[][][] iScore;
+    protected transient double[][][] iScore;
     // outside scores
     // start idx, end idx, state -> logProb
-    protected double[][][] oScore;
+    protected transient double[][][] oScore;
 
     protected List<Word> sentence;
     protected int length;
