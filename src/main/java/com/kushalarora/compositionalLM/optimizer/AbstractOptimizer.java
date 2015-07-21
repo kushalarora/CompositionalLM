@@ -23,12 +23,6 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
     protected AbstractOptimizer(Options op) {
         this.op = op;
         rand = new Random();
-        if (op.trainOp.parallel) {
-            log.info("Running in parallel mode");
-            log.info("NumThreads#: {}", op.trainOp.nThreads);
-            executor =
-                    Executors.newFixedThreadPool(op.trainOp.nThreads);
-        }
     }
 
     public abstract double getValidationScore(T data);
@@ -36,6 +30,13 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
     public abstract void saveModel();
 
     public void fit(List<T> trainSet, List<T> validationSet) {
+        if (op.trainOp.parallel) {
+            log.info("Running in parallel mode");
+            log.info("NumThreads#: {}", op.trainOp.nThreads);
+            executor =
+                    Executors.newFixedThreadPool(op.trainOp.nThreads);
+        }
+
         boolean done = false;
         int numBatch = trainSet.size() / op.trainOp.batchSize + 1;
         int epoch = 0;
@@ -57,12 +58,13 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                 fitRoutine(startIdx, trainSet.subList(startIdx, endIdx));
 
 
-                if (true || op.trainOp.validate &&
+                if (op.trainOp.validate &&
                         (iter + 1) % op.trainOp.validationFreq == 0) {
                     double mean = validationRoutine(validationSet);
                     log.info("Mean validation score iter#{}: {}", iter, mean);
 
                     if (mean < bestValidationScore) {
+                        // TODO Fix this
                         if (mean < bestValidationScore * (1 - op.trainOp.tolerance)) {
                             done = true;
                         }
@@ -98,8 +100,14 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
             idx = 0;
             for (Future<Double> future : futureList) {
                 try {
+                    Double score = future.get();
+                    if (score.isInfinite() || score.isNaN()) {
+                        log.info("******** Validation#{} is {}************", idx++, score);
+                        continue;
+                    }
+                    log.info("*********Finished Validation#{}: {} ************", idx++, score);
                     validationScore += future.get();
-                    log.info("*********Finished Validation#{} ************", idx++);
+
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {
@@ -148,6 +156,7 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                     T sample = derivatives.getSentence();
                     calcLearningRate(sample, derivatives);
                     derivativeAccumulator(derivatives);
+
                     log.info("*********Finished Training#{} ************", idx++);
                 } catch (InterruptedException e) {
                     e.printStackTrace();

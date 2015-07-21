@@ -17,9 +17,8 @@ public abstract class MemcachedWrapper<K, V> extends CacheWrapper<K, V> {
     public static int EXPIRY = 3600;
 
     public MemcachedWrapper(Options op) throws IOException {
-        memcachedClient =new MemcachedClient(
+        memcachedClient = new MemcachedClient(
                 AddrUtil.getAddresses("localhost:3030"));
-        memcachedClient.flush();
     }
 
     @Override
@@ -29,6 +28,6 @@ public abstract class MemcachedWrapper<K, V> extends CacheWrapper<K, V> {
 
     @Override
     public V getRoutine(K input) {
-        return (V)memcachedClient.get(getKeyString(input));
+        return (V) memcachedClient.get(getKeyString(input));
     }
 }
