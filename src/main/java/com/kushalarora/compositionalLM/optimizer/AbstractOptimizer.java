@@ -1,14 +1,12 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.collect.Lists;
+import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.IParameterDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -57,7 +55,6 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
 
                 fitRoutine(startIdx, trainSet.subList(startIdx, endIdx));
 
-
                 if (op.trainOp.validate &&
                         (iter + 1) % op.trainOp.validationFreq == 0) {
                     double mean = validationRoutine(validationSet);
@@ -71,9 +68,13 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                         bestValidationScore = mean;
                         saveModel();
                     }
-                }
-            }
+                }   // end if validate
+            }   // end for batch < numBatch
             epoch += 1;
+        }   // end  while epoch
+
+        if (op.trainOp.parallel) {
+            executor.shutdown();
         }
     }
 
@@ -98,16 +99,18 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
             }
 
             idx = 0;
-            for (Future<Double> future : futureList) {
+            Iterator<Future<Double>> it = futureList.iterator();
+            while(it.hasNext()) {
                 try {
+                    Future<Double> future = it.next();
                     Double score = future.get();
                     if (score.isInfinite() || score.isNaN()) {
                         log.info("******** Validation#{} is {}************", idx++, score);
                         continue;
                     }
                     log.info("*********Finished Validation#{}: {} ************", idx++, score);
-                    validationScore += future.get();
-
+                    validationScore += score;
+                    it.remove();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {
@@ -149,15 +152,17 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
             }
 
             idx = startIdx;
-            for (Future<IParameterDerivatives<T>> future : futureList) {
+            Iterator<Future<IParameterDerivatives<T>>> it = futureList.iterator();
+            while(it.hasNext())  {
                 try {
+                    Future<IParameterDerivatives<T>> future = it.next();
                     IParameterDerivatives<T> derivatives =
                             future.get();
-                    T sample = derivatives.getSentence();
-                    calcLearningRate(sample, derivatives);
+                    calcLearningRate(derivatives);
                     derivativeAccumulator(derivatives);
-
+                    it.remove();
                     log.info("*********Finished Training#{} ************", idx++);
+
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {
@@ -167,7 +172,7 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
         } else {
             for (T sample : trainBatch) {
                 IParameterDerivatives derivatives = fitOne(sample);
-                calcLearningRate(sample, derivatives);
+                calcLearningRate(derivatives);
                 derivativeAccumulator(derivatives);
             }
         }

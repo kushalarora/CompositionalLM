@@ -24,5 +24,5 @@ public interface IOptimizer<T> {
 
     public void flushDerivaiveAccumulator();
 
-    public void calcLearningRate(final T sample, final IParameterDerivatives<T> derivatives);
+    public void calcLearningRate(final IParameterDerivatives<T> derivatives);
 }

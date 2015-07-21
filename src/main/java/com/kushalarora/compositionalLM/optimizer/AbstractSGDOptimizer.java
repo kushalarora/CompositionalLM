@@ -25,7 +25,7 @@ public abstract class AbstractSGDOptimizer<T> extends AbstractOptimizer<T> {
                         -1 * op.trainOp.learningRate));
     }
 
-    public void calcLearningRate(final T sample, final IParameterDerivatives<T> derivatives) {
+    public void calcLearningRate(final IParameterDerivatives<T> derivatives) {
         // do nothing
     }
 }
