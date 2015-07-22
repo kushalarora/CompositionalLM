@@ -488,7 +488,7 @@ public class CompositionalGrammar implements Serializable {
             doMuScore();
             log.info("Computed Compositional mu score:{}", sentence.getIndex());
 
-            log.info("Compositional Score for sentence:{}", sentence.getIndex());
+            log.info("Compositional Score for sentence#{}: {}", sentence.getIndex(), compositionalIScore[0][length]);
             return compositionalIScore[0][length];
         }
     }
