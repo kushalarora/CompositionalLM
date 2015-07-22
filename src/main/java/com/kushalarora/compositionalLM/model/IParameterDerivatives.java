@@ -10,5 +10,5 @@ public interface IParameterDerivatives<T> extends Serializable {
     public IParameterDerivatives<T> mul(double learningRate);
     public IParameterDerivatives<T> calcDerivative(T data, CompositionalGrammar.CompositionalInsideOutsideScore scorer);
     public void clear();
-    public T getSentence();
+    public T getData();
 }

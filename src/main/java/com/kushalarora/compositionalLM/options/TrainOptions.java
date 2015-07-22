@@ -26,20 +26,33 @@ public class TrainOptions implements Serializable {
     public CacheFactory.CacheType cacheType;
 
     public TrainOptions(Configuration config) {
-        trainFiles = config.getStringArray("trainFiles");
-        validate = config.getBoolean("validate", false);
-        validationFiles = config.getStringArray("validationFiles");
-        maxEpochs = config.getInt("maxEpochs", 10);
-        tolerance = config.getDouble("tolerance", 1e-3);
-        batchSize = config.getInt("batchSize", 100);
-        validationFreq = config.getInt("validationFreq", 5);
-        parallel = config.getBoolean("parallel", false);
-        nThreads = config.getInt("nThreads", 0);
-        cacheServer = config.getString("cacheServer", "localhost");
-        cachePort = config.getInt("cachePort", 3030);
-        cacheType = CacheFactory.CacheType.fromString(
+        trainFiles =
+                config.getStringArray("trainFiles");
+        validate =
+                config.getBoolean("validate", false);
+        validationFiles =
+                config.getStringArray("validationFiles");
+        maxEpochs =
+                config.getInt("maxEpochs", 10);
+        tolerance =
+                config.getDouble("tolerance", 1e-3);
+        batchSize =
+                config.getInt("batchSize", 100);
+        validationFreq =
+                config.getInt("validationFreq", 5);
+        parallel =
+                config.getBoolean("parallel", false);
+        nThreads =
+                config.getInt("nThreads", 0);
+        cacheServer =
+                config.getString("cacheServer", "localhost");
+        cachePort =
+                config.getInt("cachePort", 3030);
+        cacheType =
+                CacheFactory.CacheType.fromString(
                 config.getString("cacheType", "none"));
-
+        learningRate =
+                config.getDouble("learningRate", 0.0);
     }
 }
 

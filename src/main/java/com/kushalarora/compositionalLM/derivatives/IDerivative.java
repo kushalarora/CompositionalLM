@@ -17,6 +17,8 @@ public interface IDerivative {
     public IDerivative add(IDerivative other);
 
     public IDerivative mul(double learningRate);
+
+    public boolean containsNanOrInf();
 }
 
 

@@ -54,7 +54,11 @@ public class CacheFactory {
 
                     @Override
                     public String getKeyString(List<Word> input) {
-                        return Integer.toString(input.hashCode());
+                        StringBuilder sb = new StringBuilder();
+                        for (Word word: input) {
+                            sb.append(word.word()).append(":");
+                        }
+                        return sb.toString();
                     }
                 };
             case NONE:

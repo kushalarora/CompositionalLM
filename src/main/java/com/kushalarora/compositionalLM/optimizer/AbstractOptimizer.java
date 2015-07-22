@@ -132,8 +132,6 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
 
     public void fitRoutine(int startIdx, List<T> trainBatch) {
         int idx = startIdx;
-        IParameterDerivatives derivative = null;
-
         if (op.trainOp.parallel) {
             List<Future<IParameterDerivatives<T>>> futureList =
                     new ArrayList<Future<IParameterDerivatives<T>>>();
@@ -160,20 +158,21 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                             future.get();
                     calcLearningRate(derivatives);
                     derivativeAccumulator(derivatives);
-                    it.remove();
-                    log.info("*********Finished Training#{} ************", idx++);
-
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                 }
+                it.remove();
+                log.info("*********Finished Training#{} ************", idx++);
             }
         } else {
             for (T sample : trainBatch) {
+                log.info("*********Started Training#{}: {} ************", idx++, sample);
                 IParameterDerivatives derivatives = fitOne(sample);
                 calcLearningRate(derivatives);
                 derivativeAccumulator(derivatives);
+                log.info("*********Finished Training#{} ************", idx++);
             }
         }
 

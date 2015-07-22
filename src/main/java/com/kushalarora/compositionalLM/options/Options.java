@@ -63,18 +63,18 @@ public class Options implements Serializable {
         grammarOp = new GrammarOptions(config);
 
         config.load(
-                FileUtils.getFile("src/configs/train.config")
+                FileUtils.getFile("configs/train.config")
                         .getAbsolutePath());
         trainOp = new TrainOptions(config);
 
         config.load(
-                FileUtils.getFile("src/configs/test.config")
+                FileUtils.getFile("configs/test.config")
                         .getAbsolutePath());
 
         testOp = new TestOptions(config);
 
         config.load(
-                FileUtils.getFile("src/configs/model.config")
+                FileUtils.getFile("configs/model.config")
                         .getAbsolutePath());
         modelOp = new ModelOptions(config);
     }

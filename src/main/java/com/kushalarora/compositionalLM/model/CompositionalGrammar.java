@@ -375,9 +375,7 @@ public class CompositionalGrammar implements Serializable {
                 // TODO:: Will this always be zero?
 
                 double compSplitScore =
-                        compositionScore[start][end][split] *
-                                cumlCompositionScore[start][split] *
-                                cumlCompositionScore[split][end];
+                        compositionScore[start][end][split];
 
                 for (int parentL = 0; parentL < start; parentL++) {
                     compositionalMu[start][end][split] +=
@@ -401,7 +399,7 @@ public class CompositionalGrammar implements Serializable {
                 }
 
             }
-            for (int diff = 1; diff <= length; diff++) {
+            for (int diff = 2; diff <= length; diff++) {
                 for (int start = 0; start + diff <= length; start++) {
                     int end = start + diff;
 

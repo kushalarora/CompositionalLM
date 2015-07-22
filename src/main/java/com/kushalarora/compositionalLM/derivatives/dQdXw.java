@@ -145,4 +145,8 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
         dQdXw = dQdXw.mul(learningRate);
         return this;
     }
+
+    public boolean containsNanOrInf() {
+        return containsNanOrInf(dQdXw);
+    }
 }

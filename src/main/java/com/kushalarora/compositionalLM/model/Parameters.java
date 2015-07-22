@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.model;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -11,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 @Getter
 @Setter
+@Slf4j
 public class Parameters implements IParameter {
     private INDArray W;
     private INDArray u;
@@ -73,8 +75,19 @@ public class Parameters implements IParameter {
 
     public void update(IParameterDerivatives derivatives) {
         Derivatives dq = (Derivatives) derivatives;
+        log.info("old W =\n {}", W);
+        log.info("dW =\n {}", dq.getDqdw().getDQdW());
         W = W.add(dq.getDqdw().getDQdW());
+        log.info("new W =\n {}", W);
+
+        log.info("old u = \n {}", u);
+        log.info("du = \n {}", dq.getDqdu().getDQdu());
         u = u.add(dq.getDqdu().getDQdu());
+        log.info("new u = \n {}", u);
+
+        log.info("old X = \n {}", X);
+        log.info("dX = \n {}", dq.getDqdxw().getDQdXw());
         X = X.add(dq.getDqdxw().getDQdXw());
+        log.info("new X = \n {}", X);
     }
 }

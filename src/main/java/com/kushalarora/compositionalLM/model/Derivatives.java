@@ -5,6 +5,7 @@ import com.kushalarora.compositionalLM.derivatives.dQdXw;
 import com.kushalarora.compositionalLM.derivatives.dQdu;
 import com.kushalarora.compositionalLM.lang.Word;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -13,6 +14,7 @@ import java.util.List;
  */
 
 @Getter
+@Slf4j
 public class Derivatives implements IParameterDerivatives<List<Word>> {
     private dQdW dqdw;
     private dQdu dqdu;
@@ -29,11 +31,17 @@ public class Derivatives implements IParameterDerivatives<List<Word>> {
     }
 
     public IParameterDerivatives add(IParameterDerivatives derivatives) {
-        dqdu = (dQdu) dqdu.add(((Derivatives) derivatives).dqdu);
-        dqdw = (dQdW) dqdw.add(((Derivatives) derivatives).dqdw);
-        dqdxw = (dQdXw) dqdxw.add(((Derivatives) derivatives).dqdxw);
+        Derivatives dv = (Derivatives) derivatives;
+        if (dv.containsNanOrInf()) {
+            log.error("Inf or Nan present in derivative in {}. Ignoring", sentence);
+            return this;
+        }
+        dqdu = (dQdu) dqdu.add(dv.dqdu);
+        dqdw = (dQdW) dqdw.add(dv.dqdw);
+        dqdxw = (dQdXw) dqdxw.add(dv.dqdxw);
         return this;
     }
+
 
     public IParameterDerivatives mul(double learningRate) {
         dqdu = (dQdu) dqdu.mul(learningRate);
@@ -43,20 +51,27 @@ public class Derivatives implements IParameterDerivatives<List<Word>> {
     }
 
     public void clear() {
-        dqdu.clear();;
+        dqdu.clear();
         dqdw.clear();
         dqdxw.clear();
     }
 
     public IParameterDerivatives<List<Word>> calcDerivative(List<Word> data, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
-        this.sentence  = sentence;
+        this.sentence = sentence;
         dqdu.calcDerivative(data, scorer);
         dqdw.calcDerivative(data, scorer);
         dqdxw.calcDerivative(data, scorer);
         return this;
     }
 
-    public List<Word> getSentence() {
+    public List<Word> getData() {
         return sentence;
+    }
+
+
+    private boolean containsNanOrInf() {
+        return dqdu.containsNanOrInf() ||
+                dqdw.containsNanOrInf() ||
+                dqdxw.containsNanOrInf();
     }
 }

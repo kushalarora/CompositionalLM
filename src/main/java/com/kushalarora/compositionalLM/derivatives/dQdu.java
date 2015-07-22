@@ -48,6 +48,10 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
         return this;
     }
 
+    public boolean containsNanOrInf() {
+        return containsNanOrInf(dQdu);
+    }
+
     public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
         int length = sentence.size();
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();

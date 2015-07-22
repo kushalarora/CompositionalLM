@@ -22,12 +22,12 @@ public abstract class MemcachedWrapper<K, V> extends CacheWrapper<K, V> {
     }
 
     @Override
-    public void put(K input, V value) {
-        memcachedClient.set(getKeyString(input), EXPIRY, value);
+    public synchronized V getRoutine(K input) {
+        return (V) memcachedClient.get(getKeyString(input));
     }
 
     @Override
-    public V getRoutine(K input) {
-        return (V) memcachedClient.get(getKeyString(input));
+    public synchronized void put(K input, V value) {
+        memcachedClient.set(getKeyString(input), EXPIRY, value);
     }
 }
