@@ -14,18 +14,21 @@ import java.util.List;
 @Slf4j
 public abstract class AbstractSGDOptimizer<T> extends AbstractOptimizer<T> {
 
+    private int count;
 
     protected AbstractSGDOptimizer(Options op) {
         super(op);
+        count = 0;
     }
 
     public void updateParams(IParameterDerivatives<T> derivatives) {
         getParams().update(
                 getAccumulatedDerivative().mul(
-                        -1 * op.trainOp.learningRate));
+                        -1 * op.trainOp.learningRate/count));
+        count = 0;
     }
 
     public void calcLearningRate(final IParameterDerivatives<T> derivatives) {
-        // do nothing
+        count++;
     }
 }
