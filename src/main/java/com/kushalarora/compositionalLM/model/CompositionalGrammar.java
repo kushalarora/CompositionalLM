@@ -467,8 +467,12 @@ public class CompositionalGrammar implements Serializable {
         }
 
 
+        /**
+         * Score is length normalized
+         * @return score
+         */
         public double getSentenceScore() {
-            return compositionalIScore[0][length];
+            return exp(Math.log(compositionalIScore[0][length])/length);
         }
 
         @SneakyThrows
@@ -488,8 +492,9 @@ public class CompositionalGrammar implements Serializable {
             doMuScore();
             log.info("Computed Compositional mu score:{}", sentence.getIndex());
 
-            log.info("Compositional Score for sentence#{}: {}", sentence.getIndex(), compositionalIScore[0][length]);
-            return compositionalIScore[0][length];
+            log.info("Compositional Score for sentence#{}: {}",
+                    sentence.getIndex(), getSentenceScore());
+            return getSentenceScore();
         }
     }
 

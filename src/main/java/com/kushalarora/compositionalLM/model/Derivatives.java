@@ -49,7 +49,7 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     public IParameterDerivatives<Sentence> add(IParameterDerivatives derivatives) {
         Derivatives dv = (Derivatives) derivatives;
         if (dv.containsNanOrInf()) {
-            log.error("Inf or Nan present in derivative in {}. Ignoring", data);
+            log.error("Inf or Nan present in derivative in {}. Ignoring", dv.getData());
             return this;
         }
         dqdu = (dQdu) dqdu.add(dv.dqdu);
