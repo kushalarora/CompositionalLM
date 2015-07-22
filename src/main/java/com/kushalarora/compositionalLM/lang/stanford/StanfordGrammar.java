@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.lang.stanford;
 
 import com.kushalarora.compositionalLM.lang.AbstractGrammar;
 import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScore;
+import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.ling.HasContext;
@@ -42,7 +43,7 @@ public class StanfordGrammar extends AbstractGrammar {
         private transient double[][][][] oSpanStateScoreWParent;
         protected int[] words;  // words of sentence being parsed as word Numberer ints
 
-        public StanfordInsideOutsideScore(List<Word> sentence) {
+        public StanfordInsideOutsideScore(Sentence sentence) {
             super(sentence);
         }
 
@@ -1023,19 +1024,19 @@ public class StanfordGrammar extends AbstractGrammar {
             considerCreatingArrays();
             initializeScoreArrays();
 
-            log.info("Starting inside score computation");
+            log.info("Starting inside score computation:{}", sentence.getIndex());
             doLexScores();
             doInsideScores();
-            log.info("Computed inside score computation");
+            log.info("Computed inside score computation:{}", sentence.getIndex());
 
 
-            log.info("Start outside score computation");
+            log.info("Start outside score computation:{}", sentence.getIndex());
             doOutsideScores();
-            log.info("Computed outside score computation");
+            log.info("Computed outside score computation:{}", sentence.getIndex());
 
-            log.info("Start mu score computation");
+            log.info("Start mu score computation:{}", sentence.getIndex());
             doMuScore();
-            log.info("Computed mu score computation");
+            log.info("Computed mu score computation:{}", sentence.getIndex());
         }
     }
 
@@ -1092,7 +1093,7 @@ public class StanfordGrammar extends AbstractGrammar {
      * @return InsideOutsideScore object
      */
     @Override
-    public AbstractInsideOutsideScore getScore(List<Word> sentence) {
+    public AbstractInsideOutsideScore getScore(Sentence sentence) {
         return new StanfordInsideOutsideScore(sentence);
     }
 

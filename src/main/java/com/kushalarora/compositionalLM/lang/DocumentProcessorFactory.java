@@ -37,24 +37,27 @@ public class DocumentProcessorFactory {
                 // TODO:: Don't hardcode. Figure out how to add more than one.
                 processor.setSentenceDelimiter("\n");
 
-                return new DocumentProcessorWrapper() {
-                    Iterator<List<HasWord>> it = processor.iterator();
+                final Iterator<List<HasWord>> it = processor.iterator();
 
-                    public Iterator<List<Word>> iterator() {
-                        return new Iterator<List<Word>>() {
+                return new DocumentProcessorWrapper() {
+                    public Iterator<Sentence> iterator() {
+                        return new Iterator<Sentence>() {
 
                             public boolean hasNext() {
+
                                 return it.hasNext();
                             }
 
-                            public List<Word> next() {
-                                List<Word> sentence =
-                                        new ArrayList<Word>();
+                            public Sentence next() {
+                                Sentence sentence =
+                                        new Sentence(index);
                                 for (HasWord word : it.next()) {
                                     sentence.add((Word) word);
                                 }
+                                index++;
                                 return sentence;
                             }
+
                             public void remove() {
                                 it.remove();
                             }

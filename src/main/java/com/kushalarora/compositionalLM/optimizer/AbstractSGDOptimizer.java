@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.optimizer;
 
+import com.kushalarora.compositionalLM.model.AbstractDerivatives;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.IParameterDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
@@ -12,7 +13,7 @@ import java.util.List;
  */
 
 @Slf4j
-public abstract class AbstractSGDOptimizer<T> extends AbstractOptimizer<T> {
+public abstract class AbstractSGDOptimizer<T extends IIndexed> extends AbstractOptimizer<T> {
 
     private int count;
 
@@ -23,12 +24,15 @@ public abstract class AbstractSGDOptimizer<T> extends AbstractOptimizer<T> {
 
     public void updateParams(IParameterDerivatives<T> derivatives) {
         getParams().update(
-                getAccumulatedDerivative().mul(
-                        -1 * op.trainOp.learningRate/count));
-        count = 0;
+                derivatives.mul(
+                        -1 * op.trainOp.learningRate / count));
     }
 
     public void calcLearningRate(final IParameterDerivatives<T> derivatives) {
         count++;
+    }
+
+    public void clearLearningRate() {
+        count = 0;
     }
 }

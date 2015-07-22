@@ -34,7 +34,7 @@ public class CompositionalLM {
     private final CompositionalGrammar compGrammar;
     private final DocumentProcessorFactory docProcessorFactory;
     private final Model model;
-    CacheWrapper<List<Word>, IInsideOutsideScore> cache;
+    CacheWrapper<Sentence, IInsideOutsideScore> cache;
 
 
     public CompositionalLM(Model model, Options op) throws IOException {
@@ -52,13 +52,13 @@ public class CompositionalLM {
 
     @SneakyThrows
     public void train() {
-        List<List<Word>> validSentences = new ArrayList<List<Word>>();
+        List<Sentence> validSentences = new ArrayList<Sentence>();
         for (String validFile : op.trainOp.validationFiles) {
             DocumentProcessorWrapper docProcessor =
                     docProcessorFactory
                             .getDocumentProcessor(validFile);
             validSentences.addAll(
-                    Lists.<List<Word>>newArrayList(
+                    Lists.<Sentence>newArrayList(
                             docProcessor));
         }
 
@@ -70,10 +70,10 @@ public class CompositionalLM {
 
 
             final Derivatives dv = new Derivatives(model);
-            AbstractSGDOptimizer<List<Word>> optimizer =
-                    new AbstractSGDOptimizer<List<Word>>(op) {
+            AbstractSGDOptimizer<Sentence> optimizer =
+                    new AbstractSGDOptimizer<Sentence>(op) {
                         @Override
-                        public double getValidationScore(List<Word> data) {
+                        public double getValidationScore(Sentence data) {
                             IInsideOutsideScore preScore = cache.get(data);
                             CompositionalGrammar.CompositionalInsideOutsideScore score =
                                     compGrammar.computeScore(data,
@@ -86,26 +86,26 @@ public class CompositionalLM {
                             saveModelSerialized(op.modelOp.outFilename);
                         }
 
-                        public IParameterDerivatives calcDerivative(List<Word> sample) {
-                            Derivatives derivatives = new Derivatives(model);
+                        public IParameterDerivatives<Sentence> calcDerivative(Sentence sample) {
+                            Derivatives derivatives = new Derivatives(model, sample);
                             IInsideOutsideScore preScore = cache.get(sample);
                             CompositionalGrammar.CompositionalInsideOutsideScore score =
                                     compGrammar.computeScore(sample,
                                            preScore);
 
-                            return derivatives.calcDerivative(sample, score);
+                            return derivatives.calcDerivative(score);
                         }
 
                         public IParameter getParams() {
                             return model.getParams();
                         }
 
-                        public void derivativeAccumulator(IParameterDerivatives derivatives) {
+                        public void derivativeAccumulator(IParameterDerivatives<Sentence> derivatives) {
 
                             dv.add(derivatives);
                         }
 
-                        public IParameterDerivatives getAccumulatedDerivative() {
+                        public IParameterDerivatives<Sentence> getAccumulatedDerivative() {
 
                             return dv;
                         }
@@ -127,7 +127,7 @@ public class CompositionalLM {
         for (String filename : op.testOp.parseFiles) {
             DocumentProcessorWrapper docProcessor = docProcessorFactory
                     .getDocumentProcessor(filename);
-            for (List<Word> sentence : docProcessor) {
+            for (Sentence sentence : docProcessor) {
                 compGrammar.parse(sentence);
             }
 

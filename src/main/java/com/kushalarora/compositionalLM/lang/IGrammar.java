@@ -10,12 +10,12 @@ import java.util.List;
  */
 public interface IGrammar extends Serializable {
 
-    public IInsideOutsideScore computeScore(List<Word> sentence);
+    public IInsideOutsideScore computeScore(Sentence sentence);
 
     public int getVocabSize();
 
     public Word getToken(String str, int loc);
 
-    public IInsideOutsideScore getScore(List<Word> sentence);
+    public IInsideOutsideScore getScore(Sentence sentence);
 
 }

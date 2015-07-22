@@ -2,6 +2,7 @@ package com.kushalarora.test.lang;
 
 import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
+import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.options.Options;
@@ -34,7 +35,7 @@ public class StanfordInsideOutsideScoresTest {
     private int length;
 
     private static int numStates;
-    private static List<Word> defaultSentence;
+    private static Sentence defaultSentence;
     private static StanfordGrammar sg;
 
 
@@ -50,7 +51,7 @@ public class StanfordInsideOutsideScoresTest {
         numStates = sg.getNumStates();
         PropertyConfigurator.configure("log4j.properties");
 
-        defaultSentence = new ArrayList<Word>();
+        defaultSentence = new Sentence(0);
         String[] sent = {"This", "is", "just", "a", "test", "."};
         for (String str : sent) {
             int index = (int) Math.random() * (sg.getVocabSize() + 1);

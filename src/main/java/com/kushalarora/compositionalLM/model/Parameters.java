@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.kushalarora.compositionalLM.lang.Sentence;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 @Getter
 @Setter
 @Slf4j
-public class Parameters implements IParameter {
+public class Parameters implements IParameter<Sentence> {
     private INDArray W;
     private INDArray u;
     private INDArray X;
@@ -57,7 +58,7 @@ public class Parameters implements IParameter {
         return result;
     }
 
-    public void update(IParameter params) {
+    public void update(IParameter<Sentence> params) {
         Parameters parameters = (Parameters) params;
         if (dimensions != parameters.dimensions ||
                 vocabSize != parameters.vocabSize) {
@@ -73,7 +74,7 @@ public class Parameters implements IParameter {
         X = parameters.X;
     }
 
-    public void update(IParameterDerivatives derivatives) {
+    public void update(IParameterDerivatives<Sentence> derivatives) {
         Derivatives dq = (Derivatives) derivatives;
         log.info("old W =\n {}", W);
         log.info("dW =\n {}", dq.getDqdw().getDQdW());

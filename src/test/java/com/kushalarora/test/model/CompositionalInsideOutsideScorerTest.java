@@ -2,6 +2,7 @@ package com.kushalarora.test.model;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
+import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 public class CompositionalInsideOutsideScorerTest {
 
     private static StanfordGrammar sg;
-    private static List<Word> defaultSentence;
+    private static Sentence defaultSentence;
     private static int length;
     private static CompositionalGrammar cg;
     private static IInsideOutsideScore preScorer;
@@ -57,7 +58,7 @@ public class CompositionalInsideOutsideScorerTest {
         sg = (StanfordGrammar)getGrammar(op);
 
 
-        defaultSentence = new ArrayList<Word>();
+        defaultSentence = new Sentence(0);
         String[] sent = {"This", "is", "just", "a", "test", "."};
 
         for (String str : sent) {

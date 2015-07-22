@@ -14,7 +14,8 @@ public abstract class MemcachedWrapper<K, V> extends CacheWrapper<K, V> {
 
     MemcachedClient memcachedClient;
 
-    public static int EXPIRY = 3600;
+    // never expire
+    public static int EXPIRY = 0;
 
     public MemcachedWrapper(Options op) throws IOException {
         memcachedClient = new MemcachedClient(

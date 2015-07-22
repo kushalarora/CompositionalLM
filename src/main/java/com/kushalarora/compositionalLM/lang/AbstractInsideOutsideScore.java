@@ -25,14 +25,15 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
     // start idx, end idx, state -> logProb
     protected transient double[][][] oScore;
 
-    protected List<Word> sentence;
+    protected Sentence sentence;
     protected int length;
     protected int arraySize = 0;
     protected static int myMaxLength = Integer.MAX_VALUE;
 
 
-    public AbstractInsideOutsideScore(List<Word> sentence) {
-        this.sentence = Lists.newArrayList(sentence);
+    public AbstractInsideOutsideScore(Sentence sentence) {
+        this.sentence = new Sentence(sentence.getIndex());
+        this.sentence.addAll(sentence);
         this.sentence.add(new Word(Lexicon.BOUNDARY, length));
         length = this.sentence.size();
     }

@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.caching;
 
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
+import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
@@ -45,15 +46,15 @@ public class CacheFactory {
     public CacheWrapper getCache(Options op) throws IOException {
         switch (op.trainOp.cacheType) {
             case MEMCACHED:
-                return new MemcachedWrapper<List<Word>, IInsideOutsideScore>(op) {
+                return new MemcachedWrapper<Sentence, IInsideOutsideScore>(op) {
 
                     @Override
-                    public IInsideOutsideScore load(List<Word> input) {
+                    public IInsideOutsideScore load(Sentence input) {
                         return model.getGrammar().computeScore(input);
                     }
 
                     @Override
-                    public String getKeyString(List<Word> input) {
+                    public String getKeyString(Sentence input) {
                         StringBuilder sb = new StringBuilder();
                         for (Word word: input) {
                             sb.append(word.word()).append(":");
@@ -62,25 +63,25 @@ public class CacheFactory {
                     }
                 };
             case NONE:
-                return new CacheWrapper<List<Word>, IInsideOutsideScore>() {
+                return new CacheWrapper<Sentence, IInsideOutsideScore>() {
 
                     @Override
-                    public IInsideOutsideScore load(List<Word> input) {
+                    public IInsideOutsideScore load(Sentence input) {
                         return model.getGrammar().computeScore(input);
                     }
 
                     @Override
-                    public void put(List<Word> input, IInsideOutsideScore value) {
+                    public void put(Sentence input, IInsideOutsideScore value) {
                         // do nothing
                     }
 
                     @Override
-                    public IInsideOutsideScore getRoutine(List<Word> input) {
+                    public IInsideOutsideScore getRoutine(Sentence input) {
                         return model.getGrammar().computeScore(input);
                     }
 
                     @Override
-                    public String getKeyString(List<Word> input) {
+                    public String getKeyString(Sentence input) {
                         return null;
                     }
                 };

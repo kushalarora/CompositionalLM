@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.collect.Lists;
+import com.kushalarora.compositionalLM.model.AbstractDerivatives;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.IParameterDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
@@ -13,7 +14,7 @@ import java.util.concurrent.*;
  * Created by karora on 7/14/15.
  */
 @Slf4j
-public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
+public abstract class AbstractOptimizer<T extends IIndexed> implements IOptimizer<T> {
     private final Random rand;
     protected Options op;
     protected ExecutorService executor;
@@ -56,11 +57,13 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                     endIdx = trainSet.size();
                 }
 
+                // In case there batch size is multiple of actual size
+                // we would have a case of blank sentence
                 if (startIdx >= endIdx) {
                     continue;
                 }
 
-                fitRoutine(startIdx, trainSet.subList(startIdx, endIdx));
+                fitRoutine(trainSet.subList(startIdx, endIdx));
 
                 if (op.trainOp.validate &&
                         (iter + 1) % op.trainOp.validationFreq == 0) {
@@ -92,9 +95,8 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
             List<Future<Double>> futureList =
                     new ArrayList<Future<Double>> ();
 
-            int idx = 0;
             for (final T data : validationSet) {
-                log.info("Starting Validation#{}: {}", idx++, data);
+                log.info("Starting Validation#{}: {}", data.getIndex(), data);
                 Callable<Double> callable =
                         new Callable<Double>() {
                             public Double call() throws Exception {
@@ -105,7 +107,7 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                 futureList.add(future);
             }
 
-            idx = 0;
+            int idx = 0;
             Iterator<Future<Double>> it = futureList.iterator();
             while(it.hasNext()) {
                 try {
@@ -123,7 +125,6 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                 }
-
             }
 
         } else {
@@ -133,68 +134,66 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
                 log.info("Validation#{}: {}", idx++, data);
                 Double score = getValidationScore(data);
                 if (score.isInfinite() || score.isNaN()) {
-                    log.info("******** Validation#{} is {}************", idx++, score);
+                    log.info("******** Validation#{} is {}************", data.getIndex(), score);
                     continue;
                 }
-                log.info("*********Finished Validation#{}: {} ************", idx++, score);
+                log.info("*********Finished Validation#{}: {} ************", data.getIndex(), score);
                 validationScore += score;
             }
         }
         return validationScore / validationSet.size();
     }
 
-    public void fitRoutine(int startIdx, List<T> trainBatch) {
-        int idx = startIdx;
+    public void fitRoutine(List<T> trainBatch) {
         if (op.trainOp.parallel) {
-            List<Future<IParameterDerivatives<T>>> futureList =
-                    new ArrayList<Future<IParameterDerivatives<T>>>();
+            List<Future<AbstractDerivatives<T>>> futureList =
+                    new ArrayList<Future<AbstractDerivatives<T>>>();
 
             for (final T sample : trainBatch) {
-                log.info("*********Started Training#{}: {} ************", idx++, sample);
-                Callable<IParameterDerivatives<T>> callable =
-                        new Callable<IParameterDerivatives<T>>() {
-                            public IParameterDerivatives<T> call() throws Exception {
-                                return fitOne(sample);
+                log.info("*********Started Training#{}: {} ************", sample.getIndex(), sample);
+                Callable<AbstractDerivatives<T>> callable =
+                        new Callable<AbstractDerivatives<T>>() {
+                            public AbstractDerivatives<T> call() throws Exception {
+                                return (AbstractDerivatives<T>)fitOne(sample);
                             }
                         };
-                Future<IParameterDerivatives<T>> future =
+                Future<AbstractDerivatives<T>> future =
                         executor.submit(callable);
                 futureList.add(future);
             }
 
-            idx = startIdx;
-            Iterator<Future<IParameterDerivatives<T>>> it = futureList.iterator();
+            Iterator<Future<AbstractDerivatives<T>>> it = futureList.iterator();
             while(it.hasNext())  {
                 try {
-                    Future<IParameterDerivatives<T>> future = it.next();
-                    IParameterDerivatives<T> derivatives =
+                    Future<AbstractDerivatives<T>> future = it.next();
+                    AbstractDerivatives<T> derivatives =
                             future.get();
                     calcLearningRate(derivatives);
                     derivativeAccumulator(derivatives);
+                    log.info("*********Finished Training#{} ************", derivatives.getData().getIndex());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                 }
                 it.remove();
-                log.info("*********Finished Training#{} ************", idx++);
             }
         } else {
             for (T sample : trainBatch) {
-                log.info("*********Started Training#{}: {} ************", idx++, sample);
-                IParameterDerivatives derivatives = fitOne(sample);
+                log.info("*********Started Training#{}: {} ************", sample.getIndex(), sample);
+                AbstractDerivatives derivatives = (AbstractDerivatives<T>)fitOne(sample);
                 calcLearningRate(derivatives);
                 derivativeAccumulator(derivatives);
-                log.info("*********Finished Training#{} ************", idx++);
+                log.info("*********Finished Training#{} ************", sample.getIndex());
             }
         }
 
         updateParams(getAccumulatedDerivative());
+        clearLearningRate();
         flushDerivaiveAccumulator();
     }
 
-    public IParameterDerivatives fitOne(T data) {
-
+    public IParameterDerivatives<T> fitOne(T data) {
         return calcDerivative(data);
     }
 

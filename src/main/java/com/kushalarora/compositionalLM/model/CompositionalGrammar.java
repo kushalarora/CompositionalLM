@@ -3,6 +3,7 @@ package com.kushalarora.compositionalLM.model;
 import com.kushalarora.compositionalLM.caching.CacheFactory;
 import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
+import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.SneakyThrows;
@@ -63,7 +64,7 @@ public class CompositionalGrammar implements Serializable {
 
         private int myMaxLength;
 
-        private List<Word> sentence;
+        private Sentence sentence;
 
         private int length;
 
@@ -437,7 +438,7 @@ public class CompositionalGrammar implements Serializable {
             }
         }
 
-        public CompositionalInsideOutsideScore(List<Word> sentence, IInsideOutsideScore preScore) {
+        public CompositionalInsideOutsideScore(Sentence sentence, IInsideOutsideScore preScore) {
             arraySize = 0;
             myMaxLength = op.grammarOp.maxLength;
             this.sentence = sentence;
@@ -475,18 +476,19 @@ public class CompositionalGrammar implements Serializable {
             considerCreatingMatrices();
             initializeMatrices();
 
-            log.info("Starting Computational inside score");
+            log.info("Starting Compositional inside score:{}", sentence.getIndex());
             doInsideScore();
-            log.info("Computed Computational inside score");
+            log.info("Computed Compositional inside score:{}", sentence.getIndex());
 
-            log.info("Starting Computational outside score");
+            log.info("Starting Compositional outside score:{}", sentence.getIndex());
             doOutsideScore();
-            log.info("Computed Computational outside score");
+            log.info("Computed Compositional outside score:{}", sentence.getIndex());
 
-            log.info("Starting Computational mu score");
+            log.info("Starting Compositional mu score:{}", sentence.getIndex());
             doMuScore();
-            log.info("Starting Computational mu score");
+            log.info("Computed Compositional mu score:{}", sentence.getIndex());
 
+            log.info("Compositional Score for sentence:{}", sentence.getIndex());
             return compositionalIScore[0][length];
         }
     }
@@ -501,11 +503,11 @@ public class CompositionalGrammar implements Serializable {
     }
 
     public CompositionalInsideOutsideScore getScore(
-            List<Word> sentence, IInsideOutsideScore preScores) {
+            Sentence sentence, IInsideOutsideScore preScores) {
         return new CompositionalInsideOutsideScore(sentence, preScores);
     }
 
-    public CompositionalInsideOutsideScore computeScore(List<Word> sentence,
+    public CompositionalInsideOutsideScore computeScore(Sentence sentence,
                                                         IInsideOutsideScore preScore) {
         CompositionalInsideOutsideScore score = getScore(sentence, preScore);
         score.computeCompInsideOutsideScores();
