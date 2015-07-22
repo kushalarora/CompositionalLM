@@ -58,7 +58,7 @@ public class Options implements Serializable {
                 new PropertiesConfiguration();
 
         config.load(
-                FileUtils.getFile("src/configs/grammar.config")
+                FileUtils.getFile("configs/grammar.config")
                 .getAbsolutePath());
         grammarOp = new GrammarOptions(config);
 
