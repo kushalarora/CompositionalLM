@@ -49,8 +49,15 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
 
                 int startIdx = batch * op.trainOp.batchSize;
                 int endIdx = (batch + 1) * op.trainOp.batchSize;
+
+
+
                 if (endIdx > trainSet.size()) {
                     endIdx = trainSet.size();
+                }
+
+                if (startIdx >= endIdx) {
+                    continue;
                 }
 
                 fitRoutine(startIdx, trainSet.subList(startIdx, endIdx));
@@ -124,7 +131,13 @@ public abstract class AbstractOptimizer<T> implements IOptimizer<T> {
             int idx = 0;
             for (T data : validationSet) {
                 log.info("Validation#{}: {}", idx++, data);
-                validationScore += getValidationScore(data);
+                Double score = getValidationScore(data);
+                if (score.isInfinite() || score.isNaN()) {
+                    log.info("******** Validation#{} is {}************", idx++, score);
+                    continue;
+                }
+                log.info("*********Finished Validation#{}: {} ************", idx++, score);
+                validationScore += score;
             }
         }
         return validationScore / validationSet.size();
