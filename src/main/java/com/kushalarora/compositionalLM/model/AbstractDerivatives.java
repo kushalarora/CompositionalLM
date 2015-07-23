@@ -5,7 +5,7 @@ import com.kushalarora.compositionalLM.optimizer.IIndexed;
 /**
  * Created by karora on 7/22/15.
  */
-public abstract class AbstractDerivatives<T extends IIndexed> implements IParameterDerivatives<T> {
+public abstract class AbstractDerivatives<T extends IIndexed> implements IDerivatives<T> {
     protected T data;
     public AbstractDerivatives(T data) {
         this.data = data;

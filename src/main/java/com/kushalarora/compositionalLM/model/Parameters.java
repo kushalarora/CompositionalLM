@@ -74,7 +74,7 @@ public class Parameters implements IParameter<Sentence> {
         X = parameters.X;
     }
 
-    public void update(IParameterDerivatives<Sentence> derivatives) {
+    public void update(IDerivatives<Sentence> derivatives) {
         Derivatives dq = (Derivatives) derivatives;
         log.info("old W =\n {}", W);
         log.info("dW =\n {}", dq.getDqdw().getDQdW());

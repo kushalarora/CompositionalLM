@@ -9,12 +9,14 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
+import static org.nd4j.linalg.ops.transforms.Transforms.pow;
+
 /**
  * Created by karora on 6/21/15.
  * Energy function E is given as
  * E = g(u^Tp) where p is phrase vector..
  * dEdu = g'(u.t().dot(p))p
- *
+ * <p/>
  * dQdu = \sum{start}{end}{split} dEdu(start, end, split) * \mu(start, end, split)
  */
 public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
@@ -28,7 +30,7 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
 
     public dQdu(dQdu dqdu) {
         super(dqdu.model);
-        dQdu = dqdu.dQdu;
+        dQdu = dqdu.dQdu.dup();
     }
 
     public void clear() {
@@ -38,18 +40,28 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
         }
     }
 
-    public IDerivative add(IDerivative other) {
-        dQdu  = dQdu.add(((dQdu)other).getDQdu());
-        return this;
+    public void add(IDerivative other) {
+        dQdu = dQdu.add(((dQdu) other).getDQdu());
     }
 
-    public IDerivative mul(double learningRate) {
+    public void mul(double learningRate) {
         dQdu = dQdu.mul(learningRate);
-        return this;
     }
 
     public boolean containsNanOrInf() {
         return containsNanOrInf(dQdu);
+    }
+
+    public void mul(IDerivative adaGrad) {
+        dQdu = dQdu.mul(((dQdu) adaGrad).getDQdu());
+    }
+
+    public void power(double power) {
+        dQdu = pow(dQdu, power);
+    }
+
+    public void add(double bias) {
+        dQdu = dQdu.add(bias);
     }
 
     public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {

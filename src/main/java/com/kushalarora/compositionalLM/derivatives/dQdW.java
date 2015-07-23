@@ -9,11 +9,13 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
+import static org.nd4j.linalg.ops.transforms.Transforms.pow;
+
 /**
  * Created by karora on 6/21/15.
  */
 public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
-    private final dXdW dxdw;
+    private dXdW dxdw;
     @Getter
     private INDArray dQdW;
     private int dim;
@@ -29,11 +31,9 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
         this(model, new dXdW(model));
     }
 
-
     public dQdW(dQdW dqdW) {
         super(dqdW.model);
-        dxdw = dqdW.dxdw;
-        dQdW = dqdW.dQdW;
+        dQdW = dqdW.dQdW.dup();
         dim = dqdW.dim;
     }
 
@@ -89,17 +89,29 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
         }
     }
 
-    public IDerivative add(IDerivative other) {
-        dQdW = dQdW.add(((dQdW)other).getDQdW());
-        return this;
+    public void add(IDerivative other) {
+        dQdW = dQdW.add(((dQdW) other).getDQdW());
     }
 
-    public IDerivative mul(double learningRate) {
+    public void mul(double learningRate) {
         dQdW = dQdW.mul(learningRate);
-        return this;
     }
 
     public boolean containsNanOrInf() {
         return containsNanOrInf(dQdW);
     }
+
+    public void mul(IDerivative adaGrad) {
+        dQdW = dQdW.mul(((dQdW) adaGrad).getDQdW());
+    }
+
+    public void power(double power) {
+        dQdW = pow(dQdW, power);
+    }
+
+    public void add(double bias) {
+        dQdW = dQdW.add(bias);
+    }
+
+
 }

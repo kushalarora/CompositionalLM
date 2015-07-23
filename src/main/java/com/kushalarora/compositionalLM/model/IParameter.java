@@ -6,5 +6,5 @@ import java.io.Serializable;
  * Created by karora on 7/14/15.
  */
 public interface IParameter<T> extends Serializable {
-    public void update(IParameterDerivatives<T> derivatives);
+    public void update(IDerivatives<T> derivatives);
 }

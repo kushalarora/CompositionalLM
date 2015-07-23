@@ -4,11 +4,11 @@ import com.kushalarora.compositionalLM.derivatives.dQdW;
 import com.kushalarora.compositionalLM.derivatives.dQdXw;
 import com.kushalarora.compositionalLM.derivatives.dQdu;
 import com.kushalarora.compositionalLM.lang.Sentence;
-import com.kushalarora.compositionalLM.lang.Word;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
+import static org.nd4j.linalg.ops.transforms.Transforms.pow;
+import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 /**
  * Created by karora on 7/14/15.
@@ -31,9 +31,17 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdxw = new dQdXw(model);
     }
 
+    public Derivatives(Sentence sentence, dQdW dqdw, dQdu dqdu, dQdXw dqdxw) {
+        super(sentence);
+        this.dqdw = dqdw;
+        this.dqdu = dqdu;
+        this.dqdxw = dqdxw;
+    }
+
 
     /**
      * This is just used for accumulation
+     *
      * @param model
      */
     public Derivatives(Model model) {
@@ -46,25 +54,30 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdxw = new dQdXw(model);
     }
 
-    public IParameterDerivatives<Sentence> add(IParameterDerivatives derivatives) {
+    public void add(IDerivatives derivatives) {
         Derivatives dv = (Derivatives) derivatives;
         if (dv.containsNanOrInf()) {
             log.error("Inf or Nan present in derivative in {}. Ignoring", dv.getData());
-            return this;
+            return;
         }
-        dqdu = (dQdu) dqdu.add(dv.dqdu);
-        dqdw = (dQdW) dqdw.add(dv.dqdw);
-        dqdxw = (dQdXw) dqdxw.add(dv.dqdxw);
-        return this;
+        dqdu.add(dv.dqdu);
+        dqdw.add(dv.dqdw);
+        dqdxw.add(dv.dqdxw);
     }
 
 
-    public IParameterDerivatives<Sentence> mul(double learningRate) {
-        dqdu = (dQdu) dqdu.mul(learningRate);
-        dqdw = (dQdW) dqdw.mul(learningRate);
-        dqdxw = (dQdXw) dqdxw.mul(learningRate);
-        return this;
+    public void mul(double learningRate) {
+        dqdu.mul(learningRate);
+        dqdw.mul(learningRate);
+        dqdxw.mul(learningRate);
     }
+
+    public void mul(IDerivatives<Sentence> adagrad) {
+        dqdu.mul(((Derivatives) adagrad).getDqdu());
+        dqdw.mul(((Derivatives) adagrad).getDqdw());
+        dqdxw.mul(((Derivatives) adagrad).getDqdxw());
+    }
+
 
     public void clear() {
         dqdu.clear();
@@ -72,13 +85,18 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdxw.clear();
     }
 
-    public IParameterDerivatives<Sentence>
+    public void
     calcDerivative(CompositionalGrammar
-            .CompositionalInsideOutsideScore scorer) {
+                           .CompositionalInsideOutsideScore scorer) {
         dqdu.calcDerivative(data, scorer);
         dqdw.calcDerivative(data, scorer);
         dqdxw.calcDerivative(data, scorer);
-        return this;
+    }
+
+    public void power(double exponent) {
+        dqdw.power(exponent);
+        dqdu.power(exponent);
+        dqdxw.power(exponent);
     }
 
     public Sentence getData() {
@@ -90,5 +108,18 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         return dqdu.containsNanOrInf() ||
                 dqdw.containsNanOrInf() ||
                 dqdxw.containsNanOrInf();
+    }
+
+    public IDerivatives<Sentence> deepcopy() {
+        return new Derivatives(data,
+                new dQdW(dqdw),
+                new dQdu(dqdu),
+                new dQdXw(dqdxw));
+    }
+
+    public void add(double bias) {
+        dqdu.add(bias);
+        dqdw.add(bias);
+        dqdxw.add(bias);
     }
 }

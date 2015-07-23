@@ -7,9 +7,9 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,6 +58,8 @@ public class dXdWTest extends AbstractDerivativeTest {
 
 
     }
+
+
 
     @Test
     public void testCalcDerivative() {

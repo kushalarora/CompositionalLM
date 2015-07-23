@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.options;
 
 import com.kushalarora.compositionalLM.caching.CacheFactory;
+import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import lombok.ToString;
 import org.apache.commons.configuration.Configuration;
 
@@ -24,6 +25,7 @@ public class TrainOptions implements Serializable {
     public String cacheServer;
     public int cachePort;
     public CacheFactory.CacheType cacheType;
+    public OptimizerFactory.OptimizerType optimizer;
 
     public TrainOptions(Configuration config) {
         trainFiles =
@@ -50,9 +52,13 @@ public class TrainOptions implements Serializable {
                 config.getInt("cachePort", 3030);
         cacheType =
                 CacheFactory.CacheType.fromString(
-                config.getString("cacheType", "none"));
+                        config.getString("cacheType", "none"));
         learningRate =
                 config.getDouble("learningRate", 0.0);
+
+        optimizer =
+                OptimizerFactory.OptimizerType.fromString(
+                        config.getString("optimizerType", "sgd"));
     }
 }
 

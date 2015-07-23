@@ -1,16 +1,20 @@
 package com.kushalarora.compositionalLM.languagemodel;
 
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.kushalarora.compositionalLM.caching.CacheFactory;
 import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.lang.*;
 import com.kushalarora.compositionalLM.model.*;
+import com.kushalarora.compositionalLM.optimizer.AbstractOptimizer;
 import com.kushalarora.compositionalLM.optimizer.AbstractSGDOptimizer;
+import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +22,7 @@ import lombok.val;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.PropertyConfigurator;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -28,6 +33,7 @@ import java.util.List;
  * Created by karora on 6/12/15.
  */
 @Slf4j
+@Getter
 public class CompositionalLM {
 
     private final Options op;
@@ -68,53 +74,37 @@ public class CompositionalLM {
                     docProcessorFactory
                             .getDocumentProcessor(trainFile);
 
-
-            final Derivatives dv = new Derivatives(model);
-            AbstractSGDOptimizer<Sentence> optimizer =
-                    new AbstractSGDOptimizer<Sentence>(op) {
-                        @Override
-                        public double getValidationScore(Sentence data) {
-                            IInsideOutsideScore preScore = cache.get(data);
-                            CompositionalGrammar.CompositionalInsideOutsideScore score =
-                                    compGrammar.computeScore(data,
-                                            preScore);
-                            return score.getSentenceScore();
-                        }
-
-                        @Override
-                        public void saveModel() {
-                            saveModelSerialized(op.modelOp.outFilename);
-                        }
-
-                        public IParameterDerivatives<Sentence> calcDerivative(Sentence sample) {
-                            Derivatives derivatives = new Derivatives(model, sample);
-                            IInsideOutsideScore preScore = cache.get(sample);
-                            CompositionalGrammar.CompositionalInsideOutsideScore score =
-                                    compGrammar.computeScore(sample,
-                                           preScore);
-
-                            return derivatives.calcDerivative(score);
-                        }
-
-                        public IParameter getParams() {
-                            return model.getParams();
-                        }
-
-                        public void derivativeAccumulator(IParameterDerivatives<Sentence> derivatives) {
-
-                            dv.add(derivatives);
-                        }
-
-                        public IParameterDerivatives<Sentence> getAccumulatedDerivative() {
-
-                            return dv;
-                        }
-
-                        public void flushDerivaiveAccumulator() {
-
-                            dv.clear();
-                        }
-                    };
+            AbstractOptimizer<Sentence, Derivatives> optimizer =
+                    OptimizerFactory.getOptimizer(op, model,
+                            new Function<Sentence, Double>() {
+                                @Nullable
+                                public Double apply(Sentence data) {
+                                    IInsideOutsideScore preScore = cache.get(data);
+                                    CompositionalGrammar.CompositionalInsideOutsideScore score =
+                                            compGrammar.computeScore(data,
+                                                    preScore);
+                                    return score.getSentenceScore();
+                                }
+                            },
+                            new Function<Sentence, Derivatives>() {
+                                @Nullable
+                                public Derivatives apply(@Nullable Sentence sample) {
+                                    Derivatives derivatives = new Derivatives(model, sample);
+                                    IInsideOutsideScore preScore = cache.get(sample);
+                                    CompositionalGrammar.CompositionalInsideOutsideScore score =
+                                            compGrammar.computeScore(sample,
+                                                    preScore);
+                                    derivatives.calcDerivative(score);
+                                    return derivatives;
+                                }
+                            },
+                            new Function<Void, Void>() {
+                                @Nullable
+                                public Void apply(@Nullable Void input) {
+                                    saveModelSerialized(op.modelOp.outFilename);
+                                    return null;
+                                }
+                            });
 
             optimizer.fit(
                     Lists.newArrayList(trainDocProcessor),

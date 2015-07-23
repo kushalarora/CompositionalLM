@@ -6,6 +6,7 @@ import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -24,6 +25,7 @@ import static java.lang.Math.exp;
  * Created by karora on 6/21/15.
  */
 @Slf4j
+@Getter
 public class CompositionalGrammar implements Serializable {
     private final Options op;
     private Model model;

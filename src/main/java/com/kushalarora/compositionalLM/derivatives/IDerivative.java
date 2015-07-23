@@ -14,11 +14,17 @@ public interface IDerivative {
 
     public void clear();
 
-    public IDerivative add(IDerivative other);
+    public void add(IDerivative other);
 
-    public IDerivative mul(double learningRate);
+    public void mul(double learningRate);
 
     public boolean containsNanOrInf();
+
+    public void mul(IDerivative adaGrad);
+
+    public void power(double power);
+
+    public void add(double bias);
 }
 
 

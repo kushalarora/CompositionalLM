@@ -14,7 +14,7 @@ import java.util.List;
 public abstract class AbstractBaseDerivativeClass implements Serializable {
     protected final Model model;
 
-    public AbstractBaseDerivativeClass( Model model) {
+    public AbstractBaseDerivativeClass(Model model) {
         this.model = model;
     }
 

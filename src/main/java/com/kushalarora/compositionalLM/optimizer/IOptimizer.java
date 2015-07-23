@@ -1,32 +1,34 @@
 package com.kushalarora.compositionalLM.optimizer;
 
-import com.kushalarora.compositionalLM.model.AbstractDerivatives;
 import com.kushalarora.compositionalLM.model.IParameter;
-import com.kushalarora.compositionalLM.model.AbstractDerivatives;
-import com.kushalarora.compositionalLM.model.IParameterDerivatives;
+import com.kushalarora.compositionalLM.model.IDerivatives;
 
 import java.util.List;
 
 /**
  * Created by karora on 7/7/15.
  */
-public interface IOptimizer<T extends IIndexed> {
+public interface IOptimizer<T extends IIndexed, D extends IDerivatives<T>> {
 
-    public IParameterDerivatives<T> calcDerivative(final T sample);
+    public D calcDerivative(final T sample);
 
-    public void updateParams(final IParameterDerivatives<T> derivatives);
+    public void updateParams(final D derivatives);
 
     public IParameter getParams();
 
     public void fitRoutine(List<T> data);
 
-    public void derivativeAccumulator(IParameterDerivatives<T> derivatives);
+    public void derivativeAcc(D derivatives);
 
-    public IParameterDerivatives<T> getAccumulatedDerivative();
+    public D getAccumulatedDerivative();
 
     public void clearLearningRate();
 
-    public void flushDerivaiveAccumulator();
+    public void flushDerivaiveAcc();
 
-    public void calcLearningRate(final IParameterDerivatives<T> derivatives);
+    public void calcLearningRate(final D derivatives);
+
+    public double getValidationScore(T data);
+
+    public void saveModel();
 }
