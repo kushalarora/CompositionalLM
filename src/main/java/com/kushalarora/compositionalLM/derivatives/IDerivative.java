@@ -25,6 +25,8 @@ public interface IDerivative {
     public void power(double power);
 
     public void add(double bias);
+
+    public IDerivative adaGrad(IDerivative gradient);
 }
 
 

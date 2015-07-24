@@ -18,19 +18,11 @@ public abstract class AbstractAdaGradOptimzer<T extends IIndexed, D extends IDer
     protected AbstractAdaGradOptimzer(Options op, D dvAcc, D dvGrad) {
         super(op, dvAcc);
         this.dvGrad = dvGrad;
-        this.dvGrad.add(1);
     }
 
     public void updateParams(D derivatives) {
-        D newD = (D)derivatives.deepcopy();
-        newD.power(2);
-        dvGrad.add(newD);
-
-        D dvGradCopy = (D) dvGrad.deepcopy();
-        dvGradCopy.power(-0.5);
-        dvGradCopy.add(1e-5);
+        derivatives = (D) dvGrad.adaGrad(derivatives);
         derivatives.mul(op.trainOp.learningRate);
-        derivatives.mul(dvGradCopy);
         getParams().update(derivatives);
     }
 

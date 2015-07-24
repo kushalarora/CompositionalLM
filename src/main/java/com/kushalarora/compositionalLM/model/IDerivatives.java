@@ -23,4 +23,6 @@ public interface IDerivatives<T> extends Cloneable {
     public IDerivatives<T> deepcopy();
 
     public void add(double bias);
+
+    public IDerivatives<T> adaGrad(IDerivatives<T> derivatives);
 }

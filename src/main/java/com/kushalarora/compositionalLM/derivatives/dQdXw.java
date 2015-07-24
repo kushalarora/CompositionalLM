@@ -22,7 +22,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
     private int V;
 
     public dQdXw(Model model, dXdXw dxdxw) {
-        super(model);
+        super(model, new int[]{model.getDimensions(), model.getVocabSize()});
         this.dxdxw = dxdxw;
         dim = model.getDimensions();
         V = model.getVocabSize();
@@ -31,10 +31,18 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
 
 
     public dQdXw(dQdXw dqdxw) {
-        super(dqdxw.model);
+        super(dqdxw.model, dqdxw.dQdXw.shape());
         dQdXw = dqdxw.dQdXw.dup();
         dim = dqdxw.dim;
         V = dqdxw.V;
+    }
+
+    private dQdXw(Model model, INDArray dqdxw) {
+        super(model, dqdxw.shape());
+        dQdXw = dqdxw;
+        int[] shape = dqdxw.shape();
+        dim = shape[0];
+        V = shape[1];
     }
 
     public dQdXw(Model model) {
@@ -159,6 +167,11 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
 
     public void add(double bias) {
         dQdXw = dQdXw.add(bias);
+    }
+
+    public IDerivative adaGrad(IDerivative gradient) {
+        return new dQdXw(model,
+                adaGrad.getGradient(((dQdXw) gradient).dQdXw));
     }
 
 }

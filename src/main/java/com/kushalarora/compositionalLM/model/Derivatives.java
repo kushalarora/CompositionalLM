@@ -122,4 +122,15 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdw.add(bias);
         dqdxw.add(bias);
     }
+
+    public Derivatives adaGrad(IDerivatives<Sentence> derivatives) {
+        return new Derivatives(data,
+                (dQdW) dqdw.adaGrad(
+                        ((Derivatives) derivatives).dqdw),
+                (dQdu) dqdu.adaGrad(
+                        ((Derivatives) derivatives).dqdu),
+                (dQdXw) dqdxw.adaGrad(
+                        ((Derivatives) derivatives).dqdxw)
+        );
+    }
 }

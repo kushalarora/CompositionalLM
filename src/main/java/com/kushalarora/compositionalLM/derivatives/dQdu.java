@@ -24,13 +24,18 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
     private INDArray dQdu;
 
     public dQdu(Model model) {
-        super(model);
+        super(model, new int[]{model.getDimensions()});
         dQdu = Nd4j.zeros(model.getDimensions());
     }
 
     public dQdu(dQdu dqdu) {
-        super(dqdu.model);
+        super(dqdu.model, dqdu.dQdu.shape());
         dQdu = dqdu.dQdu.dup();
+    }
+
+    private dQdu(Model model, INDArray dqdu) {
+        super(model, dqdu.shape());
+        this.dQdu = dqdu;
     }
 
     public void clear() {
@@ -62,6 +67,11 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
 
     public void add(double bias) {
         dQdu = dQdu.add(bias);
+    }
+
+    public IDerivative adaGrad(IDerivative gradient) {
+        return new dQdu(model,
+                adaGrad.getGradient(((dQdu) gradient).dQdu));
     }
 
     public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {

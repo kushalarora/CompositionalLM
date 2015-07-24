@@ -6,6 +6,7 @@ import com.kushalarora.compositionalLM.model.Model;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.AdaGrad;
 
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
     private int dim;
 
     public dQdW(Model model, dXdW dxdw) {
-        super(model);
+        super(model, new int[]{model.getDimensions(), 2 * model.getDimensions()});
         this.dxdw = dxdw;
         dim = model.getDimensions();
         this.dQdW = Nd4j.zeros(dim, 2 * dim);
@@ -32,9 +33,16 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
     }
 
     public dQdW(dQdW dqdW) {
-        super(dqdW.model);
+        super(dqdW.model, dqdW.dQdW.shape());
         dQdW = dqdW.dQdW.dup();
         dim = dqdW.dim;
+    }
+
+    private dQdW(Model model, INDArray dqdw) {
+        super(model, dqdw.shape());
+        this.dQdW = dqdw;
+        int[] shape = dqdw.shape();
+        dim = shape[0];
     }
 
     public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
@@ -111,6 +119,11 @@ public class dQdW extends AbstractBaseDerivativeClass implements IDerivative {
 
     public void add(double bias) {
         dQdW = dQdW.add(bias);
+    }
+
+    public IDerivative adaGrad(IDerivative gradient) {
+        return new dQdW(model,
+                adaGrad.getGradient(((dQdW) gradient).dQdW));
     }
 
 
