@@ -6,6 +6,7 @@ import com.kushalarora.compositionalLM.derivatives.dQdu;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
@@ -89,8 +90,11 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     calcDerivative(CompositionalGrammar
                            .CompositionalInsideOutsideScore scorer) {
         dqdu.calcDerivative(data, scorer);
+        log.info("dQdu Norm2:{} = {}", data.getIndex(), Nd4j.norm2(dqdu.getDQdu()));
         dqdw.calcDerivative(data, scorer);
+        log.info("dQdW Norm2:{} = {}", data.getIndex(), Nd4j.norm2(dqdw.getDQdW()));
         dqdxw.calcDerivative(data, scorer);
+        log.info("dQdXw Norm2:{} = {}", data.getIndex(), Nd4j.norm2(dqdxw.getDQdXw()));
     }
 
     public void power(double exponent) {
