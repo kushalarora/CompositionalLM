@@ -190,8 +190,9 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                         sample.getIndex());
             }
         }
-
-        updateParams(getAccumulatedDerivative());
+        D accDv = getAccumulatedDerivative();
+        accDv.mul(1/trainBatch.size());
+        updateParams(accDv);
         clearLearningRate();
         flushDerivaiveAcc();
     }
