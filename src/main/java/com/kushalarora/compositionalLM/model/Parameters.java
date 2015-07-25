@@ -10,6 +10,8 @@ import org.deeplearning4j.nn.conf.rng.Random;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import static org.nd4j.linalg.ops.transforms.Transforms.unitVec;
+
 
 /**
  * Created by karora on 7/14/15.
@@ -95,6 +97,11 @@ public class Parameters implements IParameter<Sentence> {
         log.info("old X = \n {}", X);
         log.info("dX = \n {}", dq.getDqdxw().getDQdXw());
         X = X.add(dq.getDqdxw().getDQdXw());
+
+        INDArray normVec =  X.norm2(0);
+        X = X.divRowVector(normVec);
+
+
         log.info("new X = \n {}", X);
     }
 }
