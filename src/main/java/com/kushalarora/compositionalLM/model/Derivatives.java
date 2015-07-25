@@ -90,7 +90,7 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     calcDerivative(CompositionalGrammar
                            .CompositionalInsideOutsideScore scorer) {
         dqdu.calcDerivative(data, scorer);
-        log.info("dQdu:{}(len={}) = {}", data.getIndex(), data.size(), dqdu.getDQdu());
+        log.info("dQdu Norm2:{}(len={}) = {}", data.getIndex(), data.size(), Nd4j.norm2(dqdu.getDQdu()));
         dqdw.calcDerivative(data, scorer);
         log.info("dQdW Norm2:{}(len={}) = {}", data.getIndex(), data.size(), Nd4j.norm2(dqdw.getDQdW()));
         dqdxw.calcDerivative(data, scorer);
