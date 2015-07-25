@@ -4,10 +4,12 @@ import com.kushalarora.compositionalLM.lang.Sentence;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.random.JDKRandomGenerator;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.nn.conf.rng.Random;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Random;
 
 /**
  * Created by karora on 7/14/15.
@@ -24,12 +26,13 @@ public class Parameters implements IParameter<Sentence> {
     private final int vocabSize;
 
     public Parameters(int dimensions, int vocabSize) {
-        Random random = new Random(1234);
+        RandomGenerator rng = new JDKRandomGenerator();
+        rng.setSeed(2204);
         this.dimensions = dimensions;
         this.vocabSize = vocabSize;
-        W = Nd4j.randn(dimensions, 2 * dimensions, 1234);      // d X 2d matrix
-        u = Nd4j.randn(1, dimensions, 1234);                   // row vector with d entries
-        X = Nd4j.randn(dimensions, vocabSize, 1234);           // d X V matrix
+        W = Nd4j.rand(dimensions, 2 * dimensions, -1, 1, rng);      // d X 2d matrix
+        u = Nd4j.rand(1, dimensions, -1, 1, rng);                   // row vector with d entries
+        X = Nd4j.rand(dimensions, vocabSize, -1, 1, rng);           // d X V matrix
     }
 
 
