@@ -15,7 +15,9 @@ import java.util.List;
 public class CacheFactory {
     public enum CacheType {
         MEMCACHED("memcached"),
-        NONE("none");
+        NONE("none"),
+        EHCACHE("ehcache");
+
         private String text;
 
         CacheType(String text) {
@@ -39,6 +41,7 @@ public class CacheFactory {
     }
 
     private final Model model;
+
     public CacheFactory(Model model) {
         this.model = model;
     }
@@ -56,7 +59,7 @@ public class CacheFactory {
                     @Override
                     public String getKeyString(Sentence input) {
                         StringBuilder sb = new StringBuilder();
-                        for (Word word: input) {
+                        for (Word word : input) {
                             sb.append(word.word()).append(":");
                         }
                         return sb.toString();
@@ -81,8 +84,30 @@ public class CacheFactory {
                     }
 
                     @Override
+                    public void close() {
+                        // do nothing
+                    }
+
+                    @Override
                     public String getKeyString(Sentence input) {
                         return null;
+                    }
+                };
+            case EHCACHE:
+                return new EhCacheWrapper<Sentence, IInsideOutsideScore>() {
+
+                    @Override
+                    public IInsideOutsideScore load(Sentence input) {
+                        return model.getGrammar().computeScore(input);
+                    }
+
+                    @Override
+                    public String getKeyString(Sentence input) {
+                        StringBuilder sb = new StringBuilder();
+                        for (Word word : input) {
+                            sb.append(word.word()).append(":");
+                        }
+                        return sb.toString();
                     }
                 };
             default:

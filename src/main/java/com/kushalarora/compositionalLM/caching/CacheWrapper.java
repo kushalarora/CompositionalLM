@@ -22,5 +22,7 @@ public abstract class CacheWrapper<K, V> {
         return value;
     }
 
+    public abstract void close();
+
     public abstract String getKeyString(K input);
 }

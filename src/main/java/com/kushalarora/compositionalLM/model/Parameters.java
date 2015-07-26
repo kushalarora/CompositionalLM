@@ -35,6 +35,10 @@ public class Parameters implements IParameter<Sentence> {
         W = Nd4j.rand(dimensions, 2 * dimensions, -1, 1, rng);      // d X 2d matrix
         u = Nd4j.rand(1, dimensions, -1, 1, rng);                   // row vector with d entries
         X = Nd4j.rand(dimensions, vocabSize, -1, 1, rng);           // d X V matrix
+
+        INDArray normVec =  X.norm2(0);
+        X = X.divRowVector(normVec);
+
     }
 
 

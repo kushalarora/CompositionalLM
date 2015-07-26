@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="ehcache.xsd"
+         updateCheck="true" monitoring="autodetect"
+         dynamicConfig="true">
+
+
+    <diskStore path="${HOM}/data/"/>
+
+    <defaultCache
+            maxEntriesLocalHeap="100000"
+            eternal="true"
+            overflowToDisk="true"
+            diskPersistent="true"
+            diskSpoolBufferSizeMB="30"
+            maxEntriesLocalDisk="10000000"
+            diskExpiryThreadIntervalSeconds="120"
+            memoryStoreEvictionPolicy="LRU"
+            statistics="false">
+    </defaultCache>
+
+    <cache name="cache"
+           maxEntriesLocalHeap="100000"
+           maxEntriesLocalDisk="100000"
+           eternal="true"
+           overflowToDisk="true"
+           diskPersistent="true"
+           diskSpoolBufferSizeMB="70"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off">
+    </cache>
+
+</ehcache>

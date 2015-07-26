@@ -109,6 +109,10 @@ public class CompositionalLM {
             optimizer.fit(
                     Lists.newArrayList(trainDocProcessor),
                     validSentences);
+
+            // Closing cache. Ecache doesn't do eternal caching
+            // until and unless closed
+            cache.close();
         }
 
     }
@@ -218,7 +222,8 @@ public class CompositionalLM {
      *
      * @param args
      */
-    public static void main(String[] args) throws IOException, ConfigurationException {
+    public static void main(String[] args) throws Exception {
+
         PropertyConfigurator.configure("log4j.properties");
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);
@@ -232,7 +237,16 @@ public class CompositionalLM {
             @NonNull IGrammar grammar = GrammarFactory.getGrammar(op);
             model = new Model(op.modelOp.dimensions, grammar);
         }
-        CompositionalLM cLM = new CompositionalLM(model, op);
+        final CompositionalLM cLM = new CompositionalLM(model, op);
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                log.error("Exiting Closing Cache");
+                // Ecache needs to be closed in all cases
+                cLM.cache.close();
+            }
+        });
 
         if (op.train) {
             log.info("starting training");
@@ -242,6 +256,8 @@ public class CompositionalLM {
         } else if (op.parse) {
             cLM.parse();
         } // end processing if statement
+
+
     }   // end of main
 
 

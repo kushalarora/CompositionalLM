@@ -31,4 +31,10 @@ public abstract class MemcachedWrapper<K, V> extends CacheWrapper<K, V> {
     public synchronized void put(K input, V value) {
         memcachedClient.set(getKeyString(input), EXPIRY, value);
     }
+
+
+    @Override
+    public void close() {
+        memcachedClient.shutdown();
+    }
 }
