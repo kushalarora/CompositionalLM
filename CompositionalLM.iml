@@ -112,7 +112,6 @@
     <orderEntry type="library" name="Maven: org.eclipse.jetty.toolchain.setuid:jetty-setuid-java:1.0.2" level="project" />
     <orderEntry type="library" name="Maven: org.spark-project.akka:akka-remote_2.10:2.3.4-spark" level="project" />
     <orderEntry type="library" name="Maven: org.scala-lang:scala-library:2.10.4" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty:3.8.0.Final" level="project" />
     <orderEntry type="library" name="Maven: org.spark-project.protobuf:protobuf-java:2.5.0-spark" level="project" />
     <orderEntry type="library" name="Maven: org.uncommons.maths:uncommons-maths:1.2.2a" level="project" />
     <orderEntry type="library" name="Maven: org.spark-project.akka:akka-actor_2.10:2.3.4-spark" level="project" />
@@ -196,6 +195,8 @@
     <orderEntry type="library" name="Maven: commons-configuration:commons-configuration:1.10" level="project" />
     <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.6" level="project" />
     <orderEntry type="library" name="Maven: commons-logging:commons-logging:1.1.1" level="project" />
+    <orderEntry type="library" name="Maven: com.lambdaworks:lettuce:2.3.3" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty:3.6.6.Final" level="project" />
     <orderEntry type="library" name="Maven: net.sf.ehcache:ehcache:2.9.0" level="project" />
   </component>
 </module>

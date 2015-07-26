@@ -16,7 +16,8 @@ public class CacheFactory {
     public enum CacheType {
         MEMCACHED("memcached"),
         NONE("none"),
-        EHCACHE("ehcache");
+        EHCACHE("ehcache"),
+        REDIS("redis");
 
         private String text;
 
@@ -108,6 +109,24 @@ public class CacheFactory {
                             sb.append(word.word()).append(":");
                         }
                         return sb.toString();
+                    }
+                };
+
+            case REDIS:
+                return new RedisCacheWrapper<Sentence, IInsideOutsideScore>() {
+
+                    @Override
+                    public IInsideOutsideScore load(Sentence input) {
+                        return model.getGrammar().computeScore(input);
+                    }
+
+                    @Override
+                    public String getKeyString(Sentence input) {
+                        StringBuilder sb = new StringBuilder();
+                        for (Word word : input) {
+                            sb.append(word.word()).append(":");
+                        }
+                        return Integer.toString(input.getIndex());
                     }
                 };
             default:
