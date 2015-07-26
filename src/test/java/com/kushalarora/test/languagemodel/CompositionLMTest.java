@@ -86,7 +86,7 @@ public class CompositionLMTest {
 
     @Test
     @Ignore
-    public void testMain() throws IOException, ConfigurationException {
+    public void testMain() throws Exception {
         String[] args =
                 new String[] {"-train", "src/resources/train10",
                         "-validate", "src/resources/valid4",
@@ -99,7 +99,7 @@ public class CompositionLMTest {
 
     @Test
     @Ignore
-    public void testMainParallel() throws IOException, ConfigurationException {
+    public void testMainParallel() throws Exception {
         String[] args =
                 new String[] {"-train", "src/resources/train10",
                         "-validate", "src/resources/valid4",
