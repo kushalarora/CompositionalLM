@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.caching;
 
+import com.kushalarora.compositionalLM.options.Options;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.codec.RedisCodec;
@@ -59,8 +60,8 @@ public abstract class RedisCacheWrapper<K, V> extends CacheWrapper<K, V> {
 
     RedisConnection<String, Object> redisConnection;
 
-    public RedisCacheWrapper() {
-        RedisClient client = new RedisClient("localhost", 3030);
+    public RedisCacheWrapper(Options op) {
+        RedisClient client = new RedisClient(op.trainOp.cacheServer, op.trainOp.cachePort);
         redisConnection = client.connect(new SerializedObjectCodec());
     }
 

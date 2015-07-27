@@ -113,7 +113,7 @@ public class CacheFactory {
                 };
 
             case REDIS:
-                return new RedisCacheWrapper<Sentence, IInsideOutsideScore>() {
+                return new RedisCacheWrapper<Sentence, IInsideOutsideScore>(op) {
 
                     @Override
                     public IInsideOutsideScore load(Sentence input) {
