@@ -33,6 +33,7 @@ public abstract class RedisCacheWrapper<K, V> extends CacheWrapper<K, V> {
                 ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(array));
                 return is.readObject();
             } catch (Exception e) {
+                e.printStackTrace();
                 return null;
             }
         }
@@ -50,6 +51,7 @@ public abstract class RedisCacheWrapper<K, V> extends CacheWrapper<K, V> {
                 os.writeObject(value);
                 return bytes.toByteArray();
             } catch (IOException e) {
+                e.printStackTrace();
                 return null;
             }
         }
