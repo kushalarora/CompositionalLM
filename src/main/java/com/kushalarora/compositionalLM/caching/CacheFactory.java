@@ -126,7 +126,7 @@ public class CacheFactory {
                         for (Word word : input) {
                             sb.append(word.word()).append(":");
                         }
-                        return Integer.toString(input.getIndex());
+                        return sb.toString();
                     }
                 };
             default:

@@ -39,7 +39,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
         int numBatch = trainSet.size() / op.trainOp.batchSize + 1;
         int epoch = 0;
         double bestValidationScore = Double.MAX_VALUE;
-        while (epoch < op.trainOp.maxEpochs) {
+        while (epoch < op.trainOp.maxEpochs && !done) {
             List<T> shuffledSet = new ArrayList<T>(trainSet);
             Collections.shuffle(shuffledSet, rand);
 
@@ -70,10 +70,12 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
 
                     if (mean < bestValidationScore) {
                         // TODO Fix this
-                        if (mean < bestValidationScore * (1 - op.trainOp.tolerance)) {
+                        if (mean > bestValidationScore * (1 - op.trainOp.tolerance)) {
                             done = true;
+                            log.info("Done training");
                         }
                         bestValidationScore = mean;
+                        log.info("Updated best validation score");
                         saveModel();
                     }
                 }   // end if validate
