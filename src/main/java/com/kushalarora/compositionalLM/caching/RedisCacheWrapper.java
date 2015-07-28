@@ -12,6 +12,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by karora on 7/26/15.
@@ -63,6 +64,7 @@ public abstract class RedisCacheWrapper<K, V> extends CacheWrapper<K, V> {
     public RedisCacheWrapper(Options op) {
         RedisClient client = new RedisClient(op.trainOp.cacheServer, op.trainOp.cachePort);
         redisConnection = client.connect(new SerializedObjectCodec());
+        redisConnection.setTimeout(5, TimeUnit.MINUTES);
     }
 
 
