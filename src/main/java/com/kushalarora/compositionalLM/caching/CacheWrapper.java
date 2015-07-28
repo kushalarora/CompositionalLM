@@ -18,8 +18,8 @@ public abstract class CacheWrapper<K, V> {
     public V get(K input) {
         V value = getRoutine(input);
         if (value == null) {
-            value = load(input);
             log.warn("value not found for input: {}", getKeyString(input));
+            value = load(input);
             synchronized (this) {
                 put(input, value);
             }
