@@ -29,6 +29,7 @@ import static java.lang.Math.exp;
 public class CompositionalGrammar implements Serializable {
     private final Options op;
     private Model model;
+
     public CompositionalGrammar(final Model model, final Options op) {
         this.model = model;
         this.op = op;
@@ -107,26 +108,14 @@ public class CompositionalGrammar implements Serializable {
         /**
          * Create matrix if the length is greater than the previous
          * matrices else use the same. Initialize them by wiping out
-         *
          */
         public void considerCreatingMatrices() {
-            if (length > op.grammarOp.maxLength ||
-                    // myMaxLength if greater than zero,
-                    // then it is max memory size
-                    length >= myMaxLength) {
-                throw new OutOfMemoryError("Refusal to create such large arrays.");
-            } else if (arraySize < length) {
-
-                try {
-                    createMatrices(length);
-                    arraySize = length;
-                } catch (Exception e) {
-                    log.error("Unable to create array of length {}. Reverting to size: {}",
-                            length, arraySize);
-                    myMaxLength = length;
-                    createMatrices(arraySize);
-                    throw new RuntimeException(e);
-                }
+            try {
+                createMatrices(length);
+            } catch (Exception e) {
+                log.error("Unable to create array of length {}",
+                        length);
+                throw new RuntimeException(e);
             }
         }
 
@@ -139,7 +128,7 @@ public class CompositionalGrammar implements Serializable {
         // and in considerCreatingMatrices or add dimension as argument
         private void createMatrices(int length) {
             clearMatrices();
-            log.info("Creating Compositional matrices for length {}", length);
+            log.info("Creating Compositional matrices for length {}: {}", length, sentence.getIndex());
             int dim = model.getDimensions();
             phraseMatrix = new INDArray[length][length + 1];
 
@@ -181,10 +170,9 @@ public class CompositionalGrammar implements Serializable {
 
         /**
          * Initialize all matrices to zeros
-         *
          */
         public void initializeMatrices() {
-            log.info("Initializing Compositional matrices");
+            log.info("Initializing Compositional matrices:{}", sentence.getIndex());
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
 
@@ -471,10 +459,11 @@ public class CompositionalGrammar implements Serializable {
 
         /**
          * Score is length normalized
+         *
          * @return score
          */
         public double getSentenceScore() {
-            return exp(Math.log(compositionalIScore[0][length])/length);
+            return exp(Math.log(compositionalIScore[0][length]) / length);
         }
 
         @SneakyThrows
