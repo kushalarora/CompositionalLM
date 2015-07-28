@@ -80,6 +80,7 @@ public abstract class RedisCacheWrapper<K, V> extends CacheWrapper<K, V> {
 
     @Override
     public void close() {
+        redisConnection.save();
         redisConnection.close();
     }
 }
