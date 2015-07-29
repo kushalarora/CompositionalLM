@@ -101,7 +101,7 @@ public class StanfordGrammar extends AbstractGrammar {
             // Figure out if we need to deal too.
             // Till then creating array of length instead
             createArrays(length);
-            log.info("Created arrays of size " + arraySize);
+            log.info("Created arrays of size " + length);
         }
 
     /**

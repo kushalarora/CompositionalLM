@@ -1,10 +1,11 @@
 package com.kushalarora.compositionalLM.optimizer;
 
-import com.google.common.collect.Lists;
+import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.model.IDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -26,187 +27,134 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
         rand = new Random();
     }
 
-    public void fit(List<T> trainSet, List<T> validationSet) {
 
-        if (op.trainOp.parallel) {
-            log.info("Running in parallel mode");
-            log.info("NumThreads#: {}", op.trainOp.nThreads);
-            executor =
-                    Executors.newFixedThreadPool(op.trainOp.nThreads);
-        }
+    private Function<List<T>, Void> fitRoutineParallel =
+            new Function<List<T>, Void>() {
+                @Nullable
+                public Void apply(@Nullable List<T> trainBatch) {
+                    List<Future<D>> futureList =
+                            new ArrayList<Future<D>>();
 
-        boolean done = false;
-        int numBatch = trainSet.size() / op.trainOp.batchSize + 1;
-        int epoch = 0;
-        double bestValidationScore = Double.MAX_VALUE;
-        while (epoch < op.trainOp.maxEpochs && !done) {
-            List<T> shuffledSet = new ArrayList<T>(trainSet);
-            Collections.shuffle(shuffledSet, rand);
+                    for (final T sample : trainBatch) {
+                        log.info("****Started Training#{}: {}****",
+                                sample.getIndex(), sample);
+                        Future<D> future = executor.submit(
+                                new Callable<D>() {
+                                    public D call() throws Exception {
+                                        return (D) fitOne(sample);
+                                    }
+                                });
+                        futureList.add(future);
+                    }
 
-            for (int batch = 0; batch < numBatch; batch++) {
-
-                int iter = epoch * op.trainOp.batchSize + batch;
-
-                int startIdx = batch * op.trainOp.batchSize;
-                int endIdx = (batch + 1) * op.trainOp.batchSize;
-
-
-                if (endIdx > trainSet.size()) {
-                    endIdx = trainSet.size();
-                }
-
-                // In case there batch size is multiple of actual size
-                // we would have a case of blank sentence
-                if (startIdx >= endIdx) {
-                    continue;
-                }
-
-                fitRoutine(trainSet.subList(startIdx, endIdx));
-
-                if (op.trainOp.validate &&
-                        (iter + 1) % op.trainOp.validationFreq == 0) {
-                    double mean = validationRoutine(validationSet);
-                    log.info("Mean validation score iter#{}: {}", iter, mean);
-
-                    if (mean < bestValidationScore) {
-                        // TODO Fix this
-                        if (mean > bestValidationScore * (1 - op.trainOp.tolerance)) {
-                            done = true;
-                            log.info("Done training");
+                    Iterator<Future<D>> it = futureList.iterator();
+                    while (it.hasNext()) {
+                        try {
+                            Future<D> future = it.next();
+                            D derivatives = future.get();
+                            calcLearningRate(derivatives);
+                            derivativeAcc(derivatives);
+                            log.info("****Finished Training#{}****",
+                                    derivatives.getData().getIndex());
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
                         }
-                        bestValidationScore = mean;
-                        log.info("Updated best validation score");
-                        saveModel();
+                        it.remove();
                     }
-                }   // end if validate
-            }   // end for batch < numBatch
-            epoch += 1;
-        }   // end  while epoch
-
-        if (op.trainOp.parallel) {
-            executor.shutdown();
-        }
-    }
-
-    private double validationRoutine(List<T> validationSet) {
-        double validationScore = 0;
-        if (op.trainOp.parallel) {
-
-            List<Future<Double>> futureList =
-                    new ArrayList<Future<Double>>();
-
-            for (final T data : validationSet) {
-                log.info("Starting Validation#{}: {}", data.getIndex(), data);
-                Future<Double> future = executor.submit(new Callable<Double>() {
-                    public Double call() throws Exception {
-                        return getValidationScore(data);
-                    }
-                });
-                futureList.add(future);
-            }
-
-            int idx = 0;
-            Iterator<Future<Double>> it = futureList.iterator();
-            while (it.hasNext()) {
-                try {
-                    Future<Double> future = it.next();
-                    Double score = future.get();
-                    if (score.isInfinite() || score.isNaN()) {
-                        log.info("****Validation#{} is {}****",
-                                idx++, score);
-                        continue;
-                    }
-
-                    log.info("****Finished Validation#{}: {}****",
-                            idx++, score);
-
-                    validationScore += score;
-                    it.remove();
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
+                    return null;
                 }
-            }
+            };
 
-        } else {
+    Function<List<T>, Void> fitRoutineSeq =
+            new Function<List<T>, Void>() {
+                @Nullable
+                public Void apply(@Nullable List<T> trainBatch) {
+                    for (T sample : trainBatch) {
+                        log.info("****Started Training#{}: {}****",
+                                sample.getIndex(), sample);
 
-            int idx = 0;
-            for (T data : validationSet) {
-                log.info("Validation#{}: {}", idx++, data);
-                Double score = getValidationScore(data);
-                if (score.isInfinite() || score.isNaN()) {
-                    log.info("******** Validation#{} is {}************", data.getIndex(), score);
-                    continue;
+                        D derivatives = fitOne(sample);
+                        calcLearningRate(derivatives);
+                        derivativeAcc(derivatives);
+                        log.info("****Finished Training#{}****",
+                                sample.getIndex());
+                    }
+                    return null;
                 }
-                log.info("*********Finished Validation#{}: {} ************", data.getIndex(), score);
-                validationScore += score;
-            }
-        }
-        return validationScore / validationSet.size();
-    }
+            };
 
-    public void fitRoutine(List<T> trainBatch) {
-        if (op.trainOp.parallel) {
-            List<Future<D>> futureList =
-                    new ArrayList<Future<D>>();
+    Function<List<T>, Double> validRoutineParallel =
+            new Function<List<T>, Double>() {
+                @Nullable
+                public Double apply(final @Nullable List<T> validList) {
+                    double validationScore = 0;
+                    List<Future<Double>> futureList =
+                            new ArrayList<Future<Double>>();
 
-            for (final T sample : trainBatch) {
-                log.info("****Started Training#{}: {}****",
-                        sample.getIndex(), sample);
-                Future<D> future = executor.submit(
-                        new Callable<D>() {
-                            public D call() throws Exception {
-                                return (D) fitOne(sample);
+                    for (final T data : validList) {
+                        log.info("Starting Validation#{}: {}", data.getIndex(), data);
+                        Future<Double> future = executor.submit(new Callable<Double>() {
+                            public Double call() throws Exception {
+                                return getValidationScore(data);
                             }
                         });
-                futureList.add(future);
-            }
+                        futureList.add(future);
+                    }
 
-            Iterator<Future<D>> it = futureList.iterator();
-            while (it.hasNext()) {
-                try {
-                    Future<D> future = it.next();
-                    D derivatives = future.get();
-                    calcLearningRate(derivatives);
-                    derivativeAcc(derivatives);
-                    log.info("****Finished Training#{}****",
-                            derivatives.getData().getIndex());
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
+                    int idx = 0;
+                    Iterator<Future<Double>> it = futureList.iterator();
+                    while (it.hasNext()) {
+                        try {
+                            Future<Double> future = it.next();
+                            Double score = future.get();
+                            if (score.isInfinite() || score.isNaN()) {
+                                log.info("****Validation#{} is {}****",
+                                        idx++, score);
+                                continue;
+                            }
+
+                            log.info("****Finished Validation#{}: {}****",
+                                    idx++, score);
+
+                            validationScore += score;
+                            it.remove();
+
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    return validationScore;
                 }
-                it.remove();
-            }
-        } else {
-            for (T sample : trainBatch) {
-                log.info("****Started Training#{}: {}****",
-                        sample.getIndex(), sample);
+            };
 
-                D derivatives = fitOne(sample);
-                calcLearningRate(derivatives);
-                derivativeAcc(derivatives);
-                log.info("****Finished Training#{}****",
-                        sample.getIndex());
-            }
-        }
-        D accDv = getAccumulatedDerivative();
-        accDv.mul(1.0/trainBatch.size());
-        updateParams(accDv);
-        clearLearningRate();
-        flushDerivaiveAcc();
-    }
+    Function<List<T>, Double> validRoutineSeq =
+            new Function<List<T>, Double>() {
+                @Nullable
+                public Double apply(@Nullable List<T> validList) {
+                    double validationScore = 0;
+                    int count = 0;
+                    int idx = 0;
+                    for (final T data : validList) {
+                        log.info("Validation#{}: {}", idx++, data);
+                        Double score = getValidationScore(data);
+                        if (score.isInfinite() || score.isNaN()) {
+                            log.info("******** Validation#{} is {}************", data.getIndex(), score);
+                            continue;
+                        }
+                        log.info("*********Finished Validation#{}: {} ************", data.getIndex(), score);
+                        validationScore += score;
+                    }
+
+                    return validationScore;
+                }
+            };
 
     public D fitOne(T data) {
         return calcDerivative(data);
-    }
-
-    public void fit(Iterable<T> trainSet, Iterable<T> validationSet) {
-        fit(Lists.<T>newArrayList(trainSet),
-                Lists.<T>newArrayList(validationSet));
-
     }
 
     public synchronized void derivativeAcc(D derivatives) {
@@ -221,11 +169,118 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
         dvAcc.clear();
     }
 
-    public void fit(List<T> trainSet) {
-        fit(trainSet, new ArrayList<T>());
-    }
+    public void fit(List<? extends List<T>> trainSet, List<? extends List<T>> validSet) {
 
-    public void fit(Iterable<T> trainSet) {
-        fit(Lists.newArrayList(trainSet));
+        Function<List<T>, Void> trainFunction;
+        Function<List<T>, Double> validFunction;
+        if (op.trainOp.parallel) {
+            log.info("Running in parallel mode");
+            log.info("NumThreads#: {}", op.trainOp.nThreads);
+            executor =
+                    Executors.newFixedThreadPool(op.trainOp.nThreads);
+            trainFunction = fitRoutineParallel;
+            validFunction = validRoutineParallel;
+        } else {
+            trainFunction = fitRoutineSeq;
+            validFunction = validRoutineSeq;
+        }
+
+        int iter = 0;
+        int epoch = 0;
+        boolean done = false;
+        double bestValidationScore = Double.MAX_VALUE;
+
+        // do training these many times
+        while (epoch < op.trainOp.maxEpochs && !done) {
+
+            // process all these lists
+            for (int trainListIdx = 0; trainListIdx < trainSet.size(); trainListIdx++) {
+
+                List<T> trainList = trainSet.get(trainListIdx);
+
+                int numBatches = trainList.size() / op.trainOp.batchSize + 1;
+
+                // shuffle to avoid overfitting
+                List<T> shuffledSet = new ArrayList<T>(trainList);
+                Collections.shuffle(shuffledSet, rand);
+
+
+                for (int batch = 0; batch < numBatches; batch++) {
+
+                    // get batch
+                    int startIdx = batch * op.trainOp.batchSize;
+                    int endIdx = (batch + 1) * op.trainOp.batchSize;
+                    if (endIdx > shuffledSet.size()) {
+                        endIdx = shuffledSet.size();
+                    }
+
+                    int batchSize = endIdx - startIdx;
+
+                    // In case there batch size is multiple of actual size
+                    // we would have a case of blank sentence
+                    if (startIdx >= endIdx) {
+                        continue;
+                    }
+
+                    // train batch
+                    trainFunction.apply(shuffledSet.subList(startIdx, endIdx));
+
+                    // normalize accumulated derivative
+                    D accDv = getAccumulatedDerivative();
+                    accDv.mul(1.0 / batchSize);
+
+                    // update param for this batch
+                    updateParams(accDv);
+
+                    // clear accumulator and
+                    // re-initialize learing rate
+                    clearLearningRate();
+                    flushDerivaiveAcc();
+
+                    // shall validate?
+                    if (op.trainOp.validate &&
+                            (iter + 1) % op.trainOp.validationFreq == 0) {
+
+                        // calc mean for validation set
+                        double cumlScore = 0;
+                        double cumlSize = 0;
+                        for (List<T> validList : validSet) {
+                            cumlScore += validFunction.apply(validList);
+                            cumlSize += validList.size();
+                        }
+
+                        double mean = cumlScore / cumlSize;
+                        log.info("Mean validation score iter#{}: {}", iter, mean);
+
+                        // is better than the bestt
+                        if (mean < bestValidationScore) {
+
+                            // save model
+                            bestValidationScore = mean;
+                            log.info("Updated best validation score");
+                            saveModel();
+
+                            // good enough for us?
+                            if (mean > bestValidationScore * (1 - op.trainOp.tolerance)) {
+                                done = true;
+                                log.info("Done training");
+                            } // end if mean > bestValidationScore
+
+                        } // end if mean < bestValidationScore
+                    }   // end if validate
+
+                    // this iteration done
+                    iter += 1;
+                } // end for batch
+                epoch += 1;
+            }   // end for trainList
+        }   // end while epoch
+
+
+        // shutdown if parallel
+        if (op.trainOp.parallel) {
+            executor.shutdown();
+        }
+
     }
 }

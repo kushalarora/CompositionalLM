@@ -16,8 +16,6 @@ public interface IOptimizer<T extends IIndexed, D extends IDerivatives<T>> {
 
     public IParameter getParams();
 
-    public void fitRoutine(List<T> data);
-
     public void derivativeAcc(D derivatives);
 
     public D getAccumulatedDerivative();

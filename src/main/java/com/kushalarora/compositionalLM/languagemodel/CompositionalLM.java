@@ -6,9 +6,10 @@ import com.google.common.collect.Lists;
 import com.kushalarora.compositionalLM.caching.CacheFactory;
 import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.lang.*;
-import com.kushalarora.compositionalLM.model.*;
+import com.kushalarora.compositionalLM.model.CompositionalGrammar;
+import com.kushalarora.compositionalLM.model.Derivatives;
+import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.AbstractOptimizer;
-import com.kushalarora.compositionalLM.optimizer.AbstractSGDOptimizer;
 import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
@@ -19,7 +20,6 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.PropertyConfigurator;
 
 import javax.annotation.Nullable;
@@ -58,84 +58,81 @@ public class CompositionalLM {
 
     @SneakyThrows
     public void train() {
-        List<Sentence> validSentences = new ArrayList<Sentence>();
+        List<List<Sentence>> validIterators = new ArrayList<List<Sentence>> ();
         for (String validFile : op.trainOp.validationFiles) {
-            DocumentProcessorWrapper docProcessor =
-                    docProcessorFactory
-                            .getDocumentProcessor(validFile);
-            validSentences.addAll(
-                    Lists.<Sentence>newArrayList(
-                            docProcessor));
+            validIterators.add(
+                    Lists.newArrayList(docProcessorFactory
+                            .getDocumentProcessor(validFile)));
         }
+
+        List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
 
         for (String trainFile : op.trainOp.trainFiles) {
             int sentenceCount = 0;
-            DocumentProcessorWrapper trainDocProcessor =
-                    docProcessorFactory
-                            .getDocumentProcessor(trainFile);
 
-            AbstractOptimizer<Sentence, Derivatives> optimizer =
-                    OptimizerFactory.getOptimizer(op, model,
-                            new Function<Sentence, Double>() {
-                                @Nullable
-                                public Double apply(Sentence data) {
-                                    IInsideOutsideScore preScore = cache.get(data);
-                                    CompositionalGrammar.CompositionalInsideOutsideScore score =
-                                            compGrammar.computeScore(data,
-                                                    preScore);
-                                    return score.getSentenceScore();
-                                }
-                            },
-                            new Function<Sentence, Derivatives>() {
-                                @Nullable
-                                public Derivatives apply(@Nullable Sentence sample) {
-                                    Derivatives derivatives = new Derivatives(model, sample);
-                                    IInsideOutsideScore preScore = cache.get(sample);
-                                    CompositionalGrammar.CompositionalInsideOutsideScore score =
-                                            compGrammar.computeScore(sample,
-                                                    preScore);
-                                    derivatives.calcDerivative(score);
-                                    return derivatives;
-                                }
-                            },
-                            new Function<Void, Void>() {
-                                @Nullable
-                                public Void apply(@Nullable Void input) {
-                                    saveModelSerialized(op.modelOp.outFilename);
-                                    return null;
-                                }
-                            });
-
-            optimizer.fit(
-                    Lists.newArrayList(trainDocProcessor),
-                    validSentences);
-
-            // Closing cache. Ecache doesn't do eternal caching
-            // until and unless closed
-            cache.close();
+            trainIterators.add(Lists.newArrayList(docProcessorFactory
+                    .getDocumentProcessor(trainFile)));
         }
+
+        AbstractOptimizer<Sentence, Derivatives> optimizer =
+                OptimizerFactory.getOptimizer(op, model,
+                        new Function<Sentence, Double>() {
+                            @Nullable
+                            public Double apply(Sentence data) {
+                                IInsideOutsideScore preScore = cache.get(data);
+                                CompositionalGrammar.CompositionalInsideOutsideScore score =
+                                        compGrammar.computeScore(data,
+                                                preScore);
+                                return score.getSentenceScore();
+                            }
+                        },
+                        new Function<Sentence, Derivatives>() {
+                            @Nullable
+                            public Derivatives apply(@Nullable Sentence sample) {
+                                Derivatives derivatives = new Derivatives(model, sample);
+                                IInsideOutsideScore preScore = cache.get(sample);
+                                CompositionalGrammar.CompositionalInsideOutsideScore score =
+                                        compGrammar.computeScore(sample,
+                                                preScore);
+                                derivatives.calcDerivative(score);
+                                return derivatives;
+                            }
+                        },
+                        new Function<Void, Void>() {
+                            @Nullable
+                            public Void apply(@Nullable Void input) {
+                                saveModelSerialized(op.modelOp.outFilename);
+                                return null;
+                            }
+                        });
+
+        optimizer.fit(trainIterators, validIterators);
+
+        // Closing cache. Ecache doesn't do eternal caching
+        // until and unless closed
+        cache.close();
 
     }
 
     public void parse() {
-        for (String filename : op.testOp.parseFiles) {
-            DocumentProcessorWrapper docProcessor = docProcessorFactory
-                    .getDocumentProcessor(filename);
+       /* for (String filename : op.testOp.parseFiles) {
+            DocumentIterator docProcessor = docProcessorFactory
+                    .getDocumentIterator(filename);
             for (Sentence sentence : docProcessor) {
                 compGrammar.parse(sentence);
             }
 
-        }
+        }*/
 
     }
 
     public void nbestList() {
-        for (String filename : op.testOp.nbestFiles) {
-            DocumentProcessorWrapper docProcessor = docProcessorFactory
-                    .getDocumentProcessor(filename);
+       /* for (String filename : op.testOp.nbestFiles) {
+            DocumentIterator docProcessor = docProcessorFactory
+                    .getDocumentIterator(filename);
             // TODO:: Figure this out
 
-        }
+        }*/
 
     }
 

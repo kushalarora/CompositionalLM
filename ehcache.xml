@@ -5,7 +5,7 @@
          dynamicConfig="true">
 
 
-    <diskStore path="${HOM}/data/"/>
+    <diskStore path="user.home/data/"/>
 
     <defaultCache
             maxEntriesLocalHeap="100000"
@@ -20,7 +20,8 @@
     </defaultCache>
 
     <cache name="cache"
-           maxEntriesLocalHeap="100000"
+
+           maxBytesLocalHeap="3000"
            maxEntriesLocalDisk="100000"
            eternal="true"
            overflowToDisk="true"

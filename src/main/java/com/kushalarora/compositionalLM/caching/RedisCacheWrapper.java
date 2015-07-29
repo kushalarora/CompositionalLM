@@ -75,12 +75,15 @@ public abstract class RedisCacheWrapper<K, V> extends CacheWrapper<K, V> {
 
     @Override
     public V getRoutine(K input) {
-        return (V) redisConnection.get(getKeyString(input));
+        String key = getKeyString(input);
+        if (!redisConnection.exists(key)) {
+            return null;
+        }
+        return (V) redisConnection.get(key);
     }
 
     @Override
     public void close() {
-        redisConnection.save();
         redisConnection.close();
     }
 }

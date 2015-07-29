@@ -4,7 +4,6 @@ import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.process.DocumentPreprocessor;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -43,20 +42,22 @@ public class DocumentProcessorFactory {
                     public Iterator<Sentence> iterator() {
                         return new Iterator<Sentence>() {
 
-                            public boolean hasNext() {
+                    public boolean hasNext() {
 
-                                return it.hasNext();
-                            }
+                        return it.hasNext();
+                    }
 
-                            public Sentence next() {
-                                Sentence sentence =
-                                        new Sentence(index);
-                                for (HasWord word : it.next()) {
-                                    sentence.add((Word) word);
-                                }
-                                index++;
-                                return sentence;
-                            }
+                    public Sentence next() {
+                        Sentence sentence =
+                                new Sentence(index);
+
+                        for (HasWord word : it.next()) {
+                            sentence.add((Word) word);
+                        }
+
+                        index++;
+                        return sentence;
+                    }
 
                             public void remove() {
                                 it.remove();
