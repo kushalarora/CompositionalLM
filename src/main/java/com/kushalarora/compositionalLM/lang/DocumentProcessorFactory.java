@@ -34,7 +34,10 @@ public class DocumentProcessorFactory {
                 }
                 processor.setTokenizerFactory(tokenizerFactory);
                 // TODO:: Don't hardcode. Figure out how to add more than one.
-                processor.setSentenceDelimiter("\n");
+
+                if (op.grammarOp.newLineDelimiter) {
+                    processor.setSentenceDelimiter("\n");
+                }
 
                 final Iterator<List<HasWord>> it = processor.iterator();
 

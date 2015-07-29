@@ -16,15 +16,14 @@ public class GrammarOptions implements Serializable {
 
     public int maxLength = DEFAULT_MAX_LENGTH;
 
-    public GrammarFactory.GrammarType grammarType =
-            GrammarFactory.GrammarType.STANFORD_GRAMMAR;
+    public GrammarFactory.GrammarType grammarType;
 
-    public String filename = "src/resources/englishPCFG.ser.gz";
+    public String filename;
 
-    public TokenizerFactory.TokenizerType tokenizerType =
-            TokenizerFactory.TokenizerType.STANFORD_PTB_TOKENIZER;
+    public TokenizerFactory.TokenizerType tokenizerType;
 
-    public boolean lowerCase = false;
+    public boolean lowerCase;
+    public boolean newLineDelimiter;
 
 
     public GrammarOptions(Configuration config) {
@@ -33,8 +32,8 @@ public class GrammarOptions implements Serializable {
 
         grammarType =
                 GrammarFactory.GrammarType.fromString(
-                config.getString("grammarType",
-                        "stanford"));
+                        config.getString("grammarType",
+                                "stanford"));
 
         filename = config.getString("grammarFile",
                 "src/resources/englishPCFG.ser.gz");
@@ -45,6 +44,9 @@ public class GrammarOptions implements Serializable {
                                 "stanfordPTB"));
 
         lowerCase = config.getBoolean("lowercase", false);
+
+        newLineDelimiter = config.getBoolean("nlDelim", false);
+
 
     }
 }
