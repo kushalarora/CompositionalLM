@@ -1,4 +1,6 @@
-package com.kushalarora.compositionalLM.lang;
+package com.kushalarora.compositionalLM.documentprocessor;
+
+import com.kushalarora.compositionalLM.lang.Sentence;
 
 /**
  * Created by karora on 7/12/15.

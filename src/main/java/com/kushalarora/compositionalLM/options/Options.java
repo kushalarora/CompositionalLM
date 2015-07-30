@@ -12,6 +12,8 @@ import java.io.Serializable;
  */
 @ToString
 public class Options implements Serializable {
+
+
     public enum FileType {
         TEXT("text"),
         SERIALIZED("serialized");
@@ -47,6 +49,7 @@ public class Options implements Serializable {
     public TrainOptions trainOp;
     public TestOptions testOp;
     public ModelOptions modelOp;
+    public InputOptions inputOp;
 
 
     public Options() throws ConfigurationException {
@@ -59,7 +62,7 @@ public class Options implements Serializable {
 
         config.load(
                 FileUtils.getFile("configs/grammar.config")
-                .getAbsolutePath());
+                        .getAbsolutePath());
         grammarOp = new GrammarOptions(config);
 
         config.load(
@@ -77,5 +80,10 @@ public class Options implements Serializable {
                 FileUtils.getFile("configs/model.config")
                         .getAbsolutePath());
         modelOp = new ModelOptions(config);
+
+        config.load(
+                FileUtils.getFile("configs/input.config")
+                        .getAbsolutePath());
+        inputOp = new InputOptions(config);
     }
 }

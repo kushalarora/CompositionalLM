@@ -48,8 +48,10 @@ public class TrainOptions implements Serializable {
                 config.getInt("nThreads", 0);
         cacheServer =
                 config.getString("cacheServer", "localhost");
+
         cachePort =
                 config.getInt("cachePort", 3030);
+
         cacheType =
                 CacheFactory.CacheType.fromString(
                         config.getString("cacheType", "none"));

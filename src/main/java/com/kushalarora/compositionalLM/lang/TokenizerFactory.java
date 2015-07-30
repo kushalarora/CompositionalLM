@@ -5,6 +5,7 @@ import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.Tokenizer;
 import edu.stanford.nlp.process.WhitespaceTokenizer;
+import lombok.Getter;
 
 import java.io.Reader;
 import java.util.Iterator;
@@ -12,6 +13,7 @@ import java.util.Iterator;
 /**
  * Created by karora on 7/12/15.
  */
+@Getter
 public class TokenizerFactory implements edu.stanford.nlp.process.TokenizerFactory<Word> {
 
     private final IGrammar grammar;
