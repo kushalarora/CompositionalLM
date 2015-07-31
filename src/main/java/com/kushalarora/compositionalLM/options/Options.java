@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.options;
 
+import lombok.SneakyThrows;
 import lombok.ToString;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -41,17 +42,17 @@ public class Options implements Serializable {
     }
 
 
-    public boolean train = false;
-    public boolean parse = false;
-    public boolean nbestRescore = false;
-    public boolean verbose = false;
+    public boolean train;
+    public boolean parse;
+    public boolean nbestRescore;
+    public boolean verbose;
     public GrammarOptions grammarOp;
     public TrainOptions trainOp;
     public TestOptions testOp;
     public ModelOptions modelOp;
     public InputOptions inputOp;
 
-
+    @SneakyThrows
     public Options() throws ConfigurationException {
         train = false;
         parse = false;

@@ -88,8 +88,8 @@ public class CompositionLMTest {
     @Ignore
     public void testMain() throws Exception {
         String[] args =
-                new String[] {"-train", "src/resources/train10",
-                        "-validate", "src/resources/valid4",
+                new String[] {"-train", /*"src/resources/train10",
+                        "-validate", "src/resources/valid4",*/
                         "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",

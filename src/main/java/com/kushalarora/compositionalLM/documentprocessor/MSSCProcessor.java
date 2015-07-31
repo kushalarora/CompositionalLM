@@ -14,13 +14,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.regex.Pattern;
 
 /**
  * Created by karora on 7/29/15.
  */
 public class MSSCProcessor extends DocumentProcessorWrapper {
 
-    String END_HEADER_PATTERN = "*END*";
+    Pattern END_HEADER_PATTERN = Pattern.compile("[\\*]?END[\\*]?.*[\\*]?END[\\*]?");
 
     StanfordDocumentProcessor stanfordProcessor;
 
@@ -36,7 +37,7 @@ public class MSSCProcessor extends DocumentProcessorWrapper {
         boolean matched = false;
         String line;
         while ((line = reader.readLine()) != null && !matched) {
-            if (line.contains(END_HEADER_PATTERN)) {
+            if (END_HEADER_PATTERN.matcher(line).find()) {
                 matched = true;
                 break;
             }

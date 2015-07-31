@@ -22,7 +22,7 @@ public class ArgParser {
             if (args[argIndex].equalsIgnoreCase("-train")) {
                 // Must be followed by a training file
                 op.train = true;
-                op.trainOp.trainFiles = ArgUtils.getStringFromArg(args, argIndex);
+              //  op.trainOp.trainFiles = ArgUtils.getStringFromArg(args, argIndex);
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
 
             } else if (args[argIndex].equalsIgnoreCase("-nbest")) {
@@ -36,7 +36,7 @@ public class ArgParser {
                 // Ignored if only testing.
                 // If training must be followed by validation File
                 op.trainOp.validate = true;
-                op.trainOp.validationFiles = ArgUtils.getStringFromArg(args, argIndex);
+            //    op.trainOp.validationFiles = ArgUtils.getStringFromArg(args, argIndex);
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
 
             } else if (args[argIndex].equalsIgnoreCase("-parse")) {
