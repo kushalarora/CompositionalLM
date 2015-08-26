@@ -1,6 +1,5 @@
 package com.kushalarora.compositionalLM.lang;
 
-import com.google.common.collect.Lists;
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,19 +10,19 @@ import java.util.List;
  */
 @Slf4j
 public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore {
-    protected double[][][] iSpanSplitScore;
-    protected double[][] iSpanScore;
-    protected double[][][] oSpanWParentScore;
-    protected transient double[][] oSpanScore;
-    protected transient double[][][] muSpanSplitScore;
-    protected transient double[][][] muScore;
-    protected double[][][][] muSpanScoreWParent;
     // inside scores
     // start idx, end idx, state -> logProb (ragged; null for end <= start)
     protected transient double[][][] iScore;
+    protected double[][] iSpanScore;
+    protected double[][][] iSpanSplitScore;
+
     // outside scores
     // start idx, end idx, state -> logProb
     protected transient double[][][] oScore;
+    protected double[][][] oSpanWParentScore;
+
+    protected transient double[][][] muScore;
+    protected double[][][][] muSpanSplitScoreWParent;
 
     protected Sentence sentence;
     protected int length;
@@ -58,10 +57,6 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
         return oSpanWParentScore;
     }
 
-    public double[][] getOutsideSpanProb() {
-        return oSpanScore;
-    }
-
     public List<Word> getCurrentSentence() {
         return sentence;
     }
@@ -70,11 +65,8 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
         return muScore;
     }
 
-    public double[][][] getMuSpanSplitScore() {
-        return muSpanSplitScore;
-    }
 
-    public double[][][][] getMuSpanScoreWParent() { return muSpanScoreWParent; }
+    public double[][][][] getMuSpanSplitScoreWParent() { return muSpanSplitScoreWParent; }
 
     public abstract void clearArrays();
 

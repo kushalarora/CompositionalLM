@@ -3,6 +3,7 @@ package com.kushalarora.compositionalLM.options;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.utils.ArgUtils;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.configuration.ConfigurationException;
 
 /**
@@ -22,7 +23,10 @@ public class ArgParser {
             if (args[argIndex].equalsIgnoreCase("-train")) {
                 // Must be followed by a training file
                 op.train = true;
-                op.trainOp.trainFiles = ArgUtils.getStringFromArg(args, argIndex);
+                val trainFiles = ArgUtils.getStringFromArg(args, argIndex);
+                if (trainFiles.length > 0) {
+                    op.trainOp.trainFiles = trainFiles;
+                }
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
 
             } else if (args[argIndex].equalsIgnoreCase("-nbest")) {
@@ -36,8 +40,10 @@ public class ArgParser {
                 // Ignored if only testing.
                 // If training must be followed by validation File
                 op.trainOp.validate = true;
-                // TODO::Fix this as it shouldn't be null
-                op.trainOp.validationFiles = ArgUtils.getStringFromArg(args, argIndex);
+                val validationFiles = ArgUtils.getStringFromArg(args, argIndex);
+                if (validationFiles.length > 0) {
+                    op.trainOp.validationFiles = validationFiles;
+                }
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
 
             } else if (args[argIndex].equalsIgnoreCase("-parse")) {
@@ -121,7 +127,7 @@ public class ArgParser {
                 if (numThreads.length > 1) {
                     throw new RuntimeException("You can only specify one numThread value");
                 }
-                op.trainOp.parallel =  true;
+                op.trainOp.parallel = true;
                 op.trainOp.nThreads = Integer.parseInt(numThreads[0]);
                 argIndex++;
             } else {

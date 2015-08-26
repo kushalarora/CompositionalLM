@@ -1,7 +1,5 @@
 package com.kushalarora.compositionalLM.model;
 
-import com.kushalarora.compositionalLM.caching.CacheFactory;
-import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
@@ -10,13 +8,10 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.spy.memcached.MemcachedClient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.net.InetSocketAddress;
 import java.util.List;
 
 import static java.lang.Math.exp;
@@ -355,7 +350,7 @@ public class CompositionalGrammar implements Serializable {
          */
         public void doMuScore() {
 
-            double[][][][] muSplitSpanScoresWParents = preScores.getMuSpanScoreWParent();
+            double[][][][] muSplitSpanScoresWParents = preScores.getMuSpanSplitScoreWParent();
             // do leaf nodes
             for (int start = 0; start < length; start++) {
                 int end = start + 1;

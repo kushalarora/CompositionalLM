@@ -15,9 +15,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;
 import static junit.framework.TestCase.assertEquals;
@@ -256,7 +254,7 @@ public class StanfordInsideOutsideScoresTest {
 
         double[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
         double[][][] muSpanStateScore = sIOScore.getMuScore();
-        double[][][][] muSpanSplitWParent = sIOScore.getMuSpanScoreWParent();
+        double[][][][] muSpanSplitWParent = sIOScore.getMuSpanSplitScoreWParent();
         for (int start = 0; start < length; start++) {
             int end = start + 1;
             int split = start;

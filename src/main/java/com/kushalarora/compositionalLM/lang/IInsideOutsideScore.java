@@ -25,20 +25,11 @@ public interface IInsideOutsideScore extends Serializable {
     public double[][] getInsideSpanProb();
 
     public double[][][] getOutsideSpanWParentScore();
-    /**
-     *  Returns \beta(i,j) an array of shape(n,n) where
-     *  n is the length of the sentence. This represents sum of
-     *  all possible trees where span (i,j) is not expanded
-     *  @return outsideSpanProb array
-     */
-    public double[][] getOutsideSpanProb();
-
 
     public double[][][] getMuScore();
 
-    public double[][][] getMuSpanSplitScore();
 
-    public double[][][][] getMuSpanScoreWParent();
+    public double[][][][] getMuSpanSplitScoreWParent();
 
 
 
