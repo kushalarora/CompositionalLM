@@ -73,11 +73,9 @@ public class StanfordInsideOutsideScoresTest {
         assertEquals(null, sIOScore.getInsideSpanSplitProb());
 
         assertEquals(null, sIOScore.getOutsideScores());
-        assertEquals(null, sIOScore.getOutsideSpanProb());
         assertEquals(null, sIOScore.getOutsideSpanWParentScore());
 
         assertEquals(null, sIOScore.getMuScore());
-        assertEquals(null, sIOScore.getMuSpanSplitScore());
 
         sIOScore.considerCreatingArrays();
         sIOScore.initializeScoreArrays();
@@ -88,16 +86,13 @@ public class StanfordInsideOutsideScoresTest {
         double[][][] iSpanSplitScore = sIOScore.getInsideSpanSplitProb();
 
         double[][][] oScore = sIOScore.getOutsideScores();
-        double[][] oSpanScore = sIOScore.getOutsideSpanProb();
         double[][][] oSpanWParentScore = sIOScore.getOutsideSpanWParentScore();
 
         double[][][] muScore = sIOScore.getMuScore();
-        double[][][] muSpanScore = sIOScore.getMuSpanSplitScore();
 
         // verify sizes
         for (int start = 0; start < length; start++) {
             assertEquals(iSpanScore[start].length, length + 1);
-            assertEquals(oSpanScore[start].length, length + 1);
             for (int end = start + 1; end <= length; end++) {
                 assertEquals(iScore[start][end].length, numStates);
                 assertEquals(iSpanSplitScore[start][end].length, length);
@@ -106,7 +101,6 @@ public class StanfordInsideOutsideScoresTest {
                 assertEquals(oSpanWParentScore[start][end].length, length + 1);
 
                 assertEquals(muScore[start][end].length, numStates);
-                assertEquals(muSpanScore[start][end].length, length);
             }
         }
 
@@ -119,7 +113,6 @@ public class StanfordInsideOutsideScoresTest {
         Arrays.fill(zerosLengthP1, 0f);
         for (int start = 0; start < length; start++) {
             assertTrue(Arrays.equals(iSpanScore[start], zerosLengthP1));
-            assertTrue(Arrays.equals(oSpanScore[start], zerosLengthP1));
             for (int end = start + 1; end <= length; end++) {
                 assertTrue(Arrays.equals(iScore[start][end], zerosNumStates));
                 assertTrue(Arrays.equals(iSpanSplitScore[start][end], zerosLength));
@@ -128,7 +121,6 @@ public class StanfordInsideOutsideScoresTest {
                 assertTrue(Arrays.equals(oSpanWParentScore[start][end], zerosLengthP1));
 
                 assertTrue(Arrays.equals(muScore[start][end], zerosNumStates));
-                assertTrue(Arrays.equals(muSpanScore[start][end], zerosLength));
             }
         }
     }
@@ -214,7 +206,6 @@ public class StanfordInsideOutsideScoresTest {
         sIOScore.doInsideScores();
         sIOScore.doOutsideScores();
 
-        double[][] oSpanScores = sIOScore.getOutsideSpanProb();
         double[][][] oScores = sIOScore.getOutsideScores();
         double[][][] oSpanWParent = sIOScore.getOutsideSpanWParentScore();
 
@@ -230,10 +221,6 @@ public class StanfordInsideOutsideScoresTest {
                 for (int parent = 0; parent <= length; parent++) {
                     iScores_span_start_end += oSpanWParent[start][end][parent];
                 }
-
-                assertEquals("Start:" + start + " End:" + end, oSpanScores[start][end], oScores_start_end, .0001);
-                assertEquals("Start:" + start + " End:" + end, oSpanScores[start][end], iScores_span_start_end, .0001);
-                log.debug("oSpanScores[{}][{}]={}", start, end, oSpanScores[start][end]);
             }
         }
     }
@@ -252,7 +239,6 @@ public class StanfordInsideOutsideScoresTest {
         sIOScore.doOutsideScores();
         sIOScore.doMuScore();
 
-        double[][][] muSpanSplitScore = sIOScore.getMuSpanSplitScore();
         double[][][] muSpanStateScore = sIOScore.getMuScore();
         double[][][][] muSpanSplitWParent = sIOScore.getMuSpanSplitScoreWParent();
         for (int start = 0; start < length; start++) {
@@ -266,7 +252,6 @@ public class StanfordInsideOutsideScoresTest {
 
             float mu_score_split_sum = 0.0f;
             float mu_score_split_parent_sum = 0;
-            mu_score_split_sum += muSpanSplitScore[start][end][split];
             for (int parentL = 0; parentL < start; parentL++) {
                 mu_score_split_parent_sum += muSpanSplitWParent[start][end][split][parentL];
             }
@@ -294,7 +279,6 @@ public class StanfordInsideOutsideScoresTest {
                 float mu_score_split_sum = 0.0f;
                 float mu_score_split_parent_sum = 0;
                 for (int split = start + 1; split < end; split++) {
-                    mu_score_split_sum += muSpanSplitScore[start][end][split];
                     for (int parentL = 0; parentL < start; parentL++) {
                         mu_score_split_parent_sum += muSpanSplitWParent[start][end][split][parentL];
                     }

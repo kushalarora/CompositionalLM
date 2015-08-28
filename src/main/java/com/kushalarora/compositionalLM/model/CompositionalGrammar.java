@@ -296,7 +296,7 @@ public class CompositionalGrammar implements Serializable {
                                                 compISplitScore));
 
                     }
-                    // normalize weights to get them sum to 1.
+                    // normalize weights to get them to sum to 1.
                     phraseMatrix[start][end] =
                             phraseMatrix[start][end].div(compositionalIScore[start][end]);
                 }
