@@ -9,6 +9,7 @@ import edu.stanford.nlp.ling.HasContext;
 import edu.stanford.nlp.parser.lexparser.*;
 import edu.stanford.nlp.util.Index;
 import lombok.extern.slf4j.Slf4j;
+import org.ujmp.core.SparseMatrix;
 
 import java.util.*;
 
@@ -39,8 +40,8 @@ public class StanfordGrammar extends AbstractGrammar {
 
     public class StanfordInsideOutsideScore extends AbstractInsideOutsideScore {
 
-        private transient double[][][][] iSplitSpanStateScore;
-        private transient double[][][][] oSpanStateScoreWParent;
+        private transient SparseMatrix iSplitSpanStateScore;
+        private transient SparseMatrix oSpanStateScoreWParent;
         protected int[] words;  // words of sentence being parsed as word Numberer ints
 
         public StanfordInsideOutsideScore(Sentence sentence) {
@@ -108,38 +109,45 @@ public class StanfordGrammar extends AbstractGrammar {
             // ran out of memory and are reallocating
             clearArrays();
             log.info("Starting array allocation");
-            iScore = new double[length][length + 1][];
+/*            iScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     iScore[start][end] = new double[numStates];
                 }
-            }
+            }*/
+            iScore = SparseMatrix.Factory.zeros(length, length + 1, numStates);
 
+/*
             oScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     oScore[start][end] = new double[numStates];
                 }
-            }
+            }*/
+            oScore = SparseMatrix.Factory.zeros(length, length + 1, numStates);
 
-            iSpanScore = new double[length][length + 1];
+//            iSpanScore = new double[length][length + 1];
+            iSpanScore = SparseMatrix.Factory.zeros(length, length + 1);
 
-            iSpanSplitScore = new double[length][length + 1][];
+/*            iSpanSplitScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     // splits
                     iSpanSplitScore[start][end] = new double[length];
                 }
-            }
+            }*/
+            iSplitSpanStateScore = SparseMatrix.Factory.zeros(length, length + 1, length);
 
-            oSpanWParentScore = new double[length][length + 1][];
+/*            oSpanWParentScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     // parents
                     oSpanWParentScore[start][end] = new double[length + 1];
                 }
-            }
+            }*/
+            oSpanWParentScore = SparseMatrix.Factory.zeros(length, length + 1, length + 1);
 
+/*
             oSpanStateScoreWParent = new double[length][length + 1][][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -155,8 +163,11 @@ public class StanfordGrammar extends AbstractGrammar {
                         oSpanStateScoreWParent[start][end][parent] = new double[numStates];
                     }
                 }
-            }
+            }*/
+            oSpanStateScoreWParent = SparseMatrix.Factory.zeros(length, length + 1, length + 1, numStates);
 
+
+/*
             iSplitSpanStateScore = new double[length][length + 1][][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -166,15 +177,19 @@ public class StanfordGrammar extends AbstractGrammar {
                         iSplitSpanStateScore[start][end][split] = new double[numStates];
                     }
                 }
-            }
+            }*/
+            iSplitSpanStateScore = SparseMatrix.Factory.zeros(length, length + 1, numStates);
 
+/*
             muScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
                     muScore[start][end] = new double[numStates];
                 }
-            }
+            }*/
+            muScore = SparseMatrix.Factory.zeros(length, length + 1, numStates);
 
+/*
             muSpanSplitScoreWParent = new double[length][length + 1][][];
             for (int start = 0; start < length; start++) {
                 for (int end = start + 1; end <= length; end++) {
@@ -185,12 +200,15 @@ public class StanfordGrammar extends AbstractGrammar {
                         muSpanSplitScoreWParent[start][end][split] = new double[length + 1];
                     }
                 }
-            }
+            }*/
+            muSpanSplitScoreWParent = SparseMatrix.Factory.zeros(length, length + 1, length, length + 1);
+
             log.info("Finished allocating arrays of length {}", length);
         }
 
         @Override
         public void initializeScoreArrays() {
+/*
             log.info("Intializing Inside Outside Arrays");
             if (length > arraySize) {
                 considerCreatingArrays();
@@ -236,7 +254,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     // fill state
                     Arrays.fill(muScore[start][end], 0f);
                 }
-            }
+            }*/
         }
 
 
@@ -270,7 +288,6 @@ public class StanfordGrammar extends AbstractGrammar {
                 int end = start + 1;
                 Arrays.fill(tags[start], false);
                 log.debug("Doing lex score lookup for index {}", start);
-                double[] iScore_start_end = iScore[start][end];
 
                 //Word context (e.g., morphosyntactic info)
                 // TODO:: Figure out how to use this to advantage
@@ -300,17 +317,17 @@ public class StanfordGrammar extends AbstractGrammar {
                     if (lexScore > Double.NEGATIVE_INFINITY) {
                         assignedSomeTag = true;
                         double tot = exp(lexScore);
-                        iScore_start_end[state] += tot;
+
+                        addToScore(iScore, tot, start, end, state);
+                        // iScore_start_end[state] += tot;
 
                         // in case of leaf nodes there is no node, hence
                         // we keeping the value of split at start
-                        iSplitSpanStateScore[start][end][start][state] += tot;
-                        iSpanSplitScore[start][end][start] += tot;
-                        iSpanScore[start][end] += tot;
-                        log.debug("Start:{} End:{} State: {}  Tag => Word : {} {} Score: {}", start, end, state,
-                                tagging,
-                                lexScore,
-                                iScore_start_end[state]);
+                        addToScore(iSplitSpanStateScore,tot,start, end, start, state);
+
+                        addToScore(iSpanSplitScore, tot, start, end, start);
+
+                        addToScore(iSpanScore, tot, start, end);
                     }
 
                     int tag = tagging.tag;
@@ -323,21 +340,29 @@ public class StanfordGrammar extends AbstractGrammar {
                     // the lexicon score is not -Inf,
                     // not just seen or specified taggings
 
+
+
                     for (int state = 0; state < numStates; state++) {
-                        if (isTag[state] && iScore_start_end[state] == Double.NEGATIVE_INFINITY) {
+                        if (isTag[state] && iScore.getAsDouble(start, end, state) == Double.NEGATIVE_INFINITY) {
 
                             double lexScore = lex.score(new IntTaggedWord(word,
                                             tagIndex.indexOf(stateIndex.get(state))),
                                     start, wordIndex.get(word), wordContextStr);
                             if (lexScore > Double.NEGATIVE_INFINITY) {
                                 double tot = exp(lexScore);
-                                iScore_start_end[state] += tot;
 
+                                addToScore(iScore, tot, start, end, state);
                                 // in case of leaf nodes there is no node, hence
                                 // we keeping the value of split at start
-                                iSplitSpanStateScore[start][end][start][state] += tot;
-                                iSpanSplitScore[start][end][start] += tot;
-                                iSpanScore[start][end] += tot;
+                                addToScore(iSplitSpanStateScore, tot, start, end, start, state);
+
+                                addToScore(iSpanSplitScore, tot, start, end, start);
+
+                                addToScore(iSpanScore, tot, start, end);
+
+//                                iSplitSpanStateScore[start][end][start][state] += tot;
+//                                iSpanSplitScore[start][end][start] += tot;
+//                                iSpanScore[start][end] += tot;
                             }
                         }
                     }
@@ -346,7 +371,7 @@ public class StanfordGrammar extends AbstractGrammar {
                 // Apply unary rules
                 for (int state = 0; state < numStates; state++) {
 
-                    double iS = iScore_start_end[state];
+                    double iS = iScore.getAsDouble(start, end, state);
                     // Unary rules are from non-terminal to non-terminal
                     // if no non-terminal spans (start, end), nothing to
                     // expand here
@@ -365,20 +390,24 @@ public class StanfordGrammar extends AbstractGrammar {
                         // different intermediate tags, so adding to
                         // previous instead of overwriting
 
-                        iScore_start_end[parentState] += tot;
+                        // iScore_start_end[parentState] += tot;
+                       addToScore(iScore, tot, start, end, parentState);
 
                         // in case of leaf nodes there is no node, hence
                         // we keeping the value of split at start
-                        iSplitSpanStateScore[start][end][start][parentState] += tot;
-                        iSpanSplitScore[start][end][start] += tot;
-                        iSpanScore[start][end] += tot;
-                        log.debug("Start:{} End:{} Unary {} iScore: {}", start, end, ur,
-                                iScore_start_end[parentState]);
+                        addToScore(iSplitSpanStateScore, tot, start, end, start, parentState);
+
+                        addToScore(iSpanSplitScore, tot, start, end, start);
+
+                        addToScore(iSpanScore, tot, start, end);
+
+//                        iSplitSpanStateScore[start][end][start][parentState] += tot;
+//                        iSpanSplitScore[start][end][start] += tot;
+//                        iSpanScore[start][end] += tot;
 
                     }   // end for unary rules
                 }   // end for state for unary rules
 
-                log.debug("iSpanScore[{}][{}]: {}", start, end, iSpanScore[start][end]);
             } // end for start
         } // end doLexScores(List sentence)
 
@@ -426,13 +455,16 @@ public class StanfordGrammar extends AbstractGrammar {
                     // (start, end - 1), (end - 1, end)
                     for (int split = start + 1; split < end; split++) {
 
-                        double lS = iScore[start][split][leftState];
+//                        double lS = iScore[start][split][leftState];
+                        double lS = getScore(iScore, start, split, leftState);
+
                         if (lS == 0f) {
                             continue;
                         }
                         lS = log(lS);
 
-                        double rS = iScore[split][end][rightState];
+//                        double rS = iScore[split][end][rightState];
+                        double rS = getScore(iScore, split, end, rightState);
                         if (rS == 0f) {
                             continue;
                         }
@@ -445,13 +477,19 @@ public class StanfordGrammar extends AbstractGrammar {
                         double tot = exp(pS + lS + rS);
 
                         // in left child
-                        iScore[start][end][parentState] += tot;
+//                        iScore[start][end][parentState] += tot;
+                        addToScore(iScore, tot, start, end, parentState);
 
                         // Marginalizing over parentState and retaining
                         // split index
-                        iSpanSplitScore[start][end][split] += tot;
+//                        iSpanSplitScore[start][end][split] += tot;
+                        addToScore(iSpanSplitScore, tot, start, end, split);
 
-                        iSplitSpanStateScore[start][end][split][parentState] += tot;
+//                        iSplitSpanStateScore[start][end][split][parentState] += tot;
+                        addToScore(iSplitSpanStateScore, tot, start, end, split, parentState);
+
+//                       iSpanScore[start][end] += tot;
+                        addToScore(iSpanScore, tot, start, end);
                     } // for split point
                 } // end for leftRules
             }
@@ -479,13 +517,15 @@ public class StanfordGrammar extends AbstractGrammar {
                     // (start, end - 1), (end - 1, end)
                     for (int split = start + 1; split < end; split++) {
 
-                        double lS = iScore[start][split][leftState];
+//                        double lS = iScore[start][split][leftState];
+                        double lS = getScore(iScore, start, split, leftState);
                         if (lS == 0f) {
                             continue;
                         }
                         lS = log(lS);
 
-                        double rS = iScore[split][end][rightState];
+//                        double rS = iScore[split][end][rightState];
+                        double rS = getScore(iScore, split, end, rightState);
                         if (rS == 0f) {
                             continue;
                         }
@@ -497,14 +537,19 @@ public class StanfordGrammar extends AbstractGrammar {
 
                         double tot = exp(pS + lS + rS);
                         // right child
-                        iScore[start][end][parentState] += tot;
-
+//                        iScore[start][end][parentState] += tot;
+                        addToScore(iScore, tot, start, end, parentState);
 
                         // Marginalizing over parentState and retaining
                         // split index
-                        iSpanSplitScore[start][end][split] += tot;
+                        //iSpanSplitScore[start][end][split] += tot;
+                        addToScore(iSpanSplitScore, tot, start, end, split);
 
-                        iSplitSpanStateScore[start][end][split][parentState] += tot;
+//                        iSplitSpanStateScore[start][end][split][parentState] += tot;
+                        addToScore(iSplitSpanStateScore, tot, start, end, split, parentState);
+
+                        addToScore(iSpanScore, tot, start, end);
+
                     } // for split point
                 } // end for rightRules
             }
@@ -512,7 +557,8 @@ public class StanfordGrammar extends AbstractGrammar {
             // do unary rules -- one could promote this loop and put start inside
             for (int state = 0; state < numStates; state++) {
 
-                double iS = iScore[start][end][state];
+//                double iS = iScore[start][end][state];
+                double iS = getScore(iScore, start, end, state);
                 if (iS == 0f) {
                     continue;
                 }
@@ -524,31 +570,34 @@ public class StanfordGrammar extends AbstractGrammar {
                     int parentState = ur.parent;
                     float pS = ur.score;
                     double tot = exp(iS + pS);
-                    iScore[start][end][parentState] += tot;
+//                    iScore[start][end][parentState] += tot;
+                    addToScore(iScore, tot, start, end, parentState);
+
 
                     // We are marginalizing over all states and this state
                     // spans (start,end) and should be marginalized for all
                     // splits
                     for (int split = start + 1; split < end; split++) {
                         if (stateSplit[state][split]) {
-                            iSpanSplitScore[start][end][split] += tot;
-                            iSplitSpanStateScore[start][end][split][parentState] += tot;
+//                            iSpanSplitScore[start][end][split] += tot;
+                            addToScore(iSpanSplitScore, tot, start, end, split);
+
+//                            iSplitSpanStateScore[start][end][split][parentState] += tot;
+                            addToScore(iSplitSpanStateScore, tot, start, end, split, parentState);
+
+//                            iSpanScore[start][end] += tot;
+                            addToScore(iSpanScore, tot, start, end);
                         }
                     }
 
                 } // for UnaryRule r
             } // for unary rules
-
-            for (int split = start + 1; split < end; split++) {
-                // Marginalizing over both split and parent state
-                iSpanScore[start][end] += iSpanSplitScore[start][end][split];
-            }
         }
 
         /**
          * Populate outside score related arrays.
          */
-        public void doOutsideScores2() {
+        /*public void doOutsideScores2() {
             int initialParentIdx = length;
             int initialStart = 0;
             int initialEnd = length;
@@ -690,7 +739,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     }   // end for right state
                 }   // end for start
             }   // end for end
-        }   // end doOutsideScores
+        }   // end doOutsideScores*/
 
 
         public void doOutsideScores() {
@@ -698,9 +747,19 @@ public class StanfordGrammar extends AbstractGrammar {
             int initialStart = 0;
             int initialEnd = length;
             int startSymbol = stateIndex.indexOf(goalStr);
-            oScore[initialStart][initialEnd][startSymbol] = 1.0f;
-            oSpanWParentScore[initialStart][initialEnd][initialParentIdx] = 1.0f;
-            oSpanStateScoreWParent[initialStart][initialEnd][initialParentIdx][startSymbol] = 1.0f;
+//            oScore[initialStart][initialEnd][startSymbol] = 1.0f;
+//            oSpanWParentScore[initialStart][initialEnd][initialParentIdx] = 1.0f;
+//            oSpanStateScoreWParent[initialStart][initialEnd][initialParentIdx][startSymbol] = 1.0f;
+
+            setScore(oScore, 1.0f,
+                    initialStart, initialEnd, startSymbol);
+
+            setScore(oSpanWParentScore, 1.0f,
+                    initialStart, initialEnd, initialParentIdx);
+
+            setScore(oSpanStateScoreWParent, 1.0f,
+                    initialStart, initialEnd, initialParentIdx, startSymbol);
+
 
             for (int diff = length; diff >= 1; diff--) {
                 for (int start = 0; start + diff <= length; start++) {
@@ -715,7 +774,9 @@ public class StanfordGrammar extends AbstractGrammar {
 
                         // if current parentState's outside score is zero,
                         // child's would be zero as well
-                        double oS = oScore[start][end][parentState];
+//                        double oS = oScore[start][end][parentState];
+                        double oS = getScore(oScore, start, end,parentState);
+
                         if (oS == 0f) {
                             continue;
                         }
@@ -729,9 +790,13 @@ public class StanfordGrammar extends AbstractGrammar {
                             log.debug("Adding unary rule {} to outside score for Start: {}, End: {}"
                                     , ur, start, end);
 
-                            oScore[start][end][childState] += tot;
-                            oSpanWParentScore[start][end][parent] += tot;
-                            oSpanStateScoreWParent[start][end][parent][childState] += tot;
+//                            oScore[start][end][childState] += tot;
+//                            oSpanWParentScore[start][end][parent] += tot;
+//                            oSpanStateScoreWParent[start][end][parent][childState] += tot;
+
+                            addToScore(oScore, tot, start, end, childState);
+                            addToScore(oSpanWParentScore, tot, start, end, parent);
+                            addToScore(oSpanStateScoreWParent, tot, start, end, parent, childState);
                         }   // end for unary rule iter
                     }   // end for parentState
 
@@ -739,7 +804,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     for (int parentState = 0; parentState < numStates; parentState++) {
                         // if current parentState's outside score is zero,
                         // child's would be zero as well
-                        double oS = oScore[start][end][parentState];
+                        double oS = getScore(oScore, start, end, parentState);
                         if (oS == 0f) {
                             continue;
                         }
@@ -756,46 +821,36 @@ public class StanfordGrammar extends AbstractGrammar {
                                 int lStart = start, lEnd = split, lParent = end;
                                 int rStart = split, rEnd = end, rParent = start;
 
-                                double rS = iScore[split][end][rightState];
+                                double rS = getScore(iScore, split, end, rightState);
                                 if (rS > 0f) {
                                     rS = log(rS);
-                                    log.debug("oScore[{}][{}][{}]= pS + oScore[{}][{}][{}]({}) + iScore[{}][{}][{}]" +
-                                                    "({}) " +
-                                                    "Rule" +
-                                                    " {}",
-                                            start, split, leftState,
-                                            start, end, parentState, oS,
-                                            split, end, rightState, rS,
-                                            br);
-
 
                                     double totR = exp(pS + rS + oS);
 
-                                    oScore[lStart][lEnd][leftState] += totR;
-                                    oSpanWParentScore[lStart][lEnd][lParent] += totR;
-                                    oSpanStateScoreWParent[lStart][lEnd][lParent][leftState] += totR;
+//                                    oScore[lStart][lEnd][leftState] += totR;
+//                                    oSpanWParentScore[lStart][lEnd][lParent] += totR;
+//                                    oSpanStateScoreWParent[lStart][lEnd][lParent][leftState] += totR;
+
+                                    addToScore(oScore, totR, lStart, lEnd, leftState);
+                                    addToScore(oSpanWParentScore, totR, lStart, lEnd, lParent);
+                                    addToScore(oSpanStateScoreWParent, totR, lStart, lEnd, lParent, leftState);
                                 } // end if rs > 0
 
 
                                 // If iScore of the left span is zero, so is the
                                 // oScore of left span
-                                double lS = iScore[start][split][leftState];
+                                double lS = getScore(iScore, start, split, leftState);
                                 if (lS > 0f) {
                                     lS = log(lS);
-
-                                    log.debug("oScore[{}][{}][{}]=oScore[{}][{}][{}]({}) + iScore[{}][{}][{}]({}) " +
-                                                    "Rule" +
-                                                    " {}",
-                                            split, end, rightState,
-                                            start, end, parentState, oS,
-                                            start, split, leftState, lS,
-                                            br);
-
                                     double totL = exp(pS + lS + oS);
 
-                                    oScore[rStart][rEnd][rightState] += totL;
-                                    oSpanWParentScore[rStart][rEnd][rParent] += totL;
-                                    oSpanStateScoreWParent[rStart][rEnd][rParent][rightState] += totL;
+//                                    oScore[rStart][rEnd][rightState] += totL;
+//                                    oSpanWParentScore[rStart][rEnd][rParent] += totL;
+//                                    oSpanStateScoreWParent[rStart][rEnd][rParent][rightState] += totL;
+                                    addToScore(oScore, totL, rStart, rEnd, rightState);
+                                    addToScore(oSpanWParentScore, totL, rStart, rEnd, rParent);
+                                    addToScore(oSpanStateScoreWParent, totL, rStart, rEnd, rParent, rightState);
+
                                 }   // end if ls > 0
                             }   // end for split
                         }
@@ -820,13 +875,13 @@ public class StanfordGrammar extends AbstractGrammar {
                 for (int state = 0; state < numStates; state++) {
 
                     // If iScore or oScore is zero, the mu score is zero
-                    double iS = iScore[start][end][state];
+                    double iS = getScore(iScore, start, end, state);
                     if (iS == 0) {
                         continue;
                     }
                     iS = log(iS);
 
-                    double oS = oScore[start][end][state];
+                    double oS = getScore(oScore, start, end, state);
 
                     if (oS == 0f) {
                         continue;
@@ -836,7 +891,9 @@ public class StanfordGrammar extends AbstractGrammar {
 
                     double tot;
                     tot = exp(iS + oS);
-                    muScore[start][end][state] += tot;
+                    addToScore(muScore, tot, start, end, state);
+
+
                     log.debug("muScore[{}][{}][{}] = {}",
                             start, end, state, tot);
 
@@ -844,17 +901,18 @@ public class StanfordGrammar extends AbstractGrammar {
                     // as iScore is nothing but marginalization over split
                     // If this is zero, then this split with this state
                     // din't occur in grammar
-                    double iSplitSpanStateScore = this.iSplitSpanStateScore[start][end][split][state];
+                    double iSplitSpanStateScore = getScore(
+                            this.iSplitSpanStateScore, start, end, split, state);
+
                     if (iSplitSpanStateScore == 0) {
                         continue;
                     }
                     iSplitSpanStateScore = log(iSplitSpanStateScore);
 
-                    tot = exp(oS + iSplitSpanStateScore);
-
                     // Takes care of parents of span (parentBegin, end)
                     for (int parentBegin = 0; parentBegin < start; parentBegin++) {
-                        double oScoreWParent = oSpanStateScoreWParent[start][end][parentBegin][state];
+                        double oScoreWParent = getScore(
+                                oSpanStateScoreWParent, start, end, parentBegin, state);
 
                         // If this is zero then parent  (parentBegin, end)
                         // were never expanded to child with this state spanning
@@ -864,14 +922,16 @@ public class StanfordGrammar extends AbstractGrammar {
                         }
                         oScoreWParent = log(oScoreWParent);
                         tot = exp(oScoreWParent + iSplitSpanStateScore);
-                        muSpanSplitScoreWParent[start][end][split][parentBegin] += tot;
-                        log.debug("muSpanSplitScoreWParent[{}][{}][{}][{}] = {}",
-                                start, end, split, parentBegin, tot);
+                        addToScore(
+                                muSpanSplitScoreWParent, tot, start, end, split, parentBegin);
+
                     }
 
                     // Takes care of the parents with span (start, parentEnd)
                     for (int parentEnd = end; parentEnd <= length; parentEnd++) {
-                        double oScoreWParent = oSpanStateScoreWParent[start][end][parentEnd][state];
+                        double oScoreWParent = getScore(
+                                oSpanStateScoreWParent, start, end, parentEnd, state);
+
                         // If this is zero then parent  (start, parentEnd)
                         // were never expanded to child with this state spanning
                         // (start, end)
@@ -880,9 +940,8 @@ public class StanfordGrammar extends AbstractGrammar {
                         }
                         oScoreWParent = log(oScoreWParent);
                         tot = exp(oScoreWParent + iSplitSpanStateScore);
-                        muSpanSplitScoreWParent[start][end][split][parentEnd] += tot;
-                        log.debug("muSpanSplitScoreWParent[{}][{}][{}][{}] = {}",
-                                start, end, split, parentEnd, tot);
+
+                        addToScore(muSpanSplitScoreWParent, tot, start, end, split, parentEnd);
                     }
                 }
             }
@@ -895,13 +954,13 @@ public class StanfordGrammar extends AbstractGrammar {
                     for (int state = 0; state < numStates; state++) {
 
                         // If iScore or oScore is zero, the mu score is zero
-                        double oS = oScore[start][end][state];
+                        double oS = getScore(oScore, start, end, state);
                         if (oS == 0) {
                             continue;
                         }
                         oS = log(oS);
 
-                        double iS = iScore[start][end][state];
+                        double iS = getScore(iScore, start, end, state);
                         if (iS == 0) {
                             continue;
                         }
@@ -910,13 +969,16 @@ public class StanfordGrammar extends AbstractGrammar {
                         double tot;
 
                         tot = exp(oS + iS);
-                        muScore[start][end][state] += tot;
+                        addToScore(muScore, tot, start, end, state);
+
                         log.debug("muScore[{}][{}][{}] = {}",
                                 start, end, state, tot);
                         // This handles the leaf nodes with no split
                         for (int split = start + 1; split < end; split++) {
                             // Marginalizing over both split and parent state
-                            double iSplitSpanStateScore = this.iSplitSpanStateScore[start][end][split][state];
+                            double iSplitSpanStateScore = getScore(
+                                    this.iSplitSpanStateScore, start, end, split, state);
+
                             if (iSplitSpanStateScore == 0) {
                                 continue;
                             }
@@ -924,7 +986,9 @@ public class StanfordGrammar extends AbstractGrammar {
 
                             // Takes care of parents of span (parentBegin, end)
                             for (int parentBegin = 0; parentBegin < start; parentBegin++) {
-                                double oScoreWParent = oSpanStateScoreWParent[start][end][parentBegin][state];
+                                double oScoreWParent = getScore(
+                                        oSpanStateScoreWParent, start, end, parentBegin, state);
+
                                 // If this is zero then parent  (parentBegin, end)
                                 // were never expanded to child with this state spanning
                                 // (start, end)
@@ -934,14 +998,14 @@ public class StanfordGrammar extends AbstractGrammar {
                                 oScoreWParent = log(oScoreWParent);
 
                                 tot = exp(oScoreWParent + iSplitSpanStateScore);
-                                muSpanSplitScoreWParent[start][end][split][parentBegin] += tot;
+                                addToScore(muSpanSplitScoreWParent, tot, start, end, split, parentBegin);
                                 log.debug("muSpanSplitScoreWParent[{}][{}][{}][{}] = {}",
                                         start, end, split, parentBegin, tot);
                             }
 
                             // Takes care of the parents with span (start, parentEnd)
                             for (int parentEnd = end; parentEnd <= length; parentEnd++) {
-                                double oStateScoreWParent = oSpanStateScoreWParent[start][end][parentEnd][state];
+                                double oStateScoreWParent = getScore(oSpanStateScoreWParent, start, end, parentEnd, state);
                                 // If this is zero then parent  (start, parentEnd)
                                 // were never expanded to child with this state spanning
                                 // (start, end)
@@ -951,7 +1015,7 @@ public class StanfordGrammar extends AbstractGrammar {
                                 oStateScoreWParent = log(oStateScoreWParent);
 
                                 tot = exp(oStateScoreWParent + iSplitSpanStateScore);
-                                muSpanSplitScoreWParent[start][end][split][parentEnd] += tot;
+                                addToScore(muSpanSplitScoreWParent, tot, start, end, split, parentEnd);
                                 log.debug("muSpanSplitScoreWParent[{}][{}][{}][{}] = {}",
                                         start, end, split, parentEnd, tot);
                             }

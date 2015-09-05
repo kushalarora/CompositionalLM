@@ -1,5 +1,7 @@
 package com.kushalarora.compositionalLM.lang;
 
+import org.ujmp.core.SparseMatrix;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -14,7 +16,7 @@ public interface IInsideOutsideScore extends Serializable {
      * sum of probability of all trees spanning (i,j) split at k
      * @return insideSpanSplitProb array
      */
-    public double[][][] getInsideSpanSplitProb();
+    public SparseMatrix getInsideSpanSplitProb();
 
     /***
      * Returns \pi(i,j), an array of shape(n,n)
@@ -22,14 +24,14 @@ public interface IInsideOutsideScore extends Serializable {
      * summ of probability of all trees spanning (i,j)
      * @return  insideSpanProb array
      */
-    public double[][] getInsideSpanProb();
+    public SparseMatrix getInsideSpanProb();
 
-    public double[][][] getOutsideSpanWParentScore();
+    public SparseMatrix getOutsideSpanWParentScore();
 
-    public double[][][] getMuScore();
+    public SparseMatrix getMuScore();
 
 
-    public double[][][][] getMuSpanSplitScoreWParent();
+    public SparseMatrix getMuSpanSplitScoreWParent();
 
 
 
@@ -40,5 +42,7 @@ public interface IInsideOutsideScore extends Serializable {
     public List<Word> getCurrentSentence();
 
     public void computeInsideOutsideProb();
+
+    public double getScore(SparseMatrix matrix, long... indexes);
 
 }

@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.lang;
 
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.extern.slf4j.Slf4j;
+import org.ujmp.core.SparseMatrix;
 
 import java.util.List;
 
@@ -12,17 +13,17 @@ import java.util.List;
 public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore {
     // inside scores
     // start idx, end idx, state -> logProb (ragged; null for end <= start)
-    protected transient double[][][] iScore;
-    protected double[][] iSpanScore;
-    protected double[][][] iSpanSplitScore;
+    protected transient SparseMatrix iScore;
+    protected SparseMatrix iSpanScore;
+    protected SparseMatrix iSpanSplitScore;
 
     // outside scores
     // start idx, end idx, state -> logProb
-    protected transient double[][][] oScore;
-    protected double[][][] oSpanWParentScore;
+    protected transient SparseMatrix oScore;
+    protected SparseMatrix oSpanWParentScore;
 
-    protected transient double[][][] muScore;
-    protected double[][][][] muSpanSplitScoreWParent;
+    protected transient SparseMatrix muScore;
+    protected SparseMatrix muSpanSplitScoreWParent;
 
     protected Sentence sentence;
     protected int length;
@@ -37,23 +38,36 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
         length = this.sentence.size();
     }
 
-    public double[][][] getInsideScores() {
+    public double getScore(SparseMatrix matrix, long... indexes) {
+        return matrix.getAsDouble(indexes);
+    }
+
+    protected void setScore(SparseMatrix matrix, double value, long... indexes) {
+        matrix.setAsDouble(value, indexes);
+    }
+
+    protected void addToScore(SparseMatrix matrix, double value, long... indexes) {
+        setScore(matrix, value + getScore(matrix, indexes), indexes);
+    }
+
+
+    public SparseMatrix getInsideScores() {
         return iScore;
     }
 
-    public double[][][] getOutsideScores() {
+    public SparseMatrix getOutsideScores() {
         return oScore;
     }
 
-    public double[][][] getInsideSpanSplitProb() {
+    public SparseMatrix getInsideSpanSplitProb() {
         return iSpanSplitScore;
     }
 
-    public double[][] getInsideSpanProb() {
+    public SparseMatrix getInsideSpanProb() {
         return iSpanScore;
     }
 
-    public double[][][] getOutsideSpanWParentScore() {
+    public SparseMatrix getOutsideSpanWParentScore() {
         return oSpanWParentScore;
     }
 
@@ -61,12 +75,12 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
         return sentence;
     }
 
-    public double[][][] getMuScore() {
+    public SparseMatrix getMuScore() {
         return muScore;
     }
 
 
-    public double[][][][] getMuSpanSplitScoreWParent() { return muSpanSplitScoreWParent; }
+    public SparseMatrix getMuSpanSplitScoreWParent() { return muSpanSplitScoreWParent; }
 
     public abstract void clearArrays();
 
