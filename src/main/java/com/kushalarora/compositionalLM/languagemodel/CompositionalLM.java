@@ -69,8 +69,6 @@ public class CompositionalLM {
         List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
 
         for (String trainFile : op.trainOp.trainFiles) {
-            int sentenceCount = 0;
-
             trainIterators.add(Lists.newArrayList(docProcessorFactory
                     .getDocumentProcessor(trainFile)));
         }

@@ -136,7 +136,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     iSpanSplitScore[start][end] = new double[length];
                 }
             }*/
-            iSplitSpanStateScore = SparseMatrix.Factory.zeros(length, length + 1, length);
+            iSpanSplitScore = SparseMatrix.Factory.zeros(length, length + 1, length);
 
 /*            oSpanWParentScore = new double[length][length + 1][];
             for (int start = 0; start < length; start++) {
@@ -178,7 +178,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     }
                 }
             }*/
-            iSplitSpanStateScore = SparseMatrix.Factory.zeros(length, length + 1, numStates);
+            iSplitSpanStateScore = SparseMatrix.Factory.zeros(length, length + 1, length, numStates);
 
 /*
             muScore = new double[length][length + 1][];
