@@ -131,6 +131,9 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
             throw new RuntimeException("Z is zero for sentence " + sentence);
         }
 
+        // removing the reference to dxdxw to save memory space
+        dxdxw = null;
+
         dQdXw = dQdXw.div(compositionalIScore[0][length]);
         return dQdXw;
     }

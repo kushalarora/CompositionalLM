@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.options;
 
+import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorFactory;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.utils.ArgUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,8 @@ import org.apache.commons.configuration.ConfigurationException;
 /**
  * Created by karora on 7/12/15.
  */
+
+// TODO:: Move caching parse config to its own file cache.config.
 
 @Slf4j
 public class ArgParser {
@@ -121,18 +124,59 @@ public class ArgParser {
                 op.grammarOp.lowerCase = true;
             } else if (args[argIndex].equalsIgnoreCase("-parallel")) {
                 op.trainOp.parallel = true;
-                op.trainOp.nThreads = Runtime.getRuntime().availableProcessors();
-            } else if (args[argIndex].equalsIgnoreCase("-parallel")) {
                 String[] numThreads = ArgUtils.getStringFromArg(args, argIndex);
                 if (numThreads.length > 1) {
                     throw new RuntimeException("You can only specify one numThread value");
+                } else if (numThreads.length == 0) {
+                    op.trainOp.nThreads = Runtime.getRuntime().availableProcessors();
+                } else {
+                    op.trainOp.nThreads = Integer.parseInt(numThreads[0]);
+                    argIndex++;
                 }
-                op.trainOp.parallel = true;
-                op.trainOp.nThreads = Integer.parseInt(numThreads[0]);
+            } else if (args[argIndex].equalsIgnoreCase("-nlDelim")) {
+                op.grammarOp.newLineDelimiter = true;
+            }   else if (args[argIndex].equalsIgnoreCase("-docType")) {
+                String[] docProcessorType = ArgUtils.getStringFromArg(args, argIndex);
+                if (docProcessorType.length != 1) {
+                    throw new RuntimeException("You can only specify one doc processor value");
+                }
+                op.inputOp.processorType =
+                        DocumentProcessorFactory
+                                .DocumentProcessorType
+                                .fromString(docProcessorType[0]);
+
+                argIndex++;
+            } else if (args[argIndex].equalsIgnoreCase("-epochs")) {
+                String[] maxEpochs = ArgUtils.getStringFromArg(args, argIndex);
+                if (maxEpochs.length != 1) {
+                    throw new RuntimeException("You can only specify exactly one epoch value");
+                }
+                op.trainOp.maxEpochs = Integer.parseInt(maxEpochs[0]);
+                argIndex++;
+            } else if (args[argIndex].equalsIgnoreCase("-batchSize")) {
+                String[] batchSize = ArgUtils.getStringFromArg(args, argIndex);
+                if (batchSize.length != 1) {
+                    throw new RuntimeException("You can only specify exactly one epoch value");
+                }
+                op.trainOp.batchSize = Integer.parseInt(batchSize[0]);
+                argIndex++;
+            } else if (args[argIndex].equalsIgnoreCase("-validFreq")) {
+                String[] validFreq = ArgUtils.getStringFromArg(args, argIndex);
+                if (validFreq.length != 1) {
+                    throw new RuntimeException("You can only specify exactly one epoch value");
+                }
+                op.trainOp.validationFreq = Integer.parseInt(validFreq[0]);
+                argIndex++;
+            } else if (args[argIndex].equalsIgnoreCase("-learnRate")) {
+                String[] learningRate = ArgUtils.getStringFromArg(args, argIndex);
+                if (learningRate.length != 1) {
+                    throw new RuntimeException("You can only specify exactly one learning rate value");
+                }
+                op.trainOp.learningRate = Double.parseDouble(learningRate[0]);
                 argIndex++;
             } else {
 
-            }   // end arg parsing if statement
+            }// end arg parsing if statement
             argIndex++;
         }   // end while loop
         return op;
