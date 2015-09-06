@@ -20,12 +20,6 @@ public interface IDerivative {
 
     public boolean containsNanOrInf();
 
-    public void mul(IDerivative adaGrad);
-
-    public void power(double power);
-
-    public void add(double bias);
-
     public IDerivative adaGrad(IDerivative gradient);
 }
 

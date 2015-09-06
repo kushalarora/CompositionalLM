@@ -157,18 +157,6 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
         return containsNanOrInf(dQdXw);
     }
 
-    public void mul(IDerivative adaGrad) {
-        dQdXw = dQdXw.mul(((dQdXw) adaGrad).getDQdXw());
-    }
-
-    public void power(double power) {
-        dQdXw = pow(dQdXw, power);
-    }
-
-    public void add(double bias) {
-        dQdXw = dQdXw.add(bias);
-    }
-
     public IDerivative adaGrad(IDerivative gradient) {
         return new dQdXw(model,
                 adaGrad.getGradient(((dQdXw) gradient).dQdXw));

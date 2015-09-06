@@ -39,7 +39,7 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
     }
 
     public void clear() {
-        // Wipe cleaern
+        // Wipe clean
         for (int i = 0; i < model.getDimensions(); i++) {
             dQdu.putScalar(i, 0);
         }
@@ -55,18 +55,6 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
 
     public boolean containsNanOrInf() {
         return containsNanOrInf(dQdu);
-    }
-
-    public void mul(IDerivative adaGrad) {
-        dQdu = dQdu.mul(((dQdu) adaGrad).getDQdu());
-    }
-
-    public void power(double power) {
-        dQdu = pow(dQdu, power);
-    }
-
-    public void add(double bias) {
-        dQdu = dQdu.add(bias);
     }
 
     public IDerivative adaGrad(IDerivative gradient) {

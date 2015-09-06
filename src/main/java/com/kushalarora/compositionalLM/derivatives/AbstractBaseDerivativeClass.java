@@ -25,6 +25,10 @@ public abstract class AbstractBaseDerivativeClass implements Serializable {
         this.model = model;
     }
 
+    /**
+     * Sum all entries, if there is a Nan or Inf result will
+     * not be a finite number.
+     */
     protected boolean containsNanOrInf(INDArray arr) {
         double sum = arr.sum(Integer.MAX_VALUE).getDouble();
         return !Double.isFinite(sum);

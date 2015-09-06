@@ -22,8 +22,7 @@ public abstract class AbstractSGDOptimizer<T extends IIndexed, D extends IDeriva
 
     public void updateParams(D derivatives) {
         derivatives.mul(-1 * op.trainOp.learningRate);
-        getParams()
-                .update(derivatives);
+        getParams().update(derivatives);
     }
 
     public void calcLearningRate(final D derivatives) {

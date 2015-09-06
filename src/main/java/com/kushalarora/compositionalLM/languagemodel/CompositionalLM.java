@@ -59,6 +59,7 @@ public class CompositionalLM {
 
     @SneakyThrows
     public void train() {
+        // List of validation documents. Documents are list of sentences.
         List<List<Sentence>> validIterators = new ArrayList<List<Sentence>> ();
         for (String validFile : op.trainOp.validationFiles) {
             validIterators.add(
@@ -66,18 +67,19 @@ public class CompositionalLM {
                             .getDocumentProcessor(validFile)));
         }
 
+        // List of training documents.
         List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
-
         for (String trainFile : op.trainOp.trainFiles) {
             trainIterators.add(Lists.newArrayList(docProcessorFactory
                     .getDocumentProcessor(trainFile)));
         }
 
+        // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
                         new Function<Sentence, Double>() {
                             @Nullable
-                            public Double apply(Sentence data) {
+                            public Double apply(Sentence data) {                // scorer
                                 IInsideOutsideScore preScore = cache.get(data);
                                 CompositionalGrammar.CompositionalInsideOutsideScore score =
                                         compGrammar.computeScore(data,
@@ -87,7 +89,7 @@ public class CompositionalLM {
                         },
                         new Function<Sentence, Derivatives>() {
                             @Nullable
-                            public Derivatives apply(@Nullable Sentence sample) {
+                            public Derivatives apply(@Nullable Sentence sample) {              // derivative calculator
                                 Derivatives derivatives = new Derivatives(model, sample);
                                 IInsideOutsideScore preScore = cache.get(sample);
                                 CompositionalGrammar.CompositionalInsideOutsideScore score =
@@ -99,12 +101,13 @@ public class CompositionalLM {
                         },
                         new Function<Void, Void>() {
                             @Nullable
-                            public Void apply(@Nullable Void input) {
+                            public Void apply(@Nullable Void input) {           // saver
                                 saveModelSerialized(op.modelOp.outFilename);
                                 return null;
                             }
                         });
 
+        // Fit training data with validation on validation file.
         optimizer.fit(trainIterators, validIterators);
 
         // Closing cache. Ecache doesn't do eternal caching

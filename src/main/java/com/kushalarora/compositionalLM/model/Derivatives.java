@@ -73,12 +73,6 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdxw.mul(learningRate);
     }
 
-    public void mul(IDerivatives<Sentence> adagrad) {
-        dqdu.mul(((Derivatives) adagrad).getDqdu());
-        dqdw.mul(((Derivatives) adagrad).getDqdw());
-        dqdxw.mul(((Derivatives) adagrad).getDqdxw());
-    }
-
 
     public void clear() {
         dqdu.clear();
@@ -97,34 +91,14 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         log.info("dQdXw Norm2:{}(len={}) = {}", data.getIndex(), data.size(), Nd4j.norm2(dqdxw.getDQdXw()));
     }
 
-    public void power(double exponent) {
-        dqdw.power(exponent);
-        dqdu.power(exponent);
-        dqdxw.power(exponent);
-    }
-
     public Sentence getData() {
         return data;
     }
-
 
     private boolean containsNanOrInf() {
         return dqdu.containsNanOrInf() ||
                 dqdw.containsNanOrInf() ||
                 dqdxw.containsNanOrInf();
-    }
-
-    public IDerivatives<Sentence> deepcopy() {
-        return new Derivatives(data,
-                new dQdW(dqdw),
-                new dQdu(dqdu),
-                new dQdXw(dqdxw));
-    }
-
-    public void add(double bias) {
-        dqdu.add(bias);
-        dqdw.add(bias);
-        dqdxw.add(bias);
     }
 
     public Derivatives adaGrad(IDerivatives<Sentence> derivatives) {
