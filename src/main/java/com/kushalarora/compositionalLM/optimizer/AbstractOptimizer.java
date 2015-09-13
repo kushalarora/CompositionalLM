@@ -245,8 +245,30 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                         double cumlScore = 0;
                         double cumlSize = 0;
                         for (List<T> validList : validSet) {
-                            cumlScore += validFunction.apply(validList);
-                            cumlSize += validList.size();
+                            int validNumBatches = validList.size()/op.trainOp.validBatchSize;
+
+                            for (int validBatch = 0; validBatch < validNumBatches; validBatch++) {
+
+                                // get batch
+                                int validStartIdx = batch * op.trainOp.validBatchSize;
+                                int validEndIdx = (batch + 1) * op.trainOp.validBatchSize;
+                                if (validEndIdx > validList.size()) {
+                                    validEndIdx = validList.size();
+                                }
+
+                                int validBatchSize = validEndIdx - validStartIdx;
+
+                                // In case there batch size is multiple of actual size
+                                // we would have a case of blank sentence
+                                if (validStartIdx >= validEndIdx) {
+                                    continue;
+                                }
+
+                                cumlScore += validFunction.apply(
+                                        validList.subList(validStartIdx, validEndIdx));
+
+                                cumlSize += validBatchSize;
+                            }
                         }
 
                         double mean = cumlScore / cumlSize;

@@ -33,6 +33,7 @@ public class TrainOptions implements Serializable {
     public int cachePort;
     public CacheFactory.CacheType cacheType;
     public OptimizerFactory.OptimizerType optimizer;
+    public int validBatchSize;
 
     public TrainOptions(Configuration config) throws IOException {
         trainFiles =
@@ -83,6 +84,8 @@ public class TrainOptions implements Serializable {
 
 
         validationFiles = validList.toArray(validationFiles);
+
+        validBatchSize = config.getInt("validBatchSize", 100);
 
 
     }

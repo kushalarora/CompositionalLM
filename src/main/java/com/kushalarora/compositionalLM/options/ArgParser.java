@@ -174,6 +174,13 @@ public class ArgParser {
                 }
                 op.trainOp.learningRate = Double.parseDouble(learningRate[0]);
                 argIndex++;
+            } else if (args[argIndex].equalsIgnoreCase("-validBatchSize")) {
+                String[] validBatchSizes = ArgUtils.getStringFromArg(args, argIndex);
+                if (validBatchSizes.length != 1) {
+                    throw new RuntimeException("You can only specify exactly one validation batch size value");
+                }
+                op.trainOp.validBatchSize = Integer.parseInt(validBatchSizes[0]);
+                argIndex++;
             } else {
 
             }// end arg parsing if statement
