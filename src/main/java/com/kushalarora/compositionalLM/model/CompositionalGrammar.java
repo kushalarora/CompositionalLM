@@ -4,6 +4,7 @@ import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.ObjectSizeFetcher;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -471,20 +472,28 @@ public class CompositionalGrammar implements Serializable {
             considerCreatingMatrices();
             initializeMatrices();
 
-            log.info("Starting Compositional inside score:{}", sentence.getIndex());
+            log.info("Starting Compositional inside score:{}:: {}", sentence.getIndex(), sentence.size());
             doInsideScore();
-            log.info("Computed Compositional inside score:{}", sentence.getIndex());
+            log.info("Computed Compositional inside score:{}:: {}", sentence.getIndex(), sentence.size());
 
-            log.info("Starting Compositional outside score:{}", sentence.getIndex());
+            log.info("Starting Compositional outside score:{}:: {}", sentence.getIndex(), sentence.size());
             doOutsideScore();
-            log.info("Computed Compositional outside score:{}", sentence.getIndex());
+            log.info("Computed Compositional outside score:{}:: {}", sentence.getIndex(), sentence.size());
 
-            log.info("Starting Compositional mu score:{}", sentence.getIndex());
+            log.info("Starting Compositional mu score:{}:: {}", sentence.getIndex(), sentence.size());
             doMuScore();
-            log.info("Computed Compositional mu score:{}", sentence.getIndex());
+            log.info("Computed Compositional mu score:{}:: {}", sentence.getIndex(), sentence.size());
 
-            log.info("Compositional Score for sentence#{}: {}",
-                    sentence.getIndex(), getSentenceScore());
+            log.info("Compositional Score for sentence#{}:: {} => {}",
+                    sentence.getIndex(),sentence.size(), getSentenceScore());
+
+
+            if (op.debug) {
+                log.info("Memory Size compIOScore: {}:: {} => {} MB",
+                        sentence.getIndex(), sentence.size(),
+                        ObjectSizeFetcher.getSize(this));
+            }
+
             return getSentenceScore();
         }
     }

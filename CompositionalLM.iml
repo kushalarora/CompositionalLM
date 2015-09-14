@@ -199,5 +199,6 @@
     <orderEntry type="library" name="Maven: net.sf.ehcache:ehcache:2.9.0" level="project" />
     <orderEntry type="library" name="Maven: org.ujmp:ujmp-core:0.3.0" level="project" />
     <orderEntry type="library" name="Maven: org.json:json:20141113" level="project" />
+    <orderEntry type="library" name="Maven: com.github.stephenc:jamm:0.2.5" level="project" />
   </component>
 </module>

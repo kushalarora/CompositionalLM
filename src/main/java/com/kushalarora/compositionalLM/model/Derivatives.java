@@ -4,6 +4,8 @@ import com.kushalarora.compositionalLM.derivatives.dQdW;
 import com.kushalarora.compositionalLM.derivatives.dQdXw;
 import com.kushalarora.compositionalLM.derivatives.dQdu;
 import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.ObjectSizeFetcher;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.factory.Nd4j;
@@ -18,11 +20,12 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 @Getter
 @Slf4j
 public class Derivatives extends AbstractDerivatives<Sentence> {
+    private  Options op;
     private dQdW dqdw;
     private dQdu dqdu;
     private dQdXw dqdxw;
 
-    public Derivatives(Model model, Sentence sentence) {
+    public Derivatives(Options op, Model model, Sentence sentence) {
         super(sentence);
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
@@ -30,13 +33,15 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdu = new dQdu(model);
         dqdw = new dQdW(model);
         dqdxw = new dQdXw(model);
+        this.op = op;
     }
 
-    public Derivatives(Sentence sentence, dQdW dqdw, dQdu dqdu, dQdXw dqdxw) {
+    public Derivatives(Options op, Sentence sentence, dQdW dqdw, dQdu dqdu, dQdXw dqdxw) {
         super(sentence);
         this.dqdw = dqdw;
         this.dqdu = dqdu;
         this.dqdxw = dqdxw;
+        this.op = op;
     }
 
 
@@ -89,6 +94,12 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         log.info("dQdW Norm2:{}(len={}) = {}", data.getIndex(), data.size(), Nd4j.norm2(dqdw.getDQdW()));
         dqdxw.calcDerivative(data, scorer);
         log.info("dQdXw Norm2:{}(len={}) = {}", data.getIndex(), data.size(), Nd4j.norm2(dqdxw.getDQdXw()));
+
+        if (op.debug) {
+            log.info("Memory Size compIOScore: {}:: {} => {} MB",
+                    data.getIndex(), data.size(),
+                    ObjectSizeFetcher.getSize(this));
+        }
     }
 
     public Sentence getData() {
@@ -102,7 +113,7 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     }
 
     public Derivatives adaGrad(IDerivatives<Sentence> derivatives) {
-        return new Derivatives(data,
+        return new Derivatives(op, data,
                 (dQdW) dqdw.adaGrad(
                         ((Derivatives) derivatives).dqdw),
                 (dQdu) dqdu.adaGrad(

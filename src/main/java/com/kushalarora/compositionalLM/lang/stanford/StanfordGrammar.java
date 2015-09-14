@@ -5,6 +5,7 @@ import com.kushalarora.compositionalLM.lang.AbstractInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.ObjectSizeFetcher;
 import edu.stanford.nlp.ling.HasContext;
 import edu.stanford.nlp.parser.lexparser.*;
 import edu.stanford.nlp.util.Index;
@@ -1034,20 +1035,26 @@ public class StanfordGrammar extends AbstractGrammar {
             considerCreatingArrays();
             initializeScoreArrays();
 
-            log.info("Starting inside score computation:{}", sentence.getIndex());
+            log.info("Starting inside score computation:{}::{}", sentence.getIndex(), sentence.size());
             doLexScores();
             doInsideScores();
-            log.info("Computed inside score computation:{}", sentence.getIndex());
+            log.info("Computed inside score computation:{}::{}", sentence.getIndex(), sentence.size());
 
 
-            log.info("Start outside score computation:{}", sentence.getIndex());
+            log.info("Start outside score computation:{}::{}", sentence.getIndex(), sentence.size());
             doOutsideScores();
-            log.info("Computed outside score computation:{}", sentence.getIndex());
+            log.info("Computed outside score computation:{}::{}", sentence.getIndex(), sentence.size());
 
-            log.info("Start mu score computation:{}", sentence.getIndex());
+            log.info("Start mu score computation:{}::{}", sentence.getIndex(), sentence.size());
             doMuScore();
-            log.info("Computed mu score computation:{}", sentence.getIndex());
+            log.info("Computed mu score computation:{}::{}", sentence.getIndex(), sentence.size());
             clearTempArrays();
+
+            if (op.debug) {
+                log.info("Memory Size StanfordIOScore: {}:: {} => {} MB",
+                        sentence.getIndex(), sentence.size(),
+                        ObjectSizeFetcher.getSize(this));
+            }
         }
 
     }

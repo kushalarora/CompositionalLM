@@ -181,6 +181,8 @@ public class ArgParser {
                 }
                 op.trainOp.validBatchSize = Integer.parseInt(validBatchSizes[0]);
                 argIndex++;
+            } else if (args[argIndex].equalsIgnoreCase("-debug")) {
+                op.debug = true;
             } else {
 
             }// end arg parsing if statement

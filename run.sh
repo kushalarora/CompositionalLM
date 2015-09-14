@@ -1,1 +1,1 @@
-java -Xmx3g -jar out/CompositionalLM-1.0-SNAPSHOT-jar-with-dependencies.jar -train src/resources/train -validate src/resources/valid -grammarType stanford -grammarFile src/resources/englishPCFG.ser.gz -saveOutputModelSerialized /tmp/model.ser.gz -parallel
+java -Xmx6g -javaagent:lib/jamm.jar -jar out/CompositionalLM-1.0-SNAPSHOT-jar-with-dependencies.jar -train src/resources/train -validate src/resources/valid -grammarType stanford -grammarFile src/resources/englishPCFG.ser.gz -saveOutputModelSerialized /tmp/model.ser.gz -parallel
