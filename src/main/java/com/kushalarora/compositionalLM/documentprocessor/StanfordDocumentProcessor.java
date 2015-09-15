@@ -17,10 +17,13 @@ import java.util.List;
  */
 public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
     final DocumentPreprocessor processor;
+    final Options op;
 
     public StanfordDocumentProcessor(Options op, String filename, TokenizerFactory tokenizerFactory) {
         processor = new DocumentPreprocessor(filename,
                 DocumentPreprocessor.DocType.Plain);
+
+        this.op = op;
 
         if (!op.grammarOp.grammarType.equals(tokenizerFactory.getOp().grammarOp.grammarType)) {
             throw new RuntimeException("GrammarType for tokenizer(" +
@@ -43,6 +46,8 @@ public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
         processor = new DocumentPreprocessor(reader,
                 DocumentPreprocessor.DocType.Plain);
 
+        this.op = op;
+
         processor.setTokenizerFactory(tokenizerFactory);
 
         if (op.grammarOp.newLineDelimiter) {
@@ -51,21 +56,38 @@ public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
 
     }
 
+    /*
+        Wrapper around the Stanford Iterator.
+        Returns Sentence instead of List<HasWord>
+
+        TODO: Write tests
+     */
     public Iterator<Sentence> iterator() {
         final Iterator<List<HasWord>> it = processor.iterator();
 
+
         return new Iterator<Sentence>() {
+            List<HasWord> sentence;
 
             public boolean hasNext() {
 
-                return it.hasNext();
+                boolean hasNext;
+                while ((hasNext = it.hasNext()) && // if next element present
+                        (sentence = it.next()).size() > op.grammarOp.maxLength); // and is greater than maxLength
+                // keep ignoring
+
+                return hasNext;
             }
 
             public Sentence next() {
+                return transform(sentence);
+            }
+
+            private Sentence transform(List<HasWord> sent) {
                 Sentence sentence =
                         new Sentence(index);
 
-                for (HasWord word : it.next()) {
+                for (HasWord word : sent) {
                     sentence.add((Word) word);
                 }
 

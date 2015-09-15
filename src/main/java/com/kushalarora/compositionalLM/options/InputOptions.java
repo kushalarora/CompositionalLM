@@ -12,11 +12,16 @@ import java.io.Serializable;
  */
 @ToString
 public class InputOptions implements Serializable {
+    public int DEFAULT_MAX_LENGTH = 30;
+
     public DocumentProcessorFactory.DocumentProcessorType processorType;
+    public int maxLength;
 
     public InputOptions(Configuration config) {
         processorType = DocumentProcessorFactory
                 .DocumentProcessorType.fromString(
                         config.getString("processorType", "stanford_plain"));
+
+        maxLength = config.getInt("maxLength", DEFAULT_MAX_LENGTH);
     }
 }

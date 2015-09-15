@@ -183,6 +183,13 @@ public class ArgParser {
                 argIndex++;
             } else if (args[argIndex].equalsIgnoreCase("-debug")) {
                 op.debug = true;
+            } else if (args[argIndex].equalsIgnoreCase("-maxLength")) {
+                String[] maxLengths = ArgUtils.getStringFromArg(args, argIndex);
+                if (maxLengths.length != 1) {
+                    throw new RuntimeException("You can only specify exactly one maximum length value");
+                }
+                op.trainOp.validBatchSize = Integer.parseInt(maxLengths[0]);
+                argIndex++;
             } else {
 
             }// end arg parsing if statement
