@@ -14,6 +14,7 @@ import org.ujmp.core.SparseMatrix;
 
 import java.util.*;
 
+import static com.kushalarora.compositionalLM.utils.ObjectSizeFetcher.getSize;
 import static java.lang.Math.exp;
 import static java.lang.Math.log;
 
@@ -1051,9 +1052,24 @@ public class StanfordGrammar extends AbstractGrammar {
             clearTempArrays();
 
             if (op.debug) {
-                log.info("Memory Size StanfordIOScore: {}:: {} => {} MB",
+                log.info("Memory Size StanfordIOScore: {}:: {}\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "total => {} MB",
                         sentence.getIndex(), sentence.size(),
-                        ObjectSizeFetcher.getSize(this));
+                        "iScore", getSize(iScore),
+                        "iSpanScore", getSize(iSpanScore),
+                        "iSpanSplitScore", getSize(iSpanSplitScore),
+                        "oScore", getSize(oScore),
+                        "oSpanWParentScore", getSize(oSpanWParentScore),
+                        "muScore", getSize(muScore),
+                        "muSpanSplitScoreWParent", getSize(muSpanSplitScoreWParent),
+                        getSize(this));
             }
         }
 

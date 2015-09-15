@@ -16,6 +16,7 @@ import org.ujmp.core.SparseMatrix;
 import java.io.Serializable;
 import java.util.List;
 
+import static com.kushalarora.compositionalLM.utils.ObjectSizeFetcher.getSize;
 import static java.lang.Math.exp;
 
 /**
@@ -487,11 +488,29 @@ public class CompositionalGrammar implements Serializable {
             log.info("Compositional Score for sentence#{}:: {} => {}",
                     sentence.getIndex(),sentence.size(), getSentenceScore());
 
-
             if (op.debug) {
-                log.info("Memory Size compIOScore: {}:: {} => {} MB",
+                log.info("Memory Size compIOScore: {}:: {}\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "\t {} => {} MB\n" +
+                                "total => {} MB",
                         sentence.getIndex(), sentence.size(),
-                        ObjectSizeFetcher.getSize(this));
+                        "phraseMatrix", getSize(phraseMatrix),
+                        "compositionMatrix", getSize(compositionMatrix),
+                        "compositionalMu", getSize(compositionalMu),
+                        "compositionalIScore", getSize(compositionalIScore),
+                        "compositionISplitScore", getSize(compositionISplitScore),
+                        "compositionalOScore", getSize(compositionalOScore),
+                        "compositionScore", getSize(compositionScore),
+                        "cumlCompositionScore", getSize(cumlCompositionScore),
+                        "preScores", getSize(preScores),
+                        getSize(this));
             }
 
             return getSentenceScore();
