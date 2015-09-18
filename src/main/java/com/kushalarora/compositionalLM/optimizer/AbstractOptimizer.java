@@ -205,11 +205,13 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                 Collections.shuffle(shuffledSet, rand);
 
 
-                for (int batch = 0; batch < numBatches; batch++) {
+                for (int batchIdx = 0; batchIdx < numBatches; batchIdx++) {
+
+                    log.info("Starting trainList: {} batch#: {}", trainListIdx, batchIdx);
 
                     // get batch
-                    int startIdx = batch * op.trainOp.batchSize;
-                    int endIdx = (batch + 1) * op.trainOp.batchSize;
+                    int startIdx = batchIdx * op.trainOp.batchSize;
+                    int endIdx = (batchIdx + 1) * op.trainOp.batchSize;
                     if (endIdx > shuffledSet.size()) {
                         endIdx = shuffledSet.size();
                     }
@@ -244,14 +246,18 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                         // calc mean for validation set
                         double cumlScore = 0;
                         double cumlSize = 0;
-                        for (List<T> validList : validSet) {
+                        for (int validListIdx = 0; validListIdx < validSet.size(); validListIdx++) {
+                            List<T> validList = validSet.get(validListIdx);
+
                             int validNumBatches = validList.size()/op.trainOp.validBatchSize;
 
-                            for (int validBatch = 0; validBatch < validNumBatches; validBatch++) {
+                            for (int validBatchIdx = 0; validBatchIdx < validNumBatches; validBatchIdx++) {
+
+                                log.info("Starting validList#: {}, validBatch#: {}", validListIdx, validBatchIdx);
 
                                 // get batch
-                                int validStartIdx = batch * op.trainOp.validBatchSize;
-                                int validEndIdx = (batch + 1) * op.trainOp.validBatchSize;
+                                int validStartIdx = validBatchIdx * op.trainOp.validBatchSize;
+                                int validEndIdx = (validBatchIdx + 1) * op.trainOp.validBatchSize;
                                 if (validEndIdx > validList.size()) {
                                     validEndIdx = validList.size();
                                 }

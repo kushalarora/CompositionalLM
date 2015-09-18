@@ -1,7 +1,12 @@
 - Hadoopization of code
 - Move parallelization to grammar level too. This will improve the performance for long sentences as it will not cause the bottleneck at one really large sentence.
-- 	DONE	 Keep a limit of maximum length you can process. If it exceeds that size... Don't process the sentence. This is a hack as really large sentences can hog the memory and will lead to halt as GC will not be able to free the memory.
+- 	NOT WORKING	 Keep a limit of maximum length you can process. If it exceeds that size... Don't process the sentence. This is a hack as really large sentences can hog the memory and will lead to halt as GC will not be able to free the memory.
 - 	DONE	 Log individual object in derivatives and Compositional Grammar to see if they really are consuming the memory. Maybe do the same for Grammar too. 
 
 
 - The memory consumption of arrays is not much but the something else is causing the huge size. Figure that out. Will need refactoring of code. Should be able to solve memory hogging issue.
+
+- Bug in mean calculation and multiple loops in validation
+
+- Memory Consumption still rises .. verify if it is due to ecache.
+
