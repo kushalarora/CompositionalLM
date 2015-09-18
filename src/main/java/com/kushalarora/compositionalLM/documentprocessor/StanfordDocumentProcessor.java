@@ -6,6 +6,8 @@ import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.process.DocumentPreprocessor;
+import org.apache.commons.collections.Predicate;
+import org.apache.commons.collections.iterators.FilterIterator;
 
 import java.io.Reader;
 import java.util.Iterator;
@@ -64,22 +66,15 @@ public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
     public Iterator<Sentence> iterator() {
         final Iterator<List<HasWord>> it = processor.iterator();
 
-
-        return new Iterator<Sentence>() {
-            List<HasWord> sentence;
+        Iterator<Sentence> iter = new Iterator<Sentence>() {
 
             public boolean hasNext() {
 
-                boolean hasNext;
-                while ((hasNext = it.hasNext()) && // if next element present
-                        (sentence = it.next()).size() > op.grammarOp.maxLength); // and is greater than maxLength
-                // keep ignoring
-
-                return hasNext;
+                return it.hasNext();
             }
 
             public Sentence next() {
-                return transform(sentence);
+                return transform(it.next());
             }
 
             private Sentence transform(List<HasWord> sent) {
@@ -98,5 +93,13 @@ public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
                 it.remove();
             }
         };
+
+
+        return new FilterIterator(iter, new Predicate() {
+            public boolean evaluate(Object o) {
+                Sentence sent = (Sentence) o;
+                return (sent.size() <= op.grammarOp.maxLength);
+            }
+        });
     }
 }
