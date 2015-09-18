@@ -1,20 +1,18 @@
 package com.kushalarora.test.languagemodel;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
+import com.kushalarora.compositionalLM.lang.StanfordGrammar;
 import com.kushalarora.compositionalLM.languagemodel.CompositionalLM;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.io.IOUtils;
 import lombok.SneakyThrows;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.ObjectOutputStream;
 
 import static com.kushalarora.compositionalLM.lang.GrammarFactory.getGrammar;

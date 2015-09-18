@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.optimizer.IIndexed;
 
 /**

@@ -1,6 +1,5 @@
 package com.kushalarora.compositionalLM.documentprocessor;
 
-import com.google.common.base.Charsets;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.TokenizerFactory;
 import com.kushalarora.compositionalLM.options.Options;

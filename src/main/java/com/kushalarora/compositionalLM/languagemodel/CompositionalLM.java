@@ -5,10 +5,11 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.kushalarora.compositionalLM.caching.CacheFactory;
 import com.kushalarora.compositionalLM.caching.CacheWrapper;
+import com.kushalarora.compositionalLM.derivatives.Derivatives;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorFactory;
 import com.kushalarora.compositionalLM.lang.*;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
-import com.kushalarora.compositionalLM.model.Derivatives;
+import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.AbstractOptimizer;
 import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
@@ -81,8 +82,8 @@ public class CompositionalLM {
                             @Nullable
                             public Double apply(Sentence data) {                // scorer
                                 IInsideOutsideScore preScore = cache.get(data);
-                                CompositionalGrammar.CompositionalInsideOutsideScore score =
-                                        compGrammar.computeScore(data,
+                                CompositionalInsideOutsideScore score =
+                                        compGrammar.getScore(data,
                                                 preScore);
                                 return score.getSentenceScore();
                             }
@@ -90,12 +91,13 @@ public class CompositionalLM {
                         new Function<Sentence, Derivatives>() {
                             @Nullable
                             public Derivatives apply(@Nullable Sentence sample) {              // derivative calculator
-                                Derivatives derivatives = new Derivatives(op, model, sample);
+                                Derivatives derivatives = new Derivatives(op,
+                                        model.getDimensions(), model.getVocabSize(), sample);
                                 IInsideOutsideScore preScore = cache.get(sample);
-                                CompositionalGrammar.CompositionalInsideOutsideScore score =
-                                        compGrammar.computeScore(sample,
+                                CompositionalInsideOutsideScore score =
+                                        compGrammar.getScore(sample,
                                                 preScore);
-                                derivatives.calcDerivative(score);
+                                derivatives.calcDerivative(model, score);
                                 return derivatives;
                             }
                         },

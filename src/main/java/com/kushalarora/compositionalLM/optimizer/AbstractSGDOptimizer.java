@@ -1,7 +1,6 @@
 package com.kushalarora.compositionalLM.optimizer;
 
-import com.kushalarora.compositionalLM.lang.Sentence;
-import com.kushalarora.compositionalLM.model.IDerivatives;
+import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 

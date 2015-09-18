@@ -166,7 +166,7 @@ public class Model implements Serializable {
      * @param learningRate Learning rate for update
      * @param scorer       Compositional scores used in calculating derivatives
      */
-    public void update(double learningRate, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
+    public void update(double learningRate, CompositionalInsideOutsideScore scorer) {
 
     }
 

@@ -1,9 +1,7 @@
 package com.kushalarora.compositionalLM.optimizer;
 
+import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.model.IParameter;
-import com.kushalarora.compositionalLM.model.IDerivatives;
-
-import java.util.List;
 
 /**
  * Created by karora on 7/7/15.

@@ -1,8 +1,8 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import com.kushalarora.compositionalLM.lang.Word;
-import com.kushalarora.compositionalLM.model.CompositionalGrammar;
+import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,7 +15,7 @@ import java.util.List;
  */
 
 @Slf4j
-public class dXdXw extends AbstractBaseDerivativeClass {
+public class dXdXw<T extends List<? extends IIndexed>> {
     @Getter
     private INDArray[][][][] dXdXw;
     @Getter
@@ -23,26 +23,51 @@ public class dXdXw extends AbstractBaseDerivativeClass {
 
     private int dim;
     private int V;
-    private int arraySize;
+    private T data;
+    private int length;
 
-    public dXdXw(Model model) {
-        super(model);
-        dim = model.getDimensions();
-        V = model.getVocabSize();
-        int arraySize = 0;
+    public dXdXw(int dimension, int vocab, T data) {
+        dim = dimension;
+        V = vocab;
+        this.data = data;
+        length = data.size();
         dXdXw = new INDArray[V][][][];
+
+        dXdXw = new INDArray[length][][][];
+        dXdXwi = new INDArray[length][length + 1];
+
+        for (int idx = 0; idx < length; idx++) {
+            dXdXw[idx] = new INDArray[length][length + 1][];
+            for (int start = 0; start < length; start++) {
+                for (int end = start + 1; end <= length; end++) {
+                    dXdXw[idx][start][end] = new INDArray[length];
+                    for (int split = start + 1; split < end; split++) {
+                        dXdXw[idx][start][end][split] = Nd4j.create(dim, dim);
+                    }
+                }
+            }
+        }
+
+        for (int start = 0; start < length; start++) {
+            int end = start + 1;
+            dXdXwi[start][end] = Nd4j.eye(dim);
+        }
+
+        for (int diff = 2; diff <= length; diff++) {
+            for (int start = 0; start + diff <= length; start++) {
+                int end = start + diff;
+                dXdXwi[start][end] = Nd4j.zeros(dim, dim);
+            }
+        }
     }
 
-    public INDArray[][][][] calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore
-            scorer) {
-        int length = sentence.size();
+    public INDArray[][][][] calcDerivative(Model model,
+                                           CompositionalInsideOutsideScore scorer) {
 
-        considerCreatingArrays(length);
 
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
         double[][][] compositionISplitScore = scorer.getCompositionISplitScore();
         double[][] compositionIScore = scorer.getInsideSpanProb();
-
 
         for (int i = 0; i < length; i++) {
 
@@ -108,55 +133,5 @@ public class dXdXw extends AbstractBaseDerivativeClass {
             }
         }
         return dXdXw;
-    }
-
-
-    private void considerCreatingArrays(int length) {
-        if (length > arraySize) {
-            try {
-                clear();
-                createArray(length);
-                arraySize = length;
-            } catch (OutOfMemoryError exp) {
-                log.error("Failed to create array of size {}", length);
-                createArray(arraySize);
-                new RuntimeException(exp);
-            }
-        }
-    }
-
-    private void createArray(int length) {
-        dXdXw = new INDArray[length][][][];
-        dXdXwi = new INDArray[length][length + 1];
-
-        for (int idx = 0; idx < length; idx++) {
-            dXdXw[idx] = new INDArray[length][length + 1][];
-            for (int start = 0; start < length; start++) {
-                for (int end = start + 1; end <= length; end++) {
-                    dXdXw[idx][start][end] = new INDArray[length];
-                    for (int split = start + 1; split < end; split++) {
-                        dXdXw[idx][start][end][split] = Nd4j.create(dim, dim);
-                    }
-                }
-            }
-        }
-
-        for (int start = 0; start < length; start++) {
-            int end = start + 1;
-                dXdXwi[start][end] = Nd4j.eye(dim);
-        }
-
-        for (int diff = 2; diff <= length; diff++) {
-            for (int start = 0; start + diff <= length; start++) {
-                int end = start + diff;
-                dXdXwi[start][end] = Nd4j.zeros(dim, dim);
-            }
-        }
-    }
-
-
-    public void clear() {
-        dXdXw = null;
-        dXdXwi = null;
     }
 }

@@ -1,16 +1,15 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.kushalarora.compositionalLM.derivatives.Derivatives;
+import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.nn.conf.rng.Random;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
-import static org.nd4j.linalg.ops.transforms.Transforms.unitVec;
 
 
 /**

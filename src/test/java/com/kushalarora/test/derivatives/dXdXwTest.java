@@ -7,8 +7,6 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static junit.framework.Assert.assertNull;
-import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -32,23 +30,13 @@ public class dXdXwTest extends AbstractDerivativeTest {
 
     @Before
     public void setUp() {
-        dxdxw = new dXdXw(model);
+        dxdxw = new dXdXw(dim, V, defaultSentence);
     }
 
-    @Test
-    public void testClear() {
-        dxdxw.calcDerivative(defaultSentence, cScorer);
-        assertNotNull(dxdxw.getDXdXw());
-        assertNotNull(dxdxw.getDXdXwi());
-
-        dxdxw.clear();
-        assertNull(dxdxw.getDXdXw());
-        assertNull(dxdxw.getDXdXwi());
-    }
 
     @Test
     public void testCalcDerivative() {
-        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(defaultSentence, cScorer);
+        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(model, cScorer);
 
         INDArray eye = Nd4j.eye(dim);
         INDArray truedxdw = Nd4j.zeros(dim, dim);

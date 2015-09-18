@@ -7,9 +7,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,37 +31,12 @@ public class dXdWTest extends AbstractDerivativeTest {
 
     @Before
     public void setUp() {
-        dxdw = new dXdW(model);
+        dxdw = new dXdW(dim, defaultSentence);
     }
-
-    @Test
-    public void testClear() {
-
-        INDArray[][][][][] dxdwArr = dxdw.calcDerivative(defaultSentence, cScorer);
-        for (int i = 0; i < dim; i++) {
-            for (int j = 0; j < 2 * dim; j++) {
-                assertNotNull(dxdwArr);
-            }
-        }
-
-        dxdw.clear();
-
-        dxdwArr = dxdw.getDXdW();
-        for (int i = 0; i < dim; i++) {
-            for (int j = 0; j < 2 * dim; j++) {
-                assertNull(dxdwArr[i][j]);
-            }
-        }
-
-
-
-    }
-
-
 
     @Test
     public void testCalcDerivative() {
-        INDArray[][][][][] arr = dxdw.calcDerivative(defaultSentence, cScorer);
+        INDArray[][][][][] arr = dxdw.calcDerivative(model, cScorer);
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 *dim; j++) {
                 INDArray j1 = Nd4j.zeros(dim, 1);

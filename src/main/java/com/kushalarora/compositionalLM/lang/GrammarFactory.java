@@ -1,14 +1,11 @@
 package com.kushalarora.compositionalLM.lang;
 
-import com.kushalarora.compositionalLM.lang.stanford.StanfordGrammar;
-import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.berkeley.nlp.PCFGLA.Grammar;
 import edu.berkeley.nlp.PCFGLA.Lexicon;
 import edu.berkeley.nlp.PCFGLA.ParserData;
 import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
 import lombok.NonNull;
-import lombok.val;
 
 /**
  * Created by karora on 6/20/15.

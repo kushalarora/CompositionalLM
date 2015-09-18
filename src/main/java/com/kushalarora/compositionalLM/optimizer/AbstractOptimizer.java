@@ -1,7 +1,7 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.base.Function;
-import com.kushalarora.compositionalLM.model.IDerivatives;
+import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 

@@ -1,8 +1,8 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import com.kushalarora.compositionalLM.lang.Word;
-import com.kushalarora.compositionalLM.model.CompositionalGrammar;
+import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -12,30 +12,20 @@ import java.util.List;
 /**
  * Created by karora on 6/21/15.
  */
-public class dXdW extends AbstractBaseDerivativeClass {
+public class dXdW<T extends List<? extends IIndexed>> {
     // d X 2d array of column vectors
     @Getter
-    INDArray[][][][][] dXdW;
-    int dim;
+    private INDArray[][][][][] dXdW;
+    private int dim;
+    private int length;
+    private T data;
 
-    public dXdW(Model model) {
-        super(model);
-        dim = model.getDimensions();
+    public dXdW(int dimension, T data) {
+        dim = dimension;
         dXdW = new INDArray[dim][2 * dim][][][];
+        this.data = data;
+        length = data.size();
 
-        for (int i = 0; i < dim; i++) {
-            for (int j = 0; j < 2 * dim; j++) {
-                dXdW[i][j] = null;
-            }
-        }
-
-    }
-
-    public INDArray[][][][][] calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore
-            scorer) {
-        int length = sentence.size();
-
-        // TODO:: Can be optimizeds
         // Allocate memory to hold spans and split
         for (int i = 0; i < dim; i++) {
             for (int j = 0; j < 2 * dim; j++) {
@@ -47,7 +37,10 @@ public class dXdW extends AbstractBaseDerivativeClass {
                 }
             }
         }
+    }
 
+    public INDArray[][][][][] calcDerivative(Model model,
+                                             CompositionalInsideOutsideScore scorer) {
 
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
         double[][][] compositionISplitScore = scorer.getCompositionISplitScore();
@@ -130,13 +123,5 @@ public class dXdW extends AbstractBaseDerivativeClass {
             }
         }
         return dXdW;
-    }
-
-    public void clear() {
-        for (int i = 0; i < dim; i++) {
-            for (int j = 0; j < 2 * dim; j++) {
-                    dXdW[i][j] = null;
-            }
-        }
     }
 }

@@ -1,7 +1,7 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.lang.Word;
-import com.kushalarora.compositionalLM.model.CompositionalGrammar;
+import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.model.Parameters;
 import org.junit.BeforeClass;
@@ -23,7 +23,7 @@ public class AbstractDerivativeTest {
     protected static Model model;
     protected static int dim = 10;
     protected static int V = 100;
-    protected static CompositionalGrammar.CompositionalInsideOutsideScore cScorer;
+    protected static CompositionalInsideOutsideScore cScorer;
     protected static int length;
     protected static Parameters params;
     protected static List<Word> defaultSentence;
@@ -32,7 +32,7 @@ public class AbstractDerivativeTest {
     public static void setUpClass() {
         model = mock(Model.class);
         params = new Parameters(dim, V);
-        cScorer = mock(CompositionalGrammar.CompositionalInsideOutsideScore.class);
+        cScorer = mock(CompositionalInsideOutsideScore.class);
         defaultSentence = new ArrayList<Word>();
         int index = 0;
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {

@@ -7,7 +7,6 @@ import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Created by karora on 7/21/15.

@@ -34,14 +34,11 @@ public interface IInsideOutsideScore extends Serializable {
     public SparseMatrix getMuSpanSplitScoreWParent();
 
 
-
     /**
      * Return the sentence currently being processed
      * @return sentence
      */
     public List<Word> getCurrentSentence();
-
-    public void computeInsideOutsideProb();
 
     public double getScore(SparseMatrix matrix, long... indexes);
 

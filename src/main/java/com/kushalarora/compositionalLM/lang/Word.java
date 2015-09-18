@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import edu.stanford.nlp.ling.HasWord;
 import lombok.EqualsAndHashCode;
 
@@ -8,7 +9,7 @@ import lombok.EqualsAndHashCode;
  */
 
 @EqualsAndHashCode
-public class Word implements HasWord, edu.berkeley.nlp.io.HasWord {
+public class Word implements HasWord, edu.berkeley.nlp.io.HasWord, IIndexed {
     String word;
     int index;
     String signature;

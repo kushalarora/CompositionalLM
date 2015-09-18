@@ -1,7 +1,6 @@
 package com.kushalarora.compositionalLM.lang;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Grammar interface to provide inside and outside scores

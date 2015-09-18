@@ -1,6 +1,7 @@
-package com.kushalarora.compositionalLM.model;
+package com.kushalarora.compositionalLM.derivatives;
 
-import java.io.Serializable;
+import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
+import com.kushalarora.compositionalLM.model.Model;
 
 /**
  * Created by karora on 7/14/15.
@@ -10,7 +11,7 @@ public interface IDerivatives<T> extends Cloneable {
 
     public void mul(double learningRate);
 
-    public void calcDerivative(CompositionalGrammar.CompositionalInsideOutsideScore scorer);
+    public void calcDerivative(Model model, CompositionalInsideOutsideScore scorer);
 
     public void clear();
 

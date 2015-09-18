@@ -1,6 +1,5 @@
 package com.kushalarora.compositionalLM.lang;
 
-import com.kushalarora.compositionalLM.lang.stanford.WordTokenFactory;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.Tokenizer;
@@ -59,7 +58,7 @@ public class TokenizerFactory implements edu.stanford.nlp.process.TokenizerFacto
             case STANFORD_PTB_TOKENIZER:
                 final PTBTokenizer ptbTokenizer =
                         new PTBTokenizer<Word>(
-                                reader, new WordTokenFactory(grammar, op), extraOptions);
+                                reader, new StanfordWordTokenFactory(grammar, op), extraOptions);
 
                 return new TokenizerWrapper() {
                     @Override
@@ -76,7 +75,7 @@ public class TokenizerFactory implements edu.stanford.nlp.process.TokenizerFacto
             case STANFORD_WORD_TOKENIZER:
                 final WhitespaceTokenizer.WhitespaceTokenizerFactory factory =
                         new WhitespaceTokenizer.WhitespaceTokenizerFactory(
-                                new WordTokenFactory(grammar, op), extraOptions);
+                                new StanfordWordTokenFactory(grammar, op), extraOptions);
 
                 final Tokenizer tokenizer = factory.getTokenizer(reader);
 

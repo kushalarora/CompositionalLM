@@ -1,15 +1,13 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import com.kushalarora.compositionalLM.lang.Word;
-import com.kushalarora.compositionalLM.model.CompositionalGrammar;
+import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
-
-import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 
 /**
  * Created by karora on 6/21/15.
@@ -19,28 +17,41 @@ import static org.nd4j.linalg.ops.transforms.Transforms.pow;
  * <p/>
  * dQdu = \sum{start}{end}{split} dEdu(start, end, split) * \mu(start, end, split)
  */
-public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
+public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
     @Getter
     private INDArray dQdu;
+    private int dimensions;
+    private T data;
+    private int length;
 
-    public dQdu(Model model) {
-        super(model, new int[]{model.getDimensions()});
-        dQdu = Nd4j.zeros(model.getDimensions());
+
+    public dQdu(int dim, T data) {
+        super(new int[]{dim, 1});
+        dQdu = Nd4j.zeros(dim, 1);
+        dimensions = dim;
+        this.data = data;
+        length = data.size();
     }
 
-    public dQdu(dQdu dqdu) {
-        super(dqdu.model, dqdu.dQdu.shape());
+    public dQdu(dQdu dqdu, T data) {
+        super(dqdu.dQdu.shape());
         dQdu = dqdu.dQdu.dup();
+        dimensions = dqdu.dQdu.shape()[0];
+        this.data = data;
+        length = data.size();
     }
 
-    private dQdu(Model model, INDArray dqdu) {
-        super(model, dqdu.shape());
+    private dQdu(INDArray dqdu, T data) {
+        super(dqdu.shape());
         this.dQdu = dqdu;
+        dimensions = dqdu.shape()[0];
+        this.data = data;
+        length = data.size();
     }
 
     public void clear() {
         // Wipe clean
-        for (int i = 0; i < model.getDimensions(); i++) {
+        for (int i = 0; i < dimensions; i++) {
             dQdu.putScalar(i, 0);
         }
     }
@@ -58,12 +69,10 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
     }
 
     public IDerivative adaGrad(IDerivative gradient) {
-        return new dQdu(model,
-                adaGrad.getGradient(((dQdu) gradient).dQdu));
+        return new dQdu(adaGrad.getGradient(((dQdu) gradient).dQdu), data);
     }
 
-    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
-        int length = sentence.size();
+    public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
         double[][][] compositionMu = scorer.getMuScore();
@@ -113,7 +122,7 @@ public class dQdu extends AbstractBaseDerivativeClass implements IDerivative {
         }
 
         if (compositionalIScore[0][length] == 0) {
-            throw new RuntimeException("Z is zero for sentence " + sentence);
+            throw new RuntimeException("Z is zero for sentence " + data);
         }
 
         dQdu = dQdu.div(compositionalIScore[0][length]);

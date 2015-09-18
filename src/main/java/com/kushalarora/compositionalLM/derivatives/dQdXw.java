@@ -1,65 +1,69 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import com.kushalarora.compositionalLM.lang.Word;
-import com.kushalarora.compositionalLM.model.CompositionalGrammar;
+import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.pow;
-
 /**
  * Created by karora on 6/21/15.
  */
-public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
+public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
     private dXdXw dxdxw;
     @Getter
     private INDArray dQdXw;
     private int dim;
     private int V;
+    private T data;
+    private int length;
 
-    public dQdXw(Model model, dXdXw dxdxw) {
-        super(model, new int[]{model.getDimensions(), model.getVocabSize()});
+    public dQdXw(int dimensions, int vocabSize, T data, dXdXw dxdxw) {
+        super(new int[]{dimensions, dimensions});
         this.dxdxw = dxdxw;
-        dim = model.getDimensions();
-        V = model.getVocabSize();
+        dim = dimensions;
+        V = vocabSize;
         dQdXw = Nd4j.zeros(dim, V);
+        this.data = data;
+        length = data.size();
     }
 
 
-    public dQdXw(dQdXw dqdxw) {
-        super(dqdxw.model, dqdxw.dQdXw.shape());
+    public dQdXw(dQdXw dqdxw, T data) {
+        super(dqdxw.dQdXw.shape());
         dQdXw = dqdxw.dQdXw.dup();
         dim = dqdxw.dim;
         V = dqdxw.V;
+        this.data = data;
+        length = data.size();
     }
 
-    private dQdXw(Model model, INDArray dqdxw) {
-        super(model, dqdxw.shape());
+    private dQdXw(INDArray dqdxw, T data) {
+        super(dqdxw.shape());
         dQdXw = dqdxw;
         int[] shape = dqdxw.shape();
         dim = shape[0];
         V = shape[1];
+        this.data = data;
+        length = data.size();
     }
 
-    public dQdXw(Model model) {
-        this(model, new dXdXw(model));
+    public dQdXw(int dimensions, int vocabSize, T data) {
+        this(dimensions, vocabSize, data, new dXdXw(dimensions, vocabSize, data));
     }
 
-    public INDArray calcDerivative(List<Word> sentence, CompositionalGrammar.CompositionalInsideOutsideScore scorer) {
-
-        int length = sentence.size();
+    public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
 
         // Save indexes
         int[] indexes = new int[length];
         for (int i = 0; i < length; i++) {
-            indexes[i] = sentence.get(i).getIndex();
+            indexes[i] = data.get(i).getIndex();
         }
 
-        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(sentence, scorer);
+        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(model, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         double[][][] compositionalMu = scorer.getMuScore();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
@@ -128,7 +132,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
         }
 
         if (compositionalIScore[0][length] == 0) {
-            throw new RuntimeException("Z is zero for sentence " + sentence);
+            throw new RuntimeException("Z is zero for sentence " + data);
         }
 
         // removing the reference to dxdxw to save memory space
@@ -161,8 +165,7 @@ public class dQdXw extends AbstractBaseDerivativeClass implements IDerivative {
     }
 
     public IDerivative adaGrad(IDerivative gradient) {
-        return new dQdXw(model,
-                adaGrad.getGradient(((dQdXw) gradient).dQdXw));
+        return new dQdXw(adaGrad.getGradient(((dQdXw) gradient).dQdXw), data);
     }
 
 }

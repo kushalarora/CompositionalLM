@@ -1,5 +1,7 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.kushalarora.compositionalLM.derivatives.IDerivatives;
+
 import java.io.Serializable;
 
 /**

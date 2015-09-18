@@ -5,7 +5,6 @@ import net.spy.memcached.AddrUtil;
 import net.spy.memcached.MemcachedClient;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
 /**
  * Created by karora on 7/21/15.
