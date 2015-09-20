@@ -254,7 +254,8 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                 List<T> shuffledSet = new ArrayList<T>(trainList);
                 Collections.shuffle(shuffledSet, rand);
 
-
+                int cumlTrainScore = 0;
+                int cumlTrainBatch = 0;
                 for (int batchIdx = 0; batchIdx < numBatches; batchIdx++) {
 
                     log.info("Starting epoch#: {}, trainList: {} , batch#: {}", epoch, trainListIdx, batchIdx);
@@ -277,6 +278,8 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                     // train batch
                     double score = trainFunction
                             .apply(shuffledSet.subList(startIdx, endIdx));
+                    cumlTrainScore += score * batchSize;
+                    cumlTrainBatch += batchSize;
 
                     log.info("Training score epoch#: {}, trainList: {} , batch#: {} => {}",
                             epoch, trainListIdx, batchIdx, score);
@@ -322,6 +325,10 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                     // this iteration done
                     iter += 1;
                 } // end for batch
+
+                log.info("Training score epoch#: {}, trainList: {}  => {}",
+                        epoch, trainListIdx, cumlTrainScore/cumlTrainBatch);
+
                 epoch += 1;
             }   // end for trainList
         }   // end while epoch

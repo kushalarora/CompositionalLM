@@ -64,6 +64,6 @@ import java.io.*;
 
     @Override
     public void close() {
-        // do nothing
+        client.close();
     }
 }
