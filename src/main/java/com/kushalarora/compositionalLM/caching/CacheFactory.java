@@ -1,8 +1,6 @@
 package com.kushalarora.compositionalLM.caching;
 
-import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
-import com.kushalarora.compositionalLM.lang.Sentence;
-import com.kushalarora.compositionalLM.lang.Word;
+import com.kushalarora.compositionalLM.lang.*;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 
@@ -16,7 +14,8 @@ public class CacheFactory {
         MEMCACHED("memcached"),
         NONE("none"),
         EHCACHE("ehcache"),
-        REDIS("redis");
+        REDIS("redis"),
+        MONGO("mongo");
 
         private String text;
 
@@ -128,8 +127,29 @@ public class CacheFactory {
                         return sb.toString();
                     }
                 };
+
+            case MONGO:
+                return new MongoCacheWrapper<Sentence, IInsideOutsideScore>(op) {
+
+
+
+                    @Override
+                    public IInsideOutsideScore load(Sentence input) {
+                        return (IInsideOutsideScore)model.getGrammar().computeScore(input);
+                    }
+
+                    @Override
+                    public String getKeyString(Sentence input) {
+                        StringBuilder sb = new StringBuilder();
+                        for (Word word : input) {
+                            sb.append(word.word()).append(":");
+                        }
+                        return sb.toString();
+                    }
+                };
             default:
                 throw new RuntimeException("Invalid Cache Type: " + op.trainOp.cacheType);
+
         }
     }
 }

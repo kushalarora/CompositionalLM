@@ -193,6 +193,8 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
         // do training these many times
         while (epoch < op.trainOp.maxEpochs && !done) {
 
+            log.info("Starting epoch: {}", epoch);
+
             // process all these lists
             for (int trainListIdx = 0; trainListIdx < trainSet.size(); trainListIdx++) {
 
@@ -207,7 +209,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
 
                 for (int batchIdx = 0; batchIdx < numBatches; batchIdx++) {
 
-                    log.info("Starting trainList: {} batch#: {}", trainListIdx, batchIdx);
+                    log.info("Starting epoch#: {}, trainList: {} , batch#: {}", epoch, trainListIdx, batchIdx);
 
                     // get batch
                     int startIdx = batchIdx * op.trainOp.batchSize;
@@ -253,7 +255,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
 
                             for (int validBatchIdx = 0; validBatchIdx < validNumBatches; validBatchIdx++) {
 
-                                log.info("Starting validList#: {}, validBatch#: {}", validListIdx, validBatchIdx);
+                                log.info("Starting epoch: {}, validList#: {},  validBatch#: {}", epoch, validListIdx, validBatchIdx);
 
                                 // get batch
                                 int validStartIdx = validBatchIdx * op.trainOp.validBatchSize;
@@ -278,14 +280,16 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                         }
 
                         double mean = cumlScore / cumlSize;
-                        log.info("Mean validation score iter#{}: {}", iter, mean);
+                        log.info("Mean validation score epoch#{}, iter#{}: {}",
+                                epoch, iter, mean);
 
                         // is better than the bestt
                         if (mean < bestValidationScore) {
 
                             // save model
                             bestValidationScore = mean;
-                            log.info("Updated best validation score");
+                            log.info("Updated best validation score epoch# {}, iter# {}:: {}",
+                                    epoch, iter, mean);
                             saveModel();
 
                             // good enough for us?
