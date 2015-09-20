@@ -1,6 +1,8 @@
 package com.kushalarora.compositionalLM.caching;
 
-import com.kushalarora.compositionalLM.lang.*;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
+import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 

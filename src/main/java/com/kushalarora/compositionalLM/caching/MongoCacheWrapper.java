@@ -1,23 +1,11 @@
 package com.kushalarora.compositionalLM.caching;
 
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
-import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.options.Options;
 import com.mongodb.*;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import lombok.SneakyThrows;
-import org.bson.Document;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Filters.in;
+import java.io.*;
 
 /**
  * Created by arorak on 9/19/15.
@@ -55,7 +43,8 @@ import static com.mongodb.client.model.Filters.in;
 
     @Override
     public V getRoutine(K input) {
-        Cursor cur = coll.find(new BasicDBObject("key", getKeyString(input)));
+        BasicDBObject query = new BasicDBObject("key", getKeyString(input));
+        Cursor cur = coll.find(query);
         if (!cur.hasNext()) {
             return null;
         }
@@ -64,6 +53,9 @@ import static com.mongodb.client.model.Filters.in;
         try {
             ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(bytes));
             return (V) is.readObject();
+        } catch (InvalidClassException ex) {
+            coll.remove(query);
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
             return null;

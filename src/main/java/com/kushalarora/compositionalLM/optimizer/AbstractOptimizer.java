@@ -153,6 +153,44 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                 }
             };
 
+    private double getValidationScore(Function<List<T>, Double> validFunction, List<? extends List<T>> validSet) {
+        // calc mean for validation set
+        double cumlScore = 0;
+        double cumlSize = 0;
+        for (int validListIdx = 0; validListIdx < validSet.size(); validListIdx++) {
+            List<T> validList = validSet.get(validListIdx);
+
+            int validNumBatches = validList.size()/op.trainOp.validBatchSize + 1;
+
+            for (int validBatchIdx = 0; validBatchIdx < validNumBatches; validBatchIdx++) {
+
+                log.info("Starting validList#: {},  validBatch#: {}", validListIdx, validBatchIdx);
+
+                // get batch
+                int validStartIdx = validBatchIdx * op.trainOp.validBatchSize;
+                int validEndIdx = (validBatchIdx + 1) * op.trainOp.validBatchSize;
+                if (validEndIdx > validList.size()) {
+                    validEndIdx = validList.size();
+                }
+
+                int validBatchSize = validEndIdx - validStartIdx;
+
+                // In case there batch size is multiple of actual size
+                // we would have a case of blank sentence
+                if (validStartIdx >= validEndIdx) {
+                    continue;
+                }
+
+                cumlScore += validFunction.apply(
+                        validList.subList(validStartIdx, validEndIdx));
+
+                cumlSize += validBatchSize;
+            }
+        }
+
+        return cumlScore / cumlSize;
+    }
+
     public D fitOne(T data) {
         return calcDerivative(data);
     }
@@ -189,6 +227,9 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
         int epoch = 0;
         boolean done = false;
         double bestValidationScore = Double.MAX_VALUE;
+
+        log.info("Intial validation score#: {}",
+                getValidationScore(validFunction, validSet));
 
         // do training these many times
         while (epoch < op.trainOp.maxEpochs && !done) {
@@ -245,41 +286,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                     if (op.trainOp.validate &&
                             (iter + 1) % op.trainOp.validationFreq == 0) {
 
-                        // calc mean for validation set
-                        double cumlScore = 0;
-                        double cumlSize = 0;
-                        for (int validListIdx = 0; validListIdx < validSet.size(); validListIdx++) {
-                            List<T> validList = validSet.get(validListIdx);
-
-                            int validNumBatches = validList.size()/op.trainOp.validBatchSize;
-
-                            for (int validBatchIdx = 0; validBatchIdx < validNumBatches; validBatchIdx++) {
-
-                                log.info("Starting epoch: {}, validList#: {},  validBatch#: {}", epoch, validListIdx, validBatchIdx);
-
-                                // get batch
-                                int validStartIdx = validBatchIdx * op.trainOp.validBatchSize;
-                                int validEndIdx = (validBatchIdx + 1) * op.trainOp.validBatchSize;
-                                if (validEndIdx > validList.size()) {
-                                    validEndIdx = validList.size();
-                                }
-
-                                int validBatchSize = validEndIdx - validStartIdx;
-
-                                // In case there batch size is multiple of actual size
-                                // we would have a case of blank sentence
-                                if (validStartIdx >= validEndIdx) {
-                                    continue;
-                                }
-
-                                cumlScore += validFunction.apply(
-                                        validList.subList(validStartIdx, validEndIdx));
-
-                                cumlSize += validBatchSize;
-                            }
-                        }
-
-                        double mean = cumlScore / cumlSize;
+                        double mean = getValidationScore(validFunction, validSet);
                         log.info("Mean validation score epoch#{}, iter#{}: {}",
                                 epoch, iter, mean);
 
@@ -313,6 +320,5 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
         if (op.trainOp.parallel) {
             executor.shutdown();
         }
-
     }
 }
