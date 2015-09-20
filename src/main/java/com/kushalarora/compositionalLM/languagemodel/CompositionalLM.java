@@ -90,12 +90,12 @@ public class CompositionalLM {
                         },
                         new Function<Sentence, Derivatives>() {
                             @Nullable
-                            public Derivatives apply(@Nullable Sentence sample) {              // derivative calculator
+                            public Derivatives apply(@Nullable Sentence sentence) {              // derivative calculator
                                 Derivatives derivatives = new Derivatives(op,
-                                        model.getDimensions(), model.getVocabSize(), sample);
-                                IInsideOutsideScore preScore = cache.get(sample);
+                                        model.getDimensions(), model.getVocabSize(), sentence);
+                                IInsideOutsideScore preScore = cache.get(sentence);
                                 CompositionalInsideOutsideScore score =
-                                        compGrammar.getScore(sample,
+                                        compGrammar.getScore(sentence,
                                                 preScore);
                                 derivatives.calcDerivative(model, score);
                                 return derivatives;

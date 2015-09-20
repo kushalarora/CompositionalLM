@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.model;
 
 import com.kushalarora.compositionalLM.lang.Sentence;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,6 +39,7 @@ public class CompositionalInsideOutsideScore {
     // marginalization over split
     protected transient double[][] cumlCompositionScore;
 
+    @Getter
     protected Sentence sentence;
 
     protected int length;

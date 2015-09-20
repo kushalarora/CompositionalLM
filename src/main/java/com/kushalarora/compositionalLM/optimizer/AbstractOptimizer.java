@@ -28,13 +28,14 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
     }
 
 
-    private Function<List<T>, Void> fitRoutineParallel =
-            new Function<List<T>, Void>() {
+    private Function<List<T>, Double> fitRoutineParallel =
+            new Function<List<T>, Double>() {
                 @Nullable
-                public Void apply(@Nullable List<T> trainBatch) {
+                public Double apply(@Nullable List<T> trainBatch) {
                     List<Future<D>> futureList =
                             new ArrayList<Future<D>>();
-
+                    double cumlTrainingScore = 0.0;
+                    int cumlTrainingSize = 0;
                     for (final T sample : trainBatch) {
                         log.info("****Started Training#{}: {}****",
                                 sample.getIndex(), sample);
@@ -52,6 +53,8 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                         try {
                             Future<D> future = it.next();
                             D derivatives = future.get();
+                            cumlTrainingScore += derivatives.getScore();
+                            cumlTrainingSize += 1;
                             calcLearningRate(derivatives);
                             derivativeAcc(derivatives);
                             log.info("****Finished Training#{}****",
@@ -63,25 +66,29 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                         }
                         it.remove();
                     }
-                    return null;
+                    return cumlTrainingScore/cumlTrainingSize;
                 }
             };
 
-    Function<List<T>, Void> fitRoutineSeq =
-            new Function<List<T>, Void>() {
+    Function<List<T>, Double> fitRoutineSeq =
+            new Function<List<T>, Double>() {
                 @Nullable
-                public Void apply(@Nullable List<T> trainBatch) {
+                public Double apply(@Nullable List<T> trainBatch) {
+                    double cumlTrainingScore = 0.0;
+                    int cumlTrainingSize = 0;
                     for (T sample : trainBatch) {
                         log.info("****Started Training#{}: {}****",
                                 sample.getIndex(), sample);
 
                         D derivatives = fitOne(sample);
+                        cumlTrainingScore += derivatives.getScore();
+                        cumlTrainingSize += 1;
                         calcLearningRate(derivatives);
                         derivativeAcc(derivatives);
                         log.info("****Finished Training#{}****",
                                 sample.getIndex());
                     }
-                    return null;
+                    return cumlTrainingScore/cumlTrainingSize;
                 }
             };
 
@@ -209,7 +216,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
 
     public void fit(List<? extends List<T>> trainSet, List<? extends List<T>> validSet) {
 
-        Function<List<T>, Void> trainFunction;
+        Function<List<T>, Double> trainFunction;
         Function<List<T>, Double> validFunction;
         if (op.trainOp.parallel) {
             log.info("Running in parallel mode");
@@ -268,7 +275,11 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                     }
 
                     // train batch
-                    trainFunction.apply(shuffledSet.subList(startIdx, endIdx));
+                    double score = trainFunction
+                            .apply(shuffledSet.subList(startIdx, endIdx));
+
+                    log.info("Training score epoch#: {}, trainList: {} , batch#: {} => {}",
+                            epoch, trainListIdx, batchIdx, score);
 
                     // normalize accumulated derivative
                     D accDv = getAccumulatedDerivative();

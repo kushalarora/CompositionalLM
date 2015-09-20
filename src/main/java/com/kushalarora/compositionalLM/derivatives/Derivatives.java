@@ -91,6 +91,7 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         log.info("dQdW Norm2:{}(len={}) = {}", idx, sz, Nd4j.norm2(dqdw.getDQdW()));
         dqdxw.calcDerivative(model, scorer);
         log.info("dQdXw Norm2:{}(len={}) = {}", idx, sz, Nd4j.norm2(dqdxw.getDQdXw()));
+        score = scorer.getSentenceScore();
 
         if (op.debug) {
             log.info("Memory Size Derivatives: {}:: {}\n" +

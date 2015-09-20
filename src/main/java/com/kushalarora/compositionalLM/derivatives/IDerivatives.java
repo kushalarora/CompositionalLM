@@ -18,4 +18,6 @@ public interface IDerivatives<T> extends Cloneable {
     public T getData();
 
     public IDerivatives<T> adaGrad(IDerivatives<T> derivatives);
+
+    public double getScore();
 }
