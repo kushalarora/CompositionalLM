@@ -55,6 +55,7 @@ import java.io.*;
             return (V) is.readObject();
         } catch (InvalidClassException ex) {
             coll.remove(query);
+            ex.printStackTrace();
             return null;
         } catch (Exception e) {
             e.printStackTrace();

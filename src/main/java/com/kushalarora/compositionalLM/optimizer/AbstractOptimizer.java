@@ -254,7 +254,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                 List<T> shuffledSet = new ArrayList<T>(trainList);
                 Collections.shuffle(shuffledSet, rand);
 
-                int cumlTrainScore = 0;
+                double cumlTrainScore = 0.0;
                 int cumlTrainBatch = 0;
                 for (int batchIdx = 0; batchIdx < numBatches; batchIdx++) {
 
