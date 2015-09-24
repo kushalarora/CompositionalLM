@@ -100,11 +100,9 @@ public class Parameters implements IParameter<Sentence> {
         log.info("old X = \n {}", X);
         log.info("dX = \n {}", dq.getDqdxw().getDQdXw());
         X = X.add(dq.getDqdxw().getDQdXw());
-
+        X = X.subRowVector(X.mean(0));
         INDArray normVec =  X.norm2(0);
         X = X.divRowVector(normVec);
-
-
         log.info("new X = \n {}", X);
     }
 }

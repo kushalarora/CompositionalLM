@@ -160,17 +160,6 @@ public class Model implements Serializable {
         return this.energy(node, null, null);
     }
 
-    /**
-     * Calculate derivative and update the parameter W,u and X.
-     *
-     * @param learningRate Learning rate for update
-     * @param scorer       Compositional scores used in calculating derivatives
-     */
-    public void update(double learningRate, CompositionalInsideOutsideScore scorer) {
-
-    }
-
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -133,7 +133,7 @@ public class StanfordGrammar extends AbstractGrammar {
                 IntTaggedWord tagging = taggingI.next();
                 int state = stateIndex.indexOf(tagIndex.get(tagging.tag));
                 // score the cell according to P(word|tag) in the lexicon
-                double lexScore = lex.score(tagging, start,
+                 double lexScore = lex.score(tagging, start,
                         wordIndex.get(tagging.word), wordContextStr);
 
                 if (lexScore > Double.NEGATIVE_INFINITY) {
@@ -947,13 +947,11 @@ public class StanfordGrammar extends AbstractGrammar {
 
         index = wordIndex.indexOf(signature);
 
+        // If we aren't able to find signature
+        // lets use UNK
         if (index == -1) {
-            // Ideally this should be
-            // newline or something that
-            // shouldn't show up at the end
-            // In any case, the program would crash
-            log.warn("word({}) or signature({}) not found in grammar",
-                    str, signature);
+            signature = "UNK";
+            index = wordIndex.indexOf(signature);
         }
         return new Word(str, index, signature);
     }
