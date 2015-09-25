@@ -5,6 +5,7 @@ import edu.stanford.nlp.ling.HasContext;
 import edu.stanford.nlp.parser.lexparser.*;
 import edu.stanford.nlp.util.Index;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 
@@ -937,12 +938,22 @@ public class StanfordGrammar extends AbstractGrammar {
     public Word getToken(String str, int loc) {
         int index = -1;
         String signature = str;
+
         if (op.grammarOp.lowerCase) {
-            signature = str.toLowerCase(Locale.ENGLISH);
+            signature = str.toLowerCase();
         }
 
         if (!wordIndex.contains(signature)) {
-            signature = lex.getUnknownWordModel().getSignature(str, loc);
+            signature = str.toLowerCase(Locale.ENGLISH);
+            if (!wordIndex.contains(signature)) {
+                signature = str.toUpperCase();
+                if (!wordIndex.contains(signature)) {
+                    signature = StringUtils.capitalize(str);
+                    if (!wordIndex.contains(signature)) {
+                        signature = lex.getUnknownWordModel().getSignature(str, loc);
+                    }
+                }
+            }
         }
 
         index = wordIndex.indexOf(signature);

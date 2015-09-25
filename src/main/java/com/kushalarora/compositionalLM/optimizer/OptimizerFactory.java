@@ -43,7 +43,7 @@ public class OptimizerFactory {
             final Model model,
             final Function<Sentence, Double> scorer,
             final Function<Sentence, Derivatives> derivativeCalculator,
-            final Function<Void, Void> functionSaver) {
+            final Function<Integer, Void> functionSaver) {
 
         int dimension = model.getDimensions();
         int vocabSize = model.getVocabSize();
@@ -62,8 +62,8 @@ public class OptimizerFactory {
                         return scorer.apply(data);
                     }
 
-                    public void saveModel() {
-                        functionSaver.apply(null);
+                    public void saveModel(int iter) {
+                        functionSaver.apply(iter);
                     }
                 };
             case ADAGRAD:
@@ -82,8 +82,8 @@ public class OptimizerFactory {
                         return scorer.apply(data);
                     }
 
-                    public void saveModel() {
-                        functionSaver.apply(null);
+                    public void saveModel(int iter) {
+                        functionSaver.apply(iter);
                     }
                 };
             default:

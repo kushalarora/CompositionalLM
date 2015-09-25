@@ -92,7 +92,8 @@ public class CompositionLMTest {
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase,",
-                                "-validBatchSize", "10"};
+                        "-saveVisualization",
+                        "-validBatchSize", "10"};
         CompositionalLM.main(args);
     }
 
@@ -106,7 +107,22 @@ public class CompositionLMTest {
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase",
+                        "-saveVisualization",
                         "-parallel", "-nThreads 2"};
         CompositionalLM.main(args);
+    }
+
+    @Test
+    @Ignore
+    public void testVisualize() throws Exception {
+String[] args =
+        new String[] {"-visualize",
+                "-lowercase",
+                "-visualizationFile", "output/embedding.csv",
+                "-grammarType", "stanford",
+                "-grammarFile", "src/resources/englishPCFG.ser.gz",
+                "-modelSerialized", "src/resources/model.gz"
+        };
+        compositionalLM.main(args);
     }
 }

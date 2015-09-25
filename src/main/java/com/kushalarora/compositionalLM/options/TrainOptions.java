@@ -34,6 +34,8 @@ public class TrainOptions implements Serializable {
     public CacheFactory.CacheType cacheType;
     public OptimizerFactory.OptimizerType optimizer;
     public int validBatchSize;
+    public boolean saveVisualization;
+    public String visualizationFilename;
 
     public TrainOptions(Configuration config) throws IOException {
         trainFiles =
@@ -88,6 +90,11 @@ public class TrainOptions implements Serializable {
         validBatchSize = config.getInt("validBatchSize", 100);
 
 
+        visualizationFilename =
+                config.getString("visualizationFilename", "src/output/embeddings.csv");
+
+        saveVisualization =
+                config.getBoolean("saveVisualization", false);
     }
 
 

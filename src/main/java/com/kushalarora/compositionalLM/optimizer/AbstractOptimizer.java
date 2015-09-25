@@ -311,7 +311,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                             bestValidationScore = mean;
                             log.info("Updated best validation score epoch# {}, iter# {}:: {}",
                                     epoch, iter, mean);
-                            saveModel();
+                            saveModel(iter);
 
                             // good enough for us?
                             if (mean > bestValidationScore * (1 - op.trainOp.tolerance)) {

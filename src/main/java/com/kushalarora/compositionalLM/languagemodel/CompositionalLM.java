@@ -15,21 +15,29 @@ import com.kushalarora.compositionalLM.optimizer.AbstractOptimizer;
 import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Visualization;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
+import edu.stanford.nlp.util.StringUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.log4j.PropertyConfigurator;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Created by karora on 6/12/15.
@@ -75,6 +83,19 @@ public class CompositionalLM {
                     .getDocumentProcessor(trainFile)));
         }
 
+        final Map<Integer, String> trainIndexSet = new HashMap<Integer, String>();
+        if (op.trainOp.saveVisualization) {
+          for (List<Sentence> trainList : trainIterators) {
+              for (Sentence sent : trainList) {
+                  for (Word word : sent) {
+                      if (!trainIndexSet.containsKey(word.getIndex())) {
+                          trainIndexSet.put(word.getIndex(), word.getSignature());
+                      }
+                  }
+              }
+          }
+        }
+
         // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
@@ -101,10 +122,42 @@ public class CompositionalLM {
                                 return derivatives;
                             }
                         },
-                        new Function<Void, Void>() {
+                        new Function<Integer, Void>() {
                             @Nullable
-                            public Void apply(@Nullable Void input) {           // saver
-                                saveModelSerialized(op.modelOp.outFilename);
+                            public Void apply(@Nullable Integer iter) {           // saver
+
+                                String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
+                                str[0] = String.format("%s-%d", str[0], iter);
+                                String outFilename = String.join(".", str);
+                                saveModelSerialized(outFilename);
+
+
+                                if (op.trainOp.saveVisualization) {
+
+                                    INDArray embeddedWords = Nd4j.zeros(
+                                            model.getDimensions(), trainIndexSet.size());
+                                    List<String> words = new ArrayList<String>();
+                                    int i = 0;
+                                    INDArray X = model.getParams().getX();
+                                    for (val entrySet : trainIndexSet.entrySet()) {
+                                        embeddedWords.putColumn(i++, X.getColumn(entrySet.getKey()));
+                                        words.add(entrySet.getValue());
+                                    }
+
+                                    str = op.trainOp.visualizationFilename.split(Pattern.quote("."));
+                                    str[0] = String.format("%s-%d", str[0], iter);
+                                    String visualizationFilename = String.join(".", str);
+
+                                    try {
+                                        Visualization.saveTNSEVisualization(
+                                                visualizationFilename,
+                                                embeddedWords,
+                                                words);
+                                    } catch (IOException e) {
+                                        log.error("Failed visualization", e);
+                                    }
+                                }
+
                                 return null;
                             }
                         });
@@ -137,6 +190,47 @@ public class CompositionalLM {
             // TODO:: Figure this out
 
         }*/
+
+    }
+
+    @SneakyThrows
+    public void visualize() {
+        // List of training documents.
+        List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
+        for (String trainFile : op.trainOp.trainFiles) {
+            trainIterators.add(Lists.newArrayList(docProcessorFactory
+                    .getDocumentProcessor(trainFile)));
+        }
+
+        final Map<Integer, String> trainIndexSet = new HashMap<Integer, String>();
+        for (List<Sentence> trainList : trainIterators) {
+            for (Sentence sent : trainList) {
+                for (Word word : sent) {
+                    if (!trainIndexSet.containsKey(word.getIndex())) {
+                        trainIndexSet.put(word.getIndex(), word.getSignature());
+                    }
+                }
+            }
+        }
+
+        INDArray embeddedWords = Nd4j.zeros(model.getDimensions(),
+                trainIndexSet.size());
+        List<String> words = new ArrayList<String>();
+        int i = 0;
+        INDArray X = model.getParams().getX();
+        for (Map.Entry<Integer, String> entrySet : trainIndexSet.entrySet()) {
+            embeddedWords.putColumn(i++, X.getColumn(entrySet.getKey()));
+            words.add(entrySet.getValue());
+        }
+
+        try {
+            Visualization.saveTNSEVisualization(
+                    op.testOp.visualizationFile,
+                    embeddedWords,
+                    words);
+        } catch (IOException e) {
+            log.error("Failed visualization", e);
+        }
 
     }
 
@@ -252,6 +346,8 @@ public class CompositionalLM {
         if (op.train) {
             log.info("starting training");
             cLM.train();
+        } else if (op.visualize) {
+            cLM.visualize();
         } else if (op.nbestRescore) {
             cLM.nbestList();
         } else if (op.parse) {

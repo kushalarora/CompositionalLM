@@ -19,8 +19,7 @@ public class ModelOptions implements Serializable {
 
     public ModelOptions(Configuration config) {
         outType =
-                Options.FileType.fromString(
-                config.getString("outType", "serialized"));
+                Options.FileType.fromString(config.getString("outType", "serialized"));
 
         outFilename =
                 config.getString("outFile", "/tmp/model.ser.gz");

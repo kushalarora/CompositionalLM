@@ -41,7 +41,7 @@ public class Options implements Serializable {
         }
     }
 
-
+    public boolean visualize;
     public boolean train;
     public boolean parse;
     public boolean nbestRescore;
@@ -57,6 +57,7 @@ public class Options implements Serializable {
         train = false;
         parse = false;
         nbestRescore = false;
+        visualize = false;
         debug = false;
 
         PropertiesConfiguration config =

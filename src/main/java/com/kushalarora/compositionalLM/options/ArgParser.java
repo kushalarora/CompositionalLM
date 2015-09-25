@@ -38,7 +38,8 @@ public class ArgParser {
                 op.nbestRescore = true;
                 op.testOp.nbestFiles = ArgUtils.getStringFromArg(args, argIndex);
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
-
+            } else if (args[argIndex].equalsIgnoreCase("-visualize")) {
+                op.visualize = true;
             } else if (args[argIndex].equalsIgnoreCase("-validate")) {
                 // Ignored if only testing.
                 // If training must be followed by validation File
@@ -92,7 +93,7 @@ public class ArgParser {
                 if (files.length > 1) {
                     throw new RuntimeException("Can't have multiple model files.");
                 }
-                op.modelOp.outFilename = files[0];
+                op.modelOp.inFilename = files[0];
                 argIndex++;
 
             } else if (args[argIndex].equalsIgnoreCase("-modelText")) {
