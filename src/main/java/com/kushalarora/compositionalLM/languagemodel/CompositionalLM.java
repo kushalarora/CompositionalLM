@@ -18,7 +18,7 @@ import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Visualization;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
-import edu.stanford.nlp.util.StringUtils;
+import edu.stanford.nlp.util.IntTuple;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -29,7 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.Nullable;
-import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -84,17 +83,6 @@ public class CompositionalLM {
         }
 
         final Map<Integer, String> trainIndexSet = new HashMap<Integer, String>();
-        if (op.trainOp.saveVisualization) {
-          for (List<Sentence> trainList : trainIterators) {
-              for (Sentence sent : trainList) {
-                  for (Word word : sent) {
-                      if (!trainIndexSet.containsKey(word.getIndex())) {
-                          trainIndexSet.put(word.getIndex(), word.getSignature());
-                      }
-                  }
-              }
-          }
-        }
 
         // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
@@ -122,48 +110,23 @@ public class CompositionalLM {
                                 return derivatives;
                             }
                         },
-                        new Function<Integer, Void>() {
+                        new Function<IntTuple, Void>() {
                             @Nullable
-                            public Void apply(@Nullable Integer iter) {           // saver
-
+                            public Void apply(@Nullable IntTuple tuple) {           // saver
                                 String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
-                                str[0] = String.format("%s-%d", str[0], iter);
+                                str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
                                 String outFilename = String.join(".", str);
                                 saveModelSerialized(outFilename);
-
-
-                                if (op.trainOp.saveVisualization) {
-
-                                    INDArray embeddedWords = Nd4j.zeros(
-                                            model.getDimensions(), trainIndexSet.size());
-                                    List<String> words = new ArrayList<String>();
-                                    int i = 0;
-                                    INDArray X = model.getParams().getX();
-                                    for (val entrySet : trainIndexSet.entrySet()) {
-                                        embeddedWords.putColumn(i++, X.getColumn(entrySet.getKey()));
-                                        words.add(entrySet.getValue());
-                                    }
-
-                                    str = op.trainOp.visualizationFilename.split(Pattern.quote("."));
-                                    str[0] = String.format("%s-%d", str[0], iter);
-                                    String visualizationFilename = String.join(".", str);
-
-                                    try {
-                                        Visualization.saveTNSEVisualization(
-                                                visualizationFilename,
-                                                embeddedWords,
-                                                words);
-                                    } catch (IOException e) {
-                                        log.error("Failed visualization", e);
-                                    }
-                                }
-
                                 return null;
                             }
                         });
 
         // Fit training data with validation on validation file.
         optimizer.fit(trainIterators, validIterators);
+
+        if (op.trainOp.saveVisualization) {
+            visualize(op.trainOp.visualizationFilename);
+        }
 
         // Closing cache. Ecache doesn't do eternal caching
         // until and unless closed
@@ -194,7 +157,7 @@ public class CompositionalLM {
     }
 
     @SneakyThrows
-    public void visualize() {
+    public void visualize(String filename) {
         // List of training documents.
         List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
         for (String trainFile : op.trainOp.trainFiles) {
@@ -225,7 +188,7 @@ public class CompositionalLM {
 
         try {
             Visualization.saveTNSEVisualization(
-                    op.testOp.visualizationFile,
+                    filename,
                     embeddedWords,
                     words);
         } catch (IOException e) {
@@ -347,7 +310,7 @@ public class CompositionalLM {
             log.info("starting training");
             cLM.train();
         } else if (op.visualize) {
-            cLM.visualize();
+            cLM.visualize(op.testOp.visualizationFile);
         } else if (op.nbestRescore) {
             cLM.nbestList();
         } else if (op.parse) {

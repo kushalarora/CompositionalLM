@@ -26,5 +26,5 @@ public interface IOptimizer<T extends IIndexed, D extends IDerivatives<T>> {
 
     public double getValidationScore(T data);
 
-    public void saveModel(int iter);
+    public void saveModel(int iter, int epoch);
 }

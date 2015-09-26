@@ -2,10 +2,6 @@ package com.kushalarora.compositionalLM.optimizer;
 
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
-import org.nd4j.linalg.ops.transforms.Pow;
-
-import static org.nd4j.linalg.ops.transforms.Transforms.pow;
-import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 /**
  * Created by karora on 7/22/15.

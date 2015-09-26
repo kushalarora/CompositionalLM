@@ -18,6 +18,10 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
     private final Random rand;
     protected Options op;
     protected ExecutorService executor;
+    protected int iter;
+    protected int epoch;
+    protected double bestValidationScore;
+    protected boolean done;
 
     D dvAcc;
 
@@ -25,6 +29,10 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
         this.op = op;
         this.dvAcc = dvAcc;
         rand = new Random();
+        iter = 0;
+        epoch = 0;
+        bestValidationScore = Double.MAX_VALUE;
+        done = false;
     }
 
 
@@ -39,6 +47,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                     for (final T sample : trainBatch) {
                         log.info("****Started Training#{}: {}****",
                                 sample.getIndex(), sample);
+
                         Future<D> future = executor.submit(
                                 new Callable<D>() {
                                     public D call() throws Exception {
@@ -230,13 +239,13 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
             validFunction = validRoutineSeq;
         }
 
-        int iter = 0;
-        int epoch = 0;
-        boolean done = false;
-        double bestValidationScore = Double.MAX_VALUE;
-
         log.info("Intial validation score#: {}",
                 getValidationScore(validFunction, validSet));
+
+        epoch = 0;
+        iter = 0;
+        bestValidationScore = Double.MAX_VALUE;
+        done = false;
 
         // do training these many times
         while (epoch < op.trainOp.maxEpochs && !done) {
@@ -311,7 +320,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                             bestValidationScore = mean;
                             log.info("Updated best validation score epoch# {}, iter# {}:: {}",
                                     epoch, iter, mean);
-                            saveModel(iter);
+                            saveModel(iter, epoch);
 
                             // good enough for us?
                             if (mean > bestValidationScore * (1 - op.trainOp.tolerance)) {
@@ -327,7 +336,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                 } // end for batch
 
                 log.info("Training score epoch#: {}, trainList: {}  => {}",
-                        epoch, trainListIdx, cumlTrainScore/cumlTrainBatch);
+                        epoch, trainListIdx, cumlTrainScore / cumlTrainBatch);
 
                 epoch += 1;
             }   // end for trainList
