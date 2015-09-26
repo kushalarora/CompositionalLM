@@ -286,15 +286,19 @@ public class CompositionalLM {
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);
 
-        Model model = loadModel(op);
-        if (model == null) {
-            if (!op.train) {
+
+        Model model;
+        if (!op.train) {
+            model =loadModel(op);
+            if (model == null) {
                 throw new RuntimeException("You must specify model file using -model argument");
             }
+        } else {
 
             @NonNull IGrammar grammar = GrammarFactory.getGrammar(op);
             model = new Model(op.modelOp.dimensions, grammar);
         }
+        
         final CompositionalLM cLM = new CompositionalLM(model, op);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
