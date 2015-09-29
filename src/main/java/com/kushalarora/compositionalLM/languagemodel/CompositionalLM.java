@@ -298,7 +298,7 @@ public class CompositionalLM {
             @NonNull IGrammar grammar = GrammarFactory.getGrammar(op);
             model = new Model(op.modelOp.dimensions, grammar);
         }
-        
+
         final CompositionalLM cLM = new CompositionalLM(model, op);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {

@@ -11,9 +11,9 @@ import java.io.IOException;
 public class DocumentProcessorFactory {
 
     public enum DocumentProcessorType {
-        STANFORD_PLAIN("stanford_plain"),
-        BERKELEY_PLAIN("berkeley_plain"),
-        MS_SENTENCE_CHALLENGE("ms_sents");
+        STANFORD_PLAIN("stanford"),
+        BERKELEY_PLAIN("berkeley"),
+        MS_SENTENCE_CHALLENGE("mssc");
 
         private String text;
 
