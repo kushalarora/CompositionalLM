@@ -230,7 +230,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
             log.info("Running in parallel mode");
             log.info("NumThreads#: {}", op.trainOp.nThreads);
             executor =
-                    Executors.newFixedThreadPool(op.trainOp.nThreads);
+                    Executors.newFixedThreadPool(2 * op.trainOp.nThreads);
             trainFunction = fitRoutineParallel;
             validFunction = validRoutineParallel;
         } else {
