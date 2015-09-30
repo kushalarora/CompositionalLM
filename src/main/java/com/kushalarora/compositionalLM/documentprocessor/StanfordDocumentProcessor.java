@@ -16,15 +16,13 @@ import java.util.List;
 /**
  * Created by karora on 7/29/15.
  */
-public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
-    final DocumentPreprocessor processor;
+public class StanfordDocumentProcessor extends DocumentProcessorWrapper<Sentence> {
+    final TokenizerFactory tokenizerFactory;
     final Options op;
 
-    public StanfordDocumentProcessor(Options op, String filename, TokenizerFactory tokenizerFactory) {
-        processor = new DocumentPreprocessor(filename,
-                DocumentPreprocessor.DocType.Plain);
-
+    public StanfordDocumentProcessor(Options op, TokenizerFactory tokenizerFactory) {
         this.op = op;
+        this.tokenizerFactory = tokenizerFactory;
 
         if (!op.grammarOp.grammarType.equals(tokenizerFactory.getOp().grammarOp.grammarType)) {
             throw new RuntimeException("GrammarType for tokenizer(" +
@@ -33,28 +31,6 @@ public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
                     "document processor(" +
                     op.grammarOp.grammarType + ")");
         }
-
-        processor.setTokenizerFactory(tokenizerFactory);
-
-
-        if (op.grammarOp.newLineDelimiter) {
-            processor.setSentenceDelimiter("\n");
-        }
-
-    }
-
-    public StanfordDocumentProcessor(Options op, Reader reader, TokenizerFactory tokenizerFactory) {
-        processor = new DocumentPreprocessor(reader,
-                DocumentPreprocessor.DocType.Plain);
-
-        this.op = op;
-
-        processor.setTokenizerFactory(tokenizerFactory);
-
-        if (op.grammarOp.newLineDelimiter) {
-            processor.setSentenceDelimiter("\n");
-        }
-
     }
 
     /*
@@ -63,10 +39,21 @@ public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
 
         TODO: Write tests
      */
-    public Iterator<Sentence> iterator() {
+    @Override
+    public Iterator<Sentence> getIterator(String filename) {
+        DocumentPreprocessor processor = new DocumentPreprocessor(filename,
+                DocumentPreprocessor.DocType.Plain);
+
+        processor.setTokenizerFactory(tokenizerFactory);
+
+
+        if (op.grammarOp.newLineDelimiter) {
+            processor.setSentenceDelimiter("\n");
+        }
+
         final Iterator<List<HasWord>> it = processor.iterator();
 
-        Iterator<Sentence> iter = new Iterator<Sentence>() {
+        return new FilterIterator(new Iterator<Sentence>() {
 
             public boolean hasNext() {
 
@@ -92,10 +79,7 @@ public class StanfordDocumentProcessor extends DocumentProcessorWrapper {
             public void remove() {
                 it.remove();
             }
-        };
-
-
-        return new FilterIterator(iter, new Predicate() {
+        }, new Predicate() {
             public boolean evaluate(Object o) {
                 Sentence sent = (Sentence) o;
                 return (sent.size() <= op.grammarOp.maxLength);

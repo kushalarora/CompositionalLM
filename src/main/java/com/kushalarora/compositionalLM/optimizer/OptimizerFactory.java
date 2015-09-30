@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
+import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.Model;
@@ -41,6 +42,7 @@ public class OptimizerFactory {
     public static AbstractOptimizer<Sentence, Derivatives> getOptimizer(
             final Options op,
             final Model model,
+            final DocumentProcessorWrapper<Sentence> documentProcessorWrapper,
             final Function<Sentence, Double> scorer,
             final Function<Sentence, Derivatives> derivativeCalculator,
             final Function<IntTuple, Void> functionSaver) {
@@ -49,7 +51,7 @@ public class OptimizerFactory {
         int vocabSize = model.getVocabSize();
         switch (op.trainOp.optimizer) {
             case SGD:
-                return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(dimension, vocabSize)) {
+                return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(dimension, vocabSize), documentProcessorWrapper) {
                     public Derivatives calcDerivative(Sentence sample) {
                         return derivativeCalculator.apply(sample);
                     }
@@ -68,7 +70,7 @@ public class OptimizerFactory {
                 };
             case ADAGRAD:
                 return new AbstractAdaGradOptimzer<Sentence, Derivatives>(
-                        op, new Derivatives(dimension, vocabSize), new Derivatives(dimension, vocabSize)) {
+                        op, new Derivatives(dimension, vocabSize), new Derivatives(dimension, vocabSize), documentProcessorWrapper) {
 
                     public Derivatives calcDerivative(Sentence sample) {
                         return derivativeCalculator.apply(sample);

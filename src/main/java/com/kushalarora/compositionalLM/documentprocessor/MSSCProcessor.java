@@ -4,6 +4,7 @@ import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.TokenizerFactory;
 import com.kushalarora.compositionalLM.options.Options;
 import edu.stanford.nlp.io.IOUtils;
+import lombok.SneakyThrows;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -22,10 +23,17 @@ public class MSSCProcessor extends DocumentProcessorWrapper {
 
     Pattern END_HEADER_PATTERN = Pattern.compile("[\\*]?END[\\*]?.*[\\*]?END[\\*]?");
 
-    StanfordDocumentProcessor stanfordProcessor;
+    TokenizerFactory tokenizerFactory;
+    Options op;
 
-    public MSSCProcessor(Options op, String filename, TokenizerFactory tokenizerFactory) throws IOException {
+    public MSSCProcessor(Options op, TokenizerFactory tokenizerFactory) throws IOException {
+        this.op = op;
+        this.tokenizerFactory = tokenizerFactory;
+    }
 
+    @Override
+    @SneakyThrows
+    public Iterator getIterator(String filename) {
         BufferedReader reader = IOUtils.readerFromString(filename);
 
         Path path = Paths.get(filename);
@@ -54,10 +62,9 @@ public class MSSCProcessor extends DocumentProcessorWrapper {
         writer.close();
         reader.close();
 
-        stanfordProcessor = new StanfordDocumentProcessor(op, tmpFileName, tokenizerFactory);
-    }
+        StanfordDocumentProcessor stanfordProcessor =
+                new StanfordDocumentProcessor(op, tokenizerFactory);
 
-    public Iterator<Sentence> iterator() {
-        return stanfordProcessor.iterator();
+        return stanfordProcessor.getIterator(filename);
     }
 }

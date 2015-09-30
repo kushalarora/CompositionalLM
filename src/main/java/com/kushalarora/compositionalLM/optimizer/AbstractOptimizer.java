@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
+import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,17 +23,20 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
     protected int epoch;
     protected double bestValidationScore;
     protected boolean done;
+    private DocumentProcessorWrapper<T> documentProcessor;
 
     D dvAcc;
 
-    protected AbstractOptimizer(Options op, D dvAcc) {
+    protected AbstractOptimizer(Options op, D dvAcc, DocumentProcessorWrapper<T> documentProcessor) {
         this.op = op;
         this.dvAcc = dvAcc;
+        this.documentProcessor = documentProcessor;
         rand = new Random();
         iter = 0;
         epoch = 0;
         bestValidationScore = Double.MAX_VALUE;
         done = false;
+
     }
 
 
@@ -169,39 +173,34 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                 }
             };
 
-    private double getValidationScore(Function<List<T>, Double> validFunction, List<? extends List<T>> validSet) {
+    private double getValidationScore(Function<List<T>, Double> validFunction, List<String> validFileList) {
         // calc mean for validation set
         double cumlScore = 0;
         double cumlSize = 0;
-        for (int validListIdx = 0; validListIdx < validSet.size(); validListIdx++) {
-            List<T> validList = validSet.get(validListIdx);
+        for (int validListIdx = 0; validListIdx < validFileList.size(); validListIdx++) {
+            String validFilename = validFileList.get(validListIdx);
 
-            int validNumBatches = validList.size()/op.trainOp.validBatchSize + 1;
+            Iterator<T> validIter = documentProcessor.getIterator(validFilename);
+            List<T> validList = new ArrayList<T>();
 
-            for (int validBatchIdx = 0; validBatchIdx < validNumBatches; validBatchIdx++) {
-
+            int validBatchIdx = 0;
+            while (validIter.hasNext()) {
+                validList.clear();
                 log.info("Starting validList#: {},  validBatch#: {}", validListIdx, validBatchIdx);
 
-                // get batch
-                int validStartIdx = validBatchIdx * op.trainOp.validBatchSize;
-                int validEndIdx = (validBatchIdx + 1) * op.trainOp.validBatchSize;
-                if (validEndIdx > validList.size()) {
-                    validEndIdx = validList.size();
+                for (int idx = 0; idx < op.trainOp.validBatchSize && validIter.hasNext(); idx++) {
+                    validList.add(validIter.next());
                 }
 
-                int validBatchSize = validEndIdx - validStartIdx;
+                int validBatchSize = validList.size();
 
-                // In case there batch size is multiple of actual size
-                // we would have a case of blank sentence
-                if (validStartIdx >= validEndIdx) {
-                    continue;
-                }
-
-                cumlScore += validFunction.apply(
-                        validList.subList(validStartIdx, validEndIdx));
+                cumlScore += validFunction.apply(validList);
 
                 cumlSize += validBatchSize;
+
+                validBatchIdx++;
             }
+
         }
 
         return cumlScore / cumlSize;
@@ -223,7 +222,7 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
         dvAcc.clear();
     }
 
-    public void fit(List<? extends List<T>> trainSet, List<? extends List<T>> validSet) {
+    public void fit(List<String> trainFileList, List<String> validSet) {
 
         Function<List<T>, Double> trainFunction;
         Function<List<T>, Double> validFunction;
@@ -249,49 +248,43 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
 
         // do training these many times
         while (epoch < op.trainOp.maxEpochs && !done) {
+            double cumlTrainScore = 0.0;
+            int cumlTrainBatch = 0;
 
             log.info("Starting epoch: {}", epoch);
+            List<T> trainList = new ArrayList<T>();
+
 
             // process all these lists
-            for (int trainListIdx = 0; trainListIdx < trainSet.size(); trainListIdx++) {
+            for (int trainFileIdx = 0; trainFileIdx < trainFileList.size(); trainFileIdx++) {
 
-                List<T> trainList = trainSet.get(trainListIdx);
+                Iterator<T> trainIter = null;
+                String trainFilename = trainFileList.get(trainFileIdx);
+                trainIter = documentProcessor.getIterator(trainFilename);
 
-                int numBatches = trainList.size() / op.trainOp.batchSize + 1;
+                int batchIdx = 0;
 
-                // shuffle to avoid overfitting
-                List<T> shuffledSet = new ArrayList<T>(trainList);
-                Collections.shuffle(shuffledSet, rand);
+                while (trainIter.hasNext()) {
+                    trainList.clear();
 
-                double cumlTrainScore = 0.0;
-                int cumlTrainBatch = 0;
-                for (int batchIdx = 0; batchIdx < numBatches; batchIdx++) {
 
-                    log.info("Starting epoch#: {}, trainList: {} , batch#: {}", epoch, trainListIdx, batchIdx);
-
-                    // get batch
-                    int startIdx = batchIdx * op.trainOp.batchSize;
-                    int endIdx = (batchIdx + 1) * op.trainOp.batchSize;
-                    if (endIdx > shuffledSet.size()) {
-                        endIdx = shuffledSet.size();
+                    for (int idx = 0; idx < op.trainOp.batchSize && trainIter.hasNext(); idx++) {
+                        trainList.add(trainIter.next());
                     }
 
-                    int batchSize = endIdx - startIdx;
+                    int batchSize = trainList.size();
+                    Collections.shuffle(trainList, rand);
 
-                    // In case there batch size is multiple of actual size
-                    // we would have a case of blank sentence
-                    if (startIdx >= endIdx) {
-                        continue;
-                    }
+                    log.info("Starting epoch#: {}, trainList: {} , batch#: {}", epoch, trainFileIdx, batchIdx);
 
                     // train batch
-                    double score = trainFunction
-                            .apply(shuffledSet.subList(startIdx, endIdx));
+                    double score = trainFunction.apply(trainList);
+
                     cumlTrainScore += score * batchSize;
                     cumlTrainBatch += batchSize;
 
                     log.info("Training score epoch#: {}, trainList: {} , batch#: {} => {}",
-                            epoch, trainListIdx, batchIdx, score);
+                            epoch, trainFileIdx, batchIdx, score);
 
                     // normalize accumulated derivative
                     D accDv = getAccumulatedDerivative();
@@ -333,10 +326,11 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
 
                     // this iteration done
                     iter += 1;
+                    batchIdx += 1;
                 } // end for batch
 
                 log.info("Training score epoch#: {}, trainList: {}  => {}",
-                        epoch, trainListIdx, cumlTrainScore / cumlTrainBatch);
+                        epoch, trainFileIdx, cumlTrainScore / cumlTrainBatch);
 
                 epoch += 1;
             }   // end for trainList

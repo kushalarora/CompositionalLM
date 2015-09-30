@@ -45,13 +45,13 @@ public class DocumentProcessorFactory {
         this.tokenizerFactory = tokenizerFactory;
     }
 
-    public DocumentProcessorWrapper getDocumentProcessor(String filename) throws IOException {
+    public DocumentProcessorWrapper getDocumentProcessor() throws IOException {
         switch (op.inputOp.processorType) {
             case STANFORD_PLAIN:
-                return new StanfordDocumentProcessor(op, filename, tokenizerFactory);
+                return new StanfordDocumentProcessor(op, tokenizerFactory);
 
             case MS_SENTENCE_CHALLENGE:
-                return new MSSCProcessor(op, filename, tokenizerFactory);
+                return new MSSCProcessor(op, tokenizerFactory);
 
             case BERKELEY_PLAIN:
 

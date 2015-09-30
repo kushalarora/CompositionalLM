@@ -37,13 +37,13 @@ public class StanfordDocumentProcessorTest {
         op.grammarOp.filename =  absoluteFilePath;
         op.grammarOp.maxLength = 10;
         sg = (StanfordGrammar)getGrammar(op);
-        sDP = new StanfordDocumentProcessor(op, FILENAME, new TokenizerFactory(op, sg));
+        sDP = new StanfordDocumentProcessor(op, new TokenizerFactory(op, sg));
     }
 
 
     @Test
     public void testMaxLength() {
-        Iterator<Sentence> it = sDP.iterator();
+        Iterator<Sentence> it = sDP.getIterator(FILENAME);
 
         ArrayList<Sentence> list = new ArrayList<Sentence>();
 
