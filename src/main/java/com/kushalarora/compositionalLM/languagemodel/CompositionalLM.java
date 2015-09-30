@@ -68,25 +68,13 @@ public class CompositionalLM {
     @SneakyThrows
     public void train() {
         // List of validation documents. Documents are list of sentences.
-        List<List<Sentence>> validIterators = new ArrayList<List<Sentence>> ();
-        for (String validFile : op.trainOp.validationFiles) {
-            validIterators.add(
-                    Lists.newArrayList(docProcessorFactory
-                            .getDocumentProcessor(validFile)));
-        }
-
-        // List of training documents.
-        List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
-        for (String trainFile : op.trainOp.trainFiles) {
-            trainIterators.add(Lists.newArrayList(docProcessorFactory
-                    .getDocumentProcessor(trainFile)));
-        }
 
         final Map<Integer, String> trainIndexSet = new HashMap<Integer, String>();
 
         // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
+                        docProcessorFactory.getDocumentProcessor(),
                         new Function<Sentence, Double>() {
                             @Nullable
                             public Double apply(Sentence data) {                // scorer
@@ -122,7 +110,8 @@ public class CompositionalLM {
                         });
 
         // Fit training data with validation on validation file.
-        optimizer.fit(trainIterators, validIterators);
+        optimizer.fit(Lists.newArrayList(op.trainOp.trainFiles),
+                Lists.newArrayList(op.trainOp.validationFiles));
 
         if (op.trainOp.saveVisualization) {
             visualize(op.trainOp.visualizationFilename);
@@ -162,7 +151,7 @@ public class CompositionalLM {
         List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
         for (String trainFile : op.trainOp.trainFiles) {
             trainIterators.add(Lists.newArrayList(docProcessorFactory
-                    .getDocumentProcessor(trainFile)));
+                    .getDocumentProcessor().getIterator(filename)));
         }
 
         final Map<Integer, String> trainIndexSet = new HashMap<Integer, String>();

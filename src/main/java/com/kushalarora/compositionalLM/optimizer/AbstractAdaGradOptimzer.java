@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
+import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.options.Options;
 
 /**
@@ -11,8 +12,8 @@ public abstract class AbstractAdaGradOptimzer<T extends IIndexed, D extends IDer
 
     D dvGrad;
 
-    protected AbstractAdaGradOptimzer(Options op, D dvAcc, D dvGrad) {
-        super(op, dvAcc);
+    protected AbstractAdaGradOptimzer(Options op, D dvAcc, D dvGrad, DocumentProcessorWrapper<T> documentProcessorWrapper) {
+        super(op, dvAcc, documentProcessorWrapper);
         this.dvGrad = dvGrad;
     }
 
