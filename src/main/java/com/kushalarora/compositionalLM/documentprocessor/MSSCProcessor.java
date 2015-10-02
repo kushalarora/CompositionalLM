@@ -65,6 +65,6 @@ public class MSSCProcessor extends DocumentProcessorWrapper {
         StanfordDocumentProcessor stanfordProcessor =
                 new StanfordDocumentProcessor(op, tokenizerFactory);
 
-        return stanfordProcessor.getIterator(filename);
+        return stanfordProcessor.getIterator(tmpFileName);
     }
 }
