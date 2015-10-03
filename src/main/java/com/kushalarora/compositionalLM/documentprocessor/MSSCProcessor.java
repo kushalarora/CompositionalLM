@@ -55,7 +55,7 @@ public class MSSCProcessor extends DocumentProcessorWrapper {
         }
 
         while ((line = reader.readLine()) != null) {
-            line = line.replace("\"", "");
+            line = line.replaceAll("[\\(\\){}\\[\\]\"]", "");
             writer.write(line + "\n");
         }
 

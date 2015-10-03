@@ -48,7 +48,7 @@ public class CacheFactory {
     }
 
     public CacheWrapper getCache(Options op) throws IOException {
-        switch (op.trainOp.cacheType) {
+        switch (op.cacheOp.cacheType) {
             case MEMCACHED:
                 return new MemcachedWrapper<Sentence, IInsideOutsideScore>(op) {
 
@@ -150,7 +150,7 @@ public class CacheFactory {
                     }
                 };
             default:
-                throw new RuntimeException("Invalid Cache Type: " + op.trainOp.cacheType);
+                throw new RuntimeException("Invalid Cache Type: " + op.cacheOp.cacheType);
 
         }
     }

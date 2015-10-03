@@ -51,6 +51,7 @@ public class Options implements Serializable {
     public TestOptions testOp;
     public ModelOptions modelOp;
     public InputOptions inputOp;
+    public CacheOptions cacheOp;
 
     @SneakyThrows
     public Options() throws ConfigurationException {
@@ -88,5 +89,11 @@ public class Options implements Serializable {
                 FileUtils.getFile("configs/input.config")
                         .getAbsolutePath());
         inputOp = new InputOptions(config);
+
+
+        config.load(
+                FileUtils.getFile("configs/cache.config")
+                        .getAbsolutePath());
+        cacheOp = new CacheOptions(config);
     }
 }
