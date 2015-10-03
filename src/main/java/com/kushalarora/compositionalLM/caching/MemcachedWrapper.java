@@ -18,7 +18,7 @@ public abstract class MemcachedWrapper<K, V> extends CacheWrapper<K, V> {
 
     public MemcachedWrapper(Options op) throws IOException {
         memcachedClient = new MemcachedClient(
-                AddrUtil.getAddresses(op.trainOp.cacheServer + ":" + op.trainOp.cachePort));
+                AddrUtil.getAddresses(op.cacheOp.cacheServer + ":" + op.cacheOp.cachePort));
     }
 
     @Override
