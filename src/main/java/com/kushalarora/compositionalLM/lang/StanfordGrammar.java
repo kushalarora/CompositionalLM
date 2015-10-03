@@ -49,6 +49,8 @@ public class StanfordGrammar extends AbstractGrammar {
     protected final int numStates;
     protected final boolean[] isTag;
 
+    protected Map<Integer, Integer> grammerToModelIdx;
+
 
     public StanfordGrammar(Options op,
                            LexicalizedParser model) {
@@ -74,6 +76,13 @@ public class StanfordGrammar extends AbstractGrammar {
                 continue;
             }
             isTag[state] = true;
+        }
+
+        grammerToModelIdx = new HashMap<Integer, Integer>();
+        List<String> words = wordIndex.objectsList();
+        for (int i = 0; i < words.size(); i++ ) {
+            grammerToModelIdx.put(
+                    wordIndex.indexOf(words.get(i)), i);
         }
     }
 
@@ -936,7 +945,7 @@ public class StanfordGrammar extends AbstractGrammar {
      * @return Returns a word object
      */
     public Word getToken(String str, int loc) {
-        int index = -1;
+        int grammarIdx = -1;
         String signature = str;
 
         if (op.grammarOp.lowerCase) {
@@ -956,14 +965,15 @@ public class StanfordGrammar extends AbstractGrammar {
             }
         }
 
-        index = wordIndex.indexOf(signature);
+        grammarIdx = wordIndex.indexOf(signature);
+
 
         // If we aren't able to find signature
         // lets use UNK
-        if (index == -1) {
+        if (grammarIdx == -1) {
             signature = "UNK";
-            index = wordIndex.indexOf(signature);
+            grammarIdx = wordIndex.indexOf(signature);
         }
-        return new Word(str, index, signature);
+        return new Word(str, grammerToModelIdx.get(grammarIdx), signature);
     }
 }
