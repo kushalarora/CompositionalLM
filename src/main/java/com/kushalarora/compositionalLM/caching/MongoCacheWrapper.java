@@ -19,9 +19,9 @@ import java.io.*;
     DBCollection coll;
     public MongoCacheWrapper(Options op) {
         super();
-        client = new MongoClient();
-        DB db = client.getDB("ioscoreDB");
-        coll = db.getCollection("ioscoreColl");
+        client = new MongoClient(op.cacheOp.cacheServer, op.cacheOp.cachePort);
+        DB db = client.getDB(op.cacheOp.mongodbDatabase);
+        coll = db.getCollection(op.cacheOp.mongodbDatabase);
         coll.createIndex(new BasicDBObject("key", 1));
     }
 

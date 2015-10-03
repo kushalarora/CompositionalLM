@@ -29,9 +29,6 @@ public class TrainOptions implements Serializable {
     public double learningRate;
     public boolean parallel;
     public int nThreads;
-    public String cacheServer;
-    public int cachePort;
-    public CacheFactory.CacheType cacheType;
     public OptimizerFactory.OptimizerType optimizer;
     public int validBatchSize;
     public boolean saveVisualization;
@@ -56,15 +53,7 @@ public class TrainOptions implements Serializable {
                 config.getBoolean("parallel", false);
         nThreads =
                 config.getInt("nThreads", 0);
-        cacheServer =
-                config.getString("cacheServer", "localhost");
 
-        cachePort =
-                config.getInt("cachePort", 3030);
-
-        cacheType =
-                CacheFactory.CacheType.fromString(
-                        config.getString("cacheType", "none"));
         learningRate =
                 config.getDouble("learningRate", 0.0);
 

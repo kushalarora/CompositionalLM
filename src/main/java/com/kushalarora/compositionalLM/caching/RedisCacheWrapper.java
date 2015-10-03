@@ -62,7 +62,7 @@ public abstract class RedisCacheWrapper<K, V> extends CacheWrapper<K, V> {
     RedisConnection<String, Object> redisConnection;
 
     public RedisCacheWrapper(Options op) {
-        RedisClient client = new RedisClient(op.trainOp.cacheServer, op.trainOp.cachePort);
+        RedisClient client = new RedisClient(op.cacheOp.cacheServer, op.cacheOp.cachePort);
         redisConnection = client.connect(new SerializedObjectCodec());
         redisConnection.setTimeout(5, TimeUnit.MINUTES);
     }
