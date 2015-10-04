@@ -49,8 +49,6 @@ public class StanfordGrammar extends AbstractGrammar {
     protected final int numStates;
     protected final boolean[] isTag;
 
-    protected Map<Integer, Integer> grammerToModelIdx;
-
 
     public StanfordGrammar(Options op,
                            LexicalizedParser model) {
@@ -76,13 +74,6 @@ public class StanfordGrammar extends AbstractGrammar {
                 continue;
             }
             isTag[state] = true;
-        }
-
-        grammerToModelIdx = new HashMap<Integer, Integer>();
-        List<String> words = wordIndex.objectsList();
-        for (int i = 0; i < words.size(); i++ ) {
-            grammerToModelIdx.put(
-                    wordIndex.indexOf(words.get(i)), i);
         }
     }
 
@@ -111,8 +102,8 @@ public class StanfordGrammar extends AbstractGrammar {
         boolean[][] tags = new boolean[length][numStates];
 
         for (int i = 0; i < length; i++) {
-            String word = sentence.get(i).word();
-            s.words[i] = wordIndex.addToIndex(word);
+         //    String word = sentence.get(i).word();
+            s.words[i] = sentence.get(i).getIndex();
         }
 
         for (int start = 0; start < length; start++) {
@@ -945,7 +936,7 @@ public class StanfordGrammar extends AbstractGrammar {
      * @return Returns a word object
      */
     public Word getToken(String str, int loc) {
-        int grammarIdx = -1;
+        int index = -1;
         String signature = str;
 
         if (op.grammarOp.lowerCase) {
@@ -965,15 +956,15 @@ public class StanfordGrammar extends AbstractGrammar {
             }
         }
 
-        grammarIdx = wordIndex.indexOf(signature);
+        index = wordIndex.indexOf(signature);
 
 
         // If we aren't able to find signature
         // lets use UNK
-        if (grammarIdx == -1) {
+        if (index == -1) {
             signature = "UNK";
-            grammarIdx = wordIndex.indexOf(signature);
+            index = wordIndex.indexOf(signature);
         }
-        return new Word(str, grammerToModelIdx.get(grammarIdx), signature);
+        return new Word(str, index, signature);
     }
 }
