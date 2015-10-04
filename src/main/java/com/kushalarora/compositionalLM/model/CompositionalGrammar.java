@@ -95,10 +95,10 @@ public class CompositionalGrammar implements Serializable {
                 log.debug("Computing Compositional inside Score for span ({}, {})", start, end);
 
                 double iScore_start_end = preScores.getScore(iScores, start, end);
+
                 // if grammar iScores is 0, so will be comp score
                 if (iScore_start_end == 0) {
-                    throw new RuntimeException(
-                            String.format("Span iScore[%d][%d] == zero", start, end));
+                    continue;
                 }
 
                 for (int split = start + 1; split < end; split++) {
