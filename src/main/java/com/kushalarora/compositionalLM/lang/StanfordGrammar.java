@@ -102,8 +102,8 @@ public class StanfordGrammar extends AbstractGrammar {
         boolean[][] tags = new boolean[length][numStates];
 
         for (int i = 0; i < length; i++) {
-         //    String word = sentence.get(i).word();
-            s.words[i] = sentence.get(i).getIndex();
+            String word = sentence.get(i).getSignature();
+            s.words[i] = wordIndex.indexOf(word);
         }
 
         for (int start = 0; start < length; start++) {
@@ -884,7 +884,7 @@ public class StanfordGrammar extends AbstractGrammar {
 
 
         log.info("Start outside score computation:{}::{}", idx, sz);
-        doOutsideScores2(s);
+        doOutsideScores(s);
         log.info("Computed outside score computation:{}::{}", idx, sz);
 
 
@@ -950,7 +950,7 @@ public class StanfordGrammar extends AbstractGrammar {
         int index = -1;
         String signature = str;
 
-        if (op.grammarOp.lowerCase) {
+        if (true) {
             signature = str.toLowerCase();
         }
 

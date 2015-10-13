@@ -238,8 +238,8 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
             validFunction = validRoutineSeq;
         }
 
-        log.info("Intial validation score#: {}",
-                getValidationScore(validFunction, validSet));
+//        log.info("Intial validation score#: {}",
+//                getValidationScore(validFunction, validSet));
 
         epoch = 0;
         iter = 0;
