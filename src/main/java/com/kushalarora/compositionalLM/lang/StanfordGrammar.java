@@ -373,6 +373,7 @@ public class StanfordGrammar extends AbstractGrammar {
 //                        iSplitSpanStateScore[start][end][split][parentState] += tot;
                     s.addToScore(s.iSplitSpanStateScore, tot, start, end, split, parentState);
 
+//                       iSpanScore[start][end] += tot;
                     s.addToScore(s.iSpanScore, tot, start, end);
 
                 } // for split point
@@ -422,150 +423,160 @@ public class StanfordGrammar extends AbstractGrammar {
     /**
      * Populate outside score related arrays.
      */
-        /**
-         * public void doOutsideScores2() {
-            int initialParentIdx = length;
-            int initialStart = 0;
-            int initialEnd = length;
-            int startSymbol = stateIndex.indexOf(goalStr);
-            oScore[initialStart][initialEnd][startSymbol] = 1.0f;
-            oSpanWParentScore[initialStart][initialEnd][initialParentIdx] = 1.0f;
-            oSpanStateScoreWParent[initialStart][initialEnd][initialParentIdx][startSymbol] = 1.0f;
+    public void doOutsideScores2(AbstractInsideOutsideScore score) {
+        StanfordInsideOutsideScore s = (StanfordInsideOutsideScore) score;
+        int initialParentIdx = s.length;
+        int initialStart = 0;
+        int initialEnd = s.length;
+        int startSymbol = stateIndex.indexOf(goalStr);
+//            oScore[initialStart][initialEnd][startSymbol] = 1.0f;
+//            oSpanWParentScore[initialStart][initialEnd][initialParentIdx] = 1.0f;
+//            oSpanStateScoreWParent[initialStart][initialEnd][initialParentIdx][startSymbol] = 1.0f;
 
-            for (int diff = length; diff >= 1; diff--) {
-                for (int start = 0; start + diff <= length; start++) {
-                    int end = start + diff;
+        s.setScore(s.oScore, 1.0f,
+                initialStart, initialEnd, startSymbol);
 
-                    log.debug("Doing oScore for span ({}, {})", start, end);
-                    // do unaries
-                    for (int parentState = 0; parentState < numStates; parentState++) {
-                        // As this is unary rule and parent span is same as child,
-                        // so consider the whole sentence to be parent ending with end
-                        int parent = end;
+        s.setScore(s.oSpanWParentScore, 1.0f,
+                initialStart, initialEnd, initialParentIdx);
 
-                        // if current parentState's outside score is zero,
-                        // child's would be zero as well
-                        double oS = oScore[start][end][parentState];
+        s.setScore(s.oSpanStateScoreWParent, 1.0f,
+                initialStart, initialEnd, initialParentIdx, startSymbol);
+
+
+        for (int diff = s.length; diff >= 1; diff--) {
+            for (int start = 0; start + diff <= s.length; start++) {
+                int end = start + diff;
+
+                log.debug("Doing oScore for span ({}, {})", start, end);
+                // do unaries
+                for (int parentState = 0; parentState < numStates; parentState++) {
+                    // As this is unary rule and parent span is same as child,
+                    // so consider the whole sentence to be parent ending with end
+                    int parent = end;
+
+                    // if current parentState's outside score is zero,
+                    // child's would be zero as well
+//                        double oS = oScore[start][end][parentState];
+                    double oS = s.getScore(s.oScore, start, end, parentState);
+
+                    if (oS == 0f) {
+                        continue;
+                    }
+                    oS = log(oS);
+
+                    UnaryRule[] rules = ug.closedRulesByParent(parentState);
+                    for (UnaryRule ur : rules) {
+                        double pS = ur.score;
+                        int childState = ur.child;
+                        double tot = exp(oS + pS);
+                        log.debug("Adding unary rule {} to outside score for Start: {}, End: {}"
+                                , ur, start, end);
+
+//                            oScore[start][end][childState] += tot;
+//                            oSpanWParentScore[start][end][parent] += tot;
+//                            oSpanStateScoreWParent[start][end][parent][childState] += tot;
+
+                        s.addToScore(s.oScore, tot, start, end, childState);
+                        s.addToScore(s.oSpanWParentScore, tot, start, end, parent);
+                        s.addToScore(s.oSpanStateScoreWParent, tot, start, end, parent, childState);
+                    }   // end for unary rule iter
+                }   // end for parentState
+
+
+                // do binaries
+
+                // Outside score with left child not expanded
+                for (int leftState = 0; leftState < numStates; leftState++) {
+                    // Left span starts at start and ends at split.
+                    // The parent ends at end and is stored, the parent
+                    // begins at start
+                    int lStart = start;
+                    int lParent = end;
+                    BinaryRule[] rules = bg.splitRulesWithLC(leftState);
+                    for (BinaryRule br : rules) {
+                        int rightState = br.rightChild;
+                        int parentState = br.parent;
+                        // If paren't outside score is zero, so will be
+                        // the child's
+                        double oS = s.getScore(s.oScore, start, end, parentState);
                         if (oS == 0f) {
                             continue;
                         }
                         oS = log(oS);
 
-                        UnaryRule[] rules = ug.closedRulesByParent(parentState);
-                        for (UnaryRule ur : rules) {
-                            double pS = ur.score;
-                            int childState = ur.child;
-                            double tot = exp(oS + pS);
-                            log.debug("Adding unary rule {} to outside score for Start: {}, End: {}"
-                                    , ur, start, end);
+                        double pS = br.score;
 
-                            oScore[start][end][childState] += tot;
-                            oSpanWParentScore[start][end][parent] += tot;
-                            oSpanStateScoreWParent[start][end][parent][childState] += tot;
-                        }   // end for unary rule iter
-                    }   // end for parentState
 
-                    // do binaries
+                        for (int split = start + 1; split < end; split++) {
+                            // left span ends at end.
+                            int lEnd = split;
 
-                    // Outside score with left child not expanded
-                    for (int leftState = 0; leftState < numStates; leftState++) {
-                        // Left span starts at start and ends at split.
-                        // The parent ends at end and is stored, the parent
-                        // begins at start
-                        int lStart = start;
-                        int lParent = end;
-                        BinaryRule[] rules = bg.splitRulesWithLC(leftState);
-                        for (BinaryRule br : rules) {
-                            int rightState = br.rightChild;
-                            int parentState = br.parent;
-                            // If paren't outside score is zero, so will be
-                            // the child's
-                            double oS = oScore[start][end][parentState];
-                            if (oS == 0f) {
-                                continue;
+                            // iScore of the right child.
+                            // If the right child's iScore is zero, so
+                            // will be the oScore of left child.
+                            double rS = s.getScore(s.iScore, split, end, rightState);
+                            if (rS > 0f) {
+                                rS = log(rS);
+
+                                double totR = exp(pS + rS + oS);
+
+///                                    oScore[lStart][lEnd][leftState] += totR;
+//                                    oSpanWParentScore[lStart][lEnd][lParent] += totR;
+//                                    oSpanStateScoreWParent[lStart][lEnd][lParent][leftState] += totR;
+
+                                s.addToScore(s.oScore, totR, lStart, lEnd, leftState);
+                                s.addToScore(s.oSpanWParentScore, totR, lStart, lEnd, lParent);
+                                s.addToScore(s.oSpanStateScoreWParent, totR, lStart, lEnd, lParent, leftState);
                             }
-                            oS = log(oS);
+                        }   // end for split
+                    }   // end for binary rule iter
+                }   // end for leftState
 
-                            double pS = br.score;
+                // Outside score with right child not expanded
+                for (int rightState = 0; rightState < numStates; rightState++) {
+                    // for right span, the span spans (split, end) with parents left endpoint
+                    // stored in start, with right endpoint being end.
+                    int rEnd = end;
+                    int rParent = start;
+
+                    BinaryRule[] rules = bg.splitRulesWithRC(rightState);
+                    for (BinaryRule br : rules) {
+                        int parentState = br.parent;
+                        int leftState = br.leftChild;
+                        //  if oScore of parent is zero, so is child's.
+                        double oS = s.getScore(s.oScore, start, end, parentState);
+                        if (oS == 0f) {
+                            continue;
+                        }
+                        oS = log(oS);
+
+                        double pS = br.score;
+
+                        for (int split = start + 1; split < end; split++) {
+                            // the left endpoint of  right span is split.
+                            int rStart = split;
+
+                            // If iScore of the left span is zero, so is the
+                            // oScore of left span
+                            double lS = s.getScore(s.iScore, start, split, leftState);
+                            if (lS > 0f) {
+                                lS = log(lS);
+                                double totL = exp(pS + lS + oS);
 
 
-                            for (int split = start + 1; split < end; split++) {
-                                // left span ends at end.
-                                int lEnd = split;
-
-                                // iScore of the right child.
-                                // If the right child's iScore is zero, so
-                                // will be the oScore of left child.
-                                double rS = iScore[split][end][rightState];
-                                if (rS > 0f) {
-                                    rS = log(rS);
-
-                                    log.debug("oScore[{}][{}][{}]= pS + oScore[{}][{}][{}]({}) + iScore[{}][{}][{}]" +
-                                                    "({}) " +
-                                                    "Rule" +
-                                                    " {}",
-                                            start, split, leftState,
-                                            start, end, br.parent, oS,
-                                            split, end, br.rightChild, rS,
-                                            br);
-
-                                    double totR = exp(pS + rS + oS);
-
-                                    oScore[lStart][lEnd][leftState] += totR;
-                                    oSpanWParentScore[lStart][lEnd][lParent] += totR;
-                                    oSpanStateScoreWParent[lStart][lEnd][lParent][leftState] += totR;
-                                }
-
-                            }   // end for split
-                        }   // end for binary rule iter
-                    }   // end for leftState
-
-                    // Outside score with right child not expanded
-                    for (int rightState = 0; rightState < numStates; rightState++) {
-                        // for right span, the span spans (split, end) with parents left endpoint
-                        // stored in start, with right endpoint being end.
-                        int rEnd = end;
-                        int rParent = start;
-
-                        BinaryRule[] rules = bg.splitRulesWithRC(rightState);
-                        for (BinaryRule br : rules) {
-                            int parentState = br.parent;
-                            int leftState = br.leftChild;
-                            //  if oScore of parent is zero, so is child's.
-                            double oS = oScore[start][end][parentState];
-                            if (oS == 0f) {
-                                continue;
+//                                    oScore[rStart][rEnd][rightState] += totL;
+//                                    oSpanWParentScore[rStart][rEnd][rParent] += totL;
+//                                    oSpanStateScoreWParent[rStart][rEnd][rParent][rightState] += totL;
+                                s.addToScore(s.oScore, totL, rStart, rEnd, rightState);
+                                s.addToScore(s.oSpanWParentScore, totL, rStart, rEnd, rParent);
+                                s.addToScore(s.oSpanStateScoreWParent, totL, rStart, rEnd, rParent, rightState);
                             }
-                            oS = log(oS);
-
-                            double pS = br.score;
-
-                            for (int split = start + 1; split < end; split++) {
-                                // the left endpoint of  right span is split.
-                                int rStart = split;
-
-                                // If iScore of the left span is zero, so is the
-                                // oScore of left span
-                                double lS = iScore[start][split][leftState];
-                                if (lS > 0f) {
-                                    lS = log(lS);
-
-                                    log.debug("oScore[{}][{}][{}]=oScore[{}][{}][{}]({}) + iScore[{}][{}][{}]({}) Rule {}",
-                                            split, end, rightState,
-                                            start, end, br.parent, oS,
-                                            start, split, br.leftChild, lS,
-                                            br);
-                                    double totL = exp(pS + lS + oS);
-                                    oScore[rStart][rEnd][rightState] += totL;
-                                    oSpanWParentScore[rStart][rEnd][rParent] += totL;
-                                    oSpanStateScoreWParent[rStart][rEnd][rParent][rightState] += totL;
-                                }
-                            }   // end for split
-                        }   // end for binary rules iter
-                    }   // end for right state
-                }   // end for start
-            }   // end for end
-        }   // end doOutsideScores*/
+                        }   // end for split
+                    }   // end for binary rules iter
+                }   // end for right state
+            }   // end for start
+        }   // end for end
+    }   // end doOutsideScores
 
 
     public void doOutsideScores(AbstractInsideOutsideScore score) {
@@ -873,7 +884,7 @@ public class StanfordGrammar extends AbstractGrammar {
 
 
         log.info("Start outside score computation:{}::{}", idx, sz);
-        doOutsideScores(s);
+        doOutsideScores2(s);
         log.info("Computed outside score computation:{}::{}", idx, sz);
 
 
