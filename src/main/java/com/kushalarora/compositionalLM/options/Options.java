@@ -44,6 +44,7 @@ public class Options implements Serializable {
     public boolean visualize;
     public boolean train;
     public boolean parse;
+    public boolean test;
     public boolean nbestRescore;
     public boolean debug;
     public GrammarOptions grammarOp;
