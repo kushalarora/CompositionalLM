@@ -25,8 +25,7 @@ public class dQdXwTest extends AbstractDerivativeTest {
 
     @Before
     public void setUp() {
-        dqdxw = new dQdXw(dim, V, defaultSentence,
-                new dXdXw(dim, V, defaultSentence));
+        dqdxw = new dQdXw(dim, V, defaultSentence);
     }
 
     @BeforeClass

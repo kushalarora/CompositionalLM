@@ -116,6 +116,7 @@ public class CompositionalLM {
             visualize(op.trainOp.visualizationFilename);
         }
 
+        saveModelSerialized(op.modelOp.outFilename);
         // Closing cache. Ecache doesn't do eternal caching
         // until and unless closed
         cache.close();

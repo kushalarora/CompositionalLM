@@ -1,13 +1,15 @@
 package com.kushalarora.compositionalLM.lang;
 
 import com.kushalarora.compositionalLM.optimizer.IIndexed;
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 
 import java.util.ArrayList;
 
 /**
  * Created by karora on 7/22/15.
  */
-public class Sentence extends ArrayList<Word> implements IIndexed {
+public class Sentence extends ArrayList<Word> implements IIndexedSized
+{
     private int index;
 
     public Sentence(int index) {
@@ -27,6 +29,10 @@ public class Sentence extends ArrayList<Word> implements IIndexed {
 
     public int getIndex() {
         return index;
+    }
+
+    public long getSize() {
+        return size();
     }
 
 }
