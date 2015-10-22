@@ -14,7 +14,7 @@ import java.util.concurrent.*;
  * Created by karora on 7/14/15.
  */
 @Slf4j
-public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivatives<T>>
+public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDerivatives<T>>
         implements IOptimizer<T, D> {
     private final Random rand;
     protected Options op;
@@ -44,8 +44,8 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
             new Function<List<T>, Double>() {
                 @Nullable
                 public Double apply(@Nullable List<T> trainBatch) {
-                    List<Future<D>> futureList =
-                            new ArrayList<Future<D>>();
+                    List<AbstractMap.SimpleEntry<T, Future<D>>> futureList =
+                            new ArrayList<AbstractMap.SimpleEntry<T, Future<D>>>();
                     double cumlTrainingScore = 0.0;
                     int cumlTrainingSize = 0;
                     for (final T sample : trainBatch) {
@@ -58,13 +58,20 @@ public abstract class AbstractOptimizer<T extends IIndexed, D extends IDerivativ
                                         return (D) fitOne(sample);
                                     }
                                 });
-                        futureList.add(future);
+                        futureList.add(new AbstractMap.SimpleEntry<T, Future<D>>(sample, future));
                     }
+                    Collections.sort(futureList, new Comparator<AbstractMap.SimpleEntry<T, Future<D>>>()
+                                     {
+                                         public int compare(AbstractMap.SimpleEntry<T, Future<D>> o1, AbstractMap.SimpleEntry<T, Future<D>> o2)
+                                         {
+                                             return (int)(o1.getKey().getSize() - o2.getKey().getSize());
+                                         }
+                                     });
 
-                    Iterator<Future<D>> it = futureList.iterator();
+                    Iterator < AbstractMap.SimpleEntry<T, Future<D>>> it = futureList.iterator();
                     while (it.hasNext()) {
                         try {
-                            Future<D> future = it.next();
+                            Future<D> future = it.next().getValue();
                             D derivatives = future.get();
                             cumlTrainingScore += derivatives.getScore();
                             cumlTrainingSize += 1;

@@ -13,24 +13,18 @@ import java.util.List;
  * Created by karora on 6/21/15.
  */
 public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
-    private dXdW dxdw;
     @Getter
     private INDArray dQdW;
     private int dim;
     private T data;
     private int length;
 
-    public dQdW(int dimension, T data, dXdW dxdw) {
+    public dQdW(int dimension, T data) {
         super(new int[]{dimension, 2 * dimension});
-        this.dxdw = dxdw;
         dim = dimension;
         this.dQdW = Nd4j.zeros(dim, 2 * dim);
         this.data = data;
         length = data.size();
-    }
-
-    public dQdW(int dimension, T data) {
-        this(dimension, data, new dXdW(dimension, data));
     }
 
     public dQdW(dQdW dqdW, T data) {
@@ -51,7 +45,7 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
     }
 
     public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
-        INDArray[][][][][] dxdwArr = dxdw.calcDerivative(model, scorer);
+        INDArray[][][][][] dxdwArr = new dXdW(dim, data).calcDerivative(model, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         double[][][] compositionalMu = scorer.getMuScore();
         double[][] compositionalIScore = scorer.getInsideSpanProb();
@@ -88,9 +82,6 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         if (compositionalIScore[0][length] == 0) {
             throw new RuntimeException("Z is zero for sentence " + data);
         }
-
-        // nullifying dxdw to save memory
-        dxdw = null;
 
         dQdW = dQdW.div(compositionalIScore[0][length]);
         return dQdW;

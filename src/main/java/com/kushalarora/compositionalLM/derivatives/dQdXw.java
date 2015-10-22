@@ -13,7 +13,6 @@ import java.util.List;
  * Created by karora on 6/21/15.
  */
 public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
-    private dXdXw dxdxw;
     @Getter
     private INDArray dQdXw;
     private int dim;
@@ -21,9 +20,8 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
     private T data;
     private int length;
 
-    public dQdXw(int dimensions, int vocabSize, T data, dXdXw dxdxw) {
+    public dQdXw(int dimensions, int vocabSize, T data) {
         super(new int[]{dimensions, dimensions});
-        this.dxdxw = dxdxw;
         dim = dimensions;
         V = vocabSize;
         dQdXw = Nd4j.zeros(dim, V);
@@ -51,10 +49,6 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
         length = data.size();
     }
 
-    public dQdXw(int dimensions, int vocabSize, T data) {
-        this(dimensions, vocabSize, data, new dXdXw(dimensions, vocabSize, data));
-    }
-
     public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
 
         // Save indexes
@@ -63,7 +57,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
             indexes[i] = data.get(i).getIndex();
         }
 
-        INDArray[][][][] dxdxwArr = dxdxw.calcDerivative(model, scorer);
+        INDArray[][][][] dxdxwArr = new dXdXw(dim, V, data).calcDerivative(model, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         double[][][] compositionalMu = scorer.getMuScore();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
@@ -134,9 +128,6 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
         if (compositionalIScore[0][length] == 0) {
             throw new RuntimeException("Z is zero for sentence " + data);
         }
-
-        // removing the reference to dxdxw to save memory space
-        dxdxw = null;
 
         dQdXw = dQdXw.div(compositionalIScore[0][length]);
         return dQdXw;
