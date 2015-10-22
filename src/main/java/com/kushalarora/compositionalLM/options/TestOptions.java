@@ -14,7 +14,9 @@ public class TestOptions implements Serializable {
     public boolean parse;
     public String[] nbestFiles;
     public String[] parseFiles;
+    public String[] testFiles;
     public String visualizationFile;
+    public String outputFile;
 
     public TestOptions(Configuration config) {
         nbestRescore =
@@ -31,5 +33,11 @@ public class TestOptions implements Serializable {
 
         visualizationFile =
                 config.getString("visualizationFile");
+
+        testFiles  =
+                config.getStringArray("testFiles");
+
+        outputFile =
+                config.getString("outputFile", "./output.txt");
     }
 }

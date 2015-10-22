@@ -7,6 +7,7 @@ import com.kushalarora.compositionalLM.caching.CacheFactory;
 import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorFactory;
+import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.lang.*;
 import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
@@ -32,10 +33,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.PrintWriter;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -142,6 +141,31 @@ public class CompositionalLM {
             // TODO:: Figure this out
 
         }*/
+
+    }
+
+    public void contrastiveEntropy() throws IOException {
+        double logScore = 0f;
+        PrintWriter writer = new PrintWriter(op.testOp.outputFile, "UTF-8");
+        for (String testFile : op.testOp.testFiles) {
+            DocumentProcessorWrapper<Sentence> documentProcessor =
+                    docProcessorFactory.getDocumentProcessor();
+            Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
+            while (testIter.hasNext()) {
+                Sentence data = testIter.next();
+                IInsideOutsideScore preScore = cache.get(data);
+                CompositionalInsideOutsideScore score =
+                        compGrammar.getScore(data,
+                                preScore);
+                Double logP = score.getLogScore();
+                writer.println(score.getSentence());
+                writer.println(String.format("Length: %d, logProp: %.4f",
+                        score.getSentence().size(), score.getLogScore()));
+                logScore += logP;
+            }
+        }
+        writer.println(String.format("Total logProb:%.4f", logScore));
+        writer.close();
 
     }
 
@@ -308,6 +332,8 @@ public class CompositionalLM {
             cLM.nbestList();
         } else if (op.parse) {
             cLM.parse();
+        } else if (op.test) {
+            cLM.contrastiveEntropy();
         } // end processing if statement
 
 

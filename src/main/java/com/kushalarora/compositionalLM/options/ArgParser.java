@@ -38,6 +38,12 @@ public class ArgParser {
                 op.nbestRescore = true;
                 op.testOp.nbestFiles = ArgUtils.getStringFromArg(args, argIndex);
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
+            } else if (args[argIndex].equalsIgnoreCase("-test")) {
+                // Must be followed by a text file with n best list generated from
+                // lattice decoder to be reranked
+                op.test = true;
+                op.testOp.testFiles = ArgUtils.getStringFromArg(args, argIndex);
+                argIndex += ArgUtils.numSubArgs(args, argIndex);
             } else if (args[argIndex].equalsIgnoreCase("-visualize")) {
                 op.visualize = true;
             } else if (args[argIndex].equalsIgnoreCase("-validate")) {
@@ -167,6 +173,13 @@ public class ArgParser {
                     throw new RuntimeException("You can only specify exactly one epoch value");
                 }
                 op.trainOp.validationFreq = Integer.parseInt(validFreq[0]);
+                argIndex++;
+            } else if (args[argIndex].equalsIgnoreCase("-output")) {
+                String[] outputs = ArgUtils.getStringFromArg(args, argIndex);
+                if (outputs.length != 1) {
+                    throw new RuntimeException("You can only specify exactly one epoch value");
+                }
+                op.testOp.outputFile = outputs[0];
                 argIndex++;
             } else if (args[argIndex].equalsIgnoreCase("-learnRate")) {
                 String[] learningRate = ArgUtils.getStringFromArg(args, argIndex);
