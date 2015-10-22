@@ -1,0 +1,2 @@
+file src/resources/ptb.test.txt: 3761 sentences, 78669 words, 0 OOVs
+0 zeroprobs, logprob= -182186 ppl= 162.254 ppl1= 206.948

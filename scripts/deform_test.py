@@ -43,12 +43,13 @@ def disform_sentences(input_filename, p1=80, p2=10, p3=10):
                 words[i] = sub
 
         newline = " ".join(words)
-        print "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        print line
-        print "======================================="
-        print newline
-        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+#        print "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+#        print line
+#        print "======================================="
+#        print newline
+#        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
         outfile.write(newline + "\n")
+    return output_filename
 
 
 if __name__ == "__main__":
