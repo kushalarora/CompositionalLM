@@ -3,6 +3,8 @@ import os
 from deform_test import disform_sentences
 import subprocess
 import json
+import csv
+from math import log10
 
 MODELS = [
         "3gram",
@@ -21,12 +23,12 @@ MODELS = [
 ngramModelsToTrainCmd = {
         "3gram": "ngram-count -order 3 -text %s -lm %s -unk -addsmooth 1 -interpolate",
         "5gram": "ngram-count -order 5 -text %s -lm %s -unk -addsmooth 1 -interpolate",
-        "3gram-kn": "ngram-count -order 3 -text %s -lm %s -unk -kndiscount -interpolate",
-        "5gram-kn":"ngram-count -order 5 -text %s -lm %s -unk -kndiscount -interpolate",
-        "3gram-gt": "ngram-count -order 3 -text %s -lm %s -unk -interpolate",
-        "5gram-gt": "ngram-count -order 5 -text %s -lm %s -unk -interpolate",
-        "5max-ent": "ngram-count -order 5 -text %s -lm %s -unk",
-        "3max-ent": "ngram-count -order 3 -text %s -lm %s -unk"
+        "3gram-kn": "ngram-count -order 3 -text %s -lm %s -unk -kndiscount -interpolate -gt3min 1 -gt4min 1",
+        "5gram-kn":"ngram-count -order 5 -text %s -lm %s -unk -kndiscount -interpolate -gt3min 1 -gt4min 1",
+        "3gram-gt": "ngram-count -order 3 -text %s -lm %s -unk -interpolate -gt3min 1 -gt4min 1",
+        "5gram-gt": "ngram-count -order 5 -text %s -lm %s -unk -interpolate -gt3min 1 -gt4min 1",
+        "5max-ent": "ngram-count -order 5 -text %s -lm %s -unk  -gt3min 1 -gt4min 1",
+        "3max-ent": "ngram-count -order 3 -text %s -lm %s -unk  -gt3min 1 -gt4min 1"
         }
 ngramModelToTestCmds = {
         "3gram": "ngram -order 3 -ppl %s -lm %s -unk",
@@ -47,6 +49,8 @@ TMP_DIR = "/tmp/"
 TRAIN_FILE_PATH="../src/resources/ptb.train.txt"
 VALID_FILE_PATH = "../src/resources/ptb.valid.txt"
 TEST_FILE_PATH="../src/resources/ptb.test.txt"
+TEST_SENT_COUNT = 3761
+TEST_VOCAB = 78669
 
 RNN_TRAIN_CMD = "../rnnlm/rnnlm -train %s -valid %s -rnnlm %s -hidden %d -rand-seed 1 -class %d -bptt 4 -bptt-block 10"
 RNN_TEST_CMD = "../rnnlm/rnnlm -test %s -rnnlm %s"
@@ -66,7 +70,6 @@ def generate_results():
         print "Training Model %s" % model
         cmd = ngramModelsToTrainCmd[model] % (TRAIN_FILE_PATH, model_filepath)
         print subprocess.call(cmd.split(" "))
-    import pdb;pdb.set_trace()
     for tuple in RNN_CLASS_HIDDEN:
         model_file = get_model_filename("rnn-%d-%d" % (tuple[0], tuple[1]))
 
@@ -115,17 +118,33 @@ def generate_results():
             deformToModelToScore[deform][model] /= iter
 
     outputfile = open("./output.txt", "w")
-    outputfile.write(json.dumps(deformToModelToScore, sort_keys=True, indent=True, separators=(',', ':')))
+    outputfile.write("deformToModelToScore: " + json.dumps(deformToModelToScore, sort_keys=True, indent=True, separators=(',', ':')))
     outputfile.write("\n")
-    modelToDeformContrastiveScore = {}
+    deformToModelContrastiveEntropy = {}
 
-    for deform in DEFORM_LEVELS[1:]:
-        modelToDeformContrastiveScore[deform] = {}
+    for deform in DEFORM_LEVELS:
+        deformToModelContrastiveEntropy[deform] = {}
         for model in deformToModelToScore[deform]:
-            modelToDeformContrastiveScore[deform][model] = deformToModelToScore[deform][model] - deformToModelToScore[0][model]
+            deformToModelContrastiveEntropy[deform][model] = deformToModelToScore[deform][model] - deformToModelToScore[0][model]
 
+    outputfile.write("deformToModelContrastiveEntropy: " + json.dumps(deformToModelContrastiveEntropy, sort_keys=True, indent=True, separators=(',', ':')))
 
-    outputfile.write(json.dumps(modelToDeformContrastiveScore, sort_keys=True, indent=True, separators=(',', ':')))
+    import pdb;pdb.set_trace()
+    deformToModelToPpl = {}
+    for deform in DEFORM_LEVELS:
+        deformToModelToPpl[deform] = {}
+        for model in MODELS:
+            deformToModelToPpl[deform][model] = pow(10, -1 * deformToModelToScore[deform][model]/(TEST_VOCAB + TEST_SENT_COUNT))
+
+    outputfile.write("deformToModelToPpl: " + json.dumps(deformToModelToPpl, sort_keys=True, indent=True, separators=(',', ':')))
+
+    deformToModelToContrastivePPl = {}
+    for deform in DEFORM_LEVELS:
+        deformToModelToContrastivePPl[deform] = {}
+        for model in MODELS:
+            deformToModelToContrastivePPl[deform][model] = pow(10, -1 * deformToModelContrastiveEntropy[deform][model]/(TEST_VOCAB + TEST_SENT_COUNT))
+    outputfile.write("deformToModelToContrastivePPl: " + json.dumps(deformToModelToContrastivePPl, sort_keys=True, indent=True, separators=(',', ':')))
+    outputfile.close()
 
 if __name__ == "__main__":
 	generate_results()
