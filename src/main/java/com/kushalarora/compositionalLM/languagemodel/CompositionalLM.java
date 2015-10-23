@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.Nullable;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -147,7 +149,7 @@ public class CompositionalLM {
 
     public void contrastiveEntropy() throws IOException {
         double logScore = 0f;
-        PrintWriter writer = new PrintWriter(op.testOp.outputFile, "UTF-8");
+        PrintWriter writer = new PrintWriter(new File(op.testOp.outputFile), "UTF-8");
         for (String testFile : op.testOp.testFiles) {
             DocumentProcessorWrapper<Sentence> documentProcessor =
                     docProcessorFactory.getDocumentProcessor();
