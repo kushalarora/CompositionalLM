@@ -114,7 +114,7 @@ public class CompositionalInsideOutsideScore {
      * @return score
      */
     public double getSentenceScore() {
-        return exp(Math.log(compositionalIScore[0][length]) / length);
+        return Math.log(compositionalIScore[0][length]);
     }
 
     public double getLogScore() {
