@@ -4,6 +4,9 @@ import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -17,6 +20,7 @@ import java.util.List;
  * <p/>
  * dQdu = \sum{start}{end}{split} dEdu(start, end, split) * \mu(start, end, split)
  */
+@Slf4j
 public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
     @Getter
     private INDArray dQdu;
@@ -126,6 +130,11 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         }
 
         dQdu = dQdu.div(compositionalIScore[0][length]);
+
+        if (containsNanOrInf()) {
+            log.error("dQdu contains Nan Or Inf. for data {}", data);
+            dQdu = Nd4j.rand(dimensions, 1, -1, 1, new JDKRandomGenerator());
+        }
 
         return dQdu;
     }
