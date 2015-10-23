@@ -21,6 +21,6 @@ public abstract class AbstractBaseDerivativeClass implements Serializable {
      */
     protected boolean containsNanOrInf(INDArray arr) {
         double sum = arr.sum(Integer.MAX_VALUE).getDouble();
-        return !Double.isFinite(sum) || (sum <= -100) || (sum >= 100);
+        return !Double.isFinite(sum) || (sum <= -10) || (sum >= 10);
     }
 }
