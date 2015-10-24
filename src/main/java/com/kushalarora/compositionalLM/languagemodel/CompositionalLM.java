@@ -158,47 +158,6 @@ public class CompositionalLM {
                     docProcessorFactory.getDocumentProcessor();
             Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
 
-            List<Future<Double>> futureList =
-                    new ArrayList<Future<Double>>();
-
-            while (testIter.hasNext()) {
-                Sentence sent = testIter.next();
-                log.info("Starting Testing#{}: {}", sent.getIndex(), sent);
-                Future<Double> future = executor.submit(new Callable<Double>() {
-                    public Double call() throws Exception {
-                        return getValidationScore(data);
-                    }
-                });
-                futureList.add(future);
-            }
-
-            int idx = 0;
-            Iterator<Future<Double>> it = futureList.iterator();
-            while (it.hasNext()) {
-                try {
-                    Future<Double> future = it.next();
-                    Double score = future.get();
-                    if (score.isInfinite() || score.isNaN()) {
-                        log.info("****Validation#{} is {}****",
-                                 idx++, score);
-                        continue;
-                    }
-
-                    log.info("****Finished Validation#{}: {}****",
-                             idx++, score);
-
-                    validationScore += score;
-                    it.remove();
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                }
-            }
-            return validationScore;
-        }
-
             while (testIter.hasNext()) {
                 Sentence data = testIter.next();
                 IInsideOutsideScore preScore = cache.get(data);
@@ -208,11 +167,14 @@ public class CompositionalLM {
                 Double logP = score.getLogScore();
                 writer.println(score.getSentence());
                 writer.println(String.format("Length: %d, logProp: %.4f",
-                        score.getSentence().size(), score.getLogScore()));
+                                             score.getSentence().size(), score.getLogScore()));
+                log.info(String.format("Length: %d, logProp: %.4f",
+                                       score.getSentence().size(), score.getLogScore()));
                 logScore += logP;
             }
         }
         writer.println(String.format("Total logProb:%.4f", logScore));
+        log.info("Total logProb:{}", logScore);
         writer.close();
 
     }
