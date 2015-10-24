@@ -118,7 +118,6 @@ public class CompositionalInsideOutsideScore {
         if (score > 10) {
             return 0;
         }
-        return compositionalIScore[0][length];
     }
 
     public double getLogScore() {
