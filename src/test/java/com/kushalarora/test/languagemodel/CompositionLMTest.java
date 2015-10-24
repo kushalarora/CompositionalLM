@@ -102,10 +102,10 @@ public class CompositionLMTest {
     public void testMainTest() throws Exception {
         String[] args =
                 new String[] {
-                        "-test", "src/resources/valid4",
+                        "-test", "src/resources/test",
                         "-output", "/tmp/output.txt",
                         // "-grammarType", "stanford",
-                       // "-grammarFile", "src/resources/englishPCFG.ser.gz",
+                        "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase,",
                       //  "-saveVisualization",

@@ -129,7 +129,6 @@ def generate_results():
 
     outputfile.write("deformToModelContrastiveEntropy: " + json.dumps(deformToModelContrastiveEntropy, sort_keys=True, indent=True, separators=(',', ':')))
 
-    import pdb;pdb.set_trace()
     deformToModelToPpl = {}
     for deform in DEFORM_LEVELS:
         deformToModelToPpl[deform] = {}
@@ -145,6 +144,18 @@ def generate_results():
             deformToModelToContrastivePPl[deform][model] = pow(10, -1 * deformToModelContrastiveEntropy[deform][model]/(TEST_VOCAB + TEST_SENT_COUNT))
     outputfile.write("deformToModelToContrastivePPl: " + json.dumps(deformToModelToContrastivePPl, sort_keys=True, indent=True, separators=(',', ':')))
     outputfile.close()
+
+    import pdb;pdb.set_trace()
+    y = []
+    for model in MODELS:
+        y.append(deformToModelToPpl[0][model])
+
+    x = []
+    for i, deform in enumerate(DEFORM_LEVELS[1:]):
+        x.append([])
+        for model in MODELS:
+            x[i].append(deformToModelToContrastivePPl[deform][model])
+
 
 if __name__ == "__main__":
 	generate_results()
