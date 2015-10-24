@@ -118,6 +118,12 @@ public class CompositionalInsideOutsideScore {
         if (score > 10) {
             return 0;
         }
+        if (score == 0) {
+            return 0;
+        }
+        if (Double.isInfinite(compositionalIScore[0][length])) {
+            return 0;
+        }
         return Math.log(compositionalIScore[0][length]);
     }
 
