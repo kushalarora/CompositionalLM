@@ -37,6 +37,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 /**
@@ -154,6 +157,48 @@ public class CompositionalLM {
             DocumentProcessorWrapper<Sentence> documentProcessor =
                     docProcessorFactory.getDocumentProcessor();
             Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
+
+            List<Future<Double>> futureList =
+                    new ArrayList<Future<Double>>();
+
+            while (testIter.hasNext()) {
+                Sentence sent = testIter.next();
+                log.info("Starting Testing#{}: {}", sent.getIndex(), sent);
+                Future<Double> future = executor.submit(new Callable<Double>() {
+                    public Double call() throws Exception {
+                        return getValidationScore(data);
+                    }
+                });
+                futureList.add(future);
+            }
+
+            int idx = 0;
+            Iterator<Future<Double>> it = futureList.iterator();
+            while (it.hasNext()) {
+                try {
+                    Future<Double> future = it.next();
+                    Double score = future.get();
+                    if (score.isInfinite() || score.isNaN()) {
+                        log.info("****Validation#{} is {}****",
+                                 idx++, score);
+                        continue;
+                    }
+
+                    log.info("****Finished Validation#{}: {}****",
+                             idx++, score);
+
+                    validationScore += score;
+                    it.remove();
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+            return validationScore;
+        }
+
             while (testIter.hasNext()) {
                 Sentence data = testIter.next();
                 IInsideOutsideScore preScore = cache.get(data);
