@@ -45,22 +45,10 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 @Nullable
                 public Double apply(@Nullable List<T> trainBatch) {
 
-                    Collections.sort(trainBatch, new Comparator<T>()
-                    {
-
-                        public int compare(T o1, T o2)
-                        {
-                            return (int)(o1.getSize() - o2.getSize());
-                        }
-                    });
-
-
                     List<AbstractMap.SimpleEntry<T, Future<D>>> futureList =
                             new ArrayList<AbstractMap.SimpleEntry<T, Future<D>>>();
                     double cumlTrainingScore = 0.0;
                     int cumlTrainingSize = 0;
-
-
 
                     for (final T sample : trainBatch) {
                         log.info("****Started Training#{}: {}****",
@@ -74,6 +62,14 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                                 });
                         futureList.add(new AbstractMap.SimpleEntry<T, Future<D>>(sample, future));
                     }
+
+                    Collections.sort(futureList, new Comparator<AbstractMap.SimpleEntry<T, Future<D>>>()
+                    {
+                        public int compare(AbstractMap.SimpleEntry<T, Future<D>> o1, AbstractMap.SimpleEntry<T, Future<D>> o2)
+                        {
+                            return (int)(o1.getKey().getSize() - o2.getKey().getSize());
+                        }
+                    });
 
 
                     Iterator < AbstractMap.SimpleEntry<T, Future<D>>> it = futureList.iterator();
