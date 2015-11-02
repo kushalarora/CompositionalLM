@@ -134,7 +134,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
         dQdXw = dQdXw.div(compositionalIScore[0][length]);
 
         if (containsNanOrInf()) {
-            return Nd4j.rand(dim, V, -1, 1, new JDKRandomGenerator());
+            dQdXw = Nd4j.rand(dim, V, -1, 1, new JDKRandomGenerator());
         }
         return dQdXw;
     }
