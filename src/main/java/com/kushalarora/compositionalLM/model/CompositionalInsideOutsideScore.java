@@ -115,9 +115,13 @@ public class CompositionalInsideOutsideScore {
      */
     public double getSentenceScore() {
         double score = compositionalIScore[0][length];
-        if (score > 10) {
+        if (score == 0) {
             return 0;
         }
+        if (Double.isInfinite(compositionalIScore[0][length])) {
+            return 0;
+        }
+        return Math.log(compositionalIScore[0][length]);
     }
 
     public double getLogScore() {
