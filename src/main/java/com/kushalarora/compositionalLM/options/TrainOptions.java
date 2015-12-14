@@ -1,7 +1,6 @@
 package com.kushalarora.compositionalLM.options;
 
 import com.google.common.collect.Lists;
-import com.kushalarora.compositionalLM.caching.CacheFactory;
 import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import lombok.ToString;
 import org.apache.commons.configuration.Configuration;
@@ -33,7 +32,7 @@ public class TrainOptions implements Serializable {
     public int validBatchSize;
     public boolean saveVisualization;
     public String visualizationFilename;
-    public int blockSize;
+    public int blockNum;
 
     public TrainOptions(Configuration config) throws IOException {
         trainFiles =
@@ -86,8 +85,8 @@ public class TrainOptions implements Serializable {
         saveVisualization =
                 config.getBoolean("saveVisualization", false);
 
-        blockSize =
-                config.getInt("blockSize", 6);
+        blockNum =
+                config.getInt("blockNum", 6);
     }
 
 

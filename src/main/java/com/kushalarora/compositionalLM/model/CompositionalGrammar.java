@@ -36,7 +36,7 @@ public class CompositionalGrammar implements Serializable {
     public CompositionalGrammar(final Model model, final Options op) {
         this.model = model;
         this.op = op;
-        parallelizer = new Parallelizer(op);
+        parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
     }
 
     public void parse(List<Word> sentence) {

@@ -251,7 +251,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             log.info("Running in parallel mode");
             log.info("NumThreads#: {}", op.trainOp.nThreads);
             executor =
-                    Executors.newFixedThreadPool(2 * op.trainOp.nThreads);
+                    Executors.newFixedThreadPool((int)Math.floor(Math.sqrt(2 * op.trainOp.nThreads)));
             trainFunction = fitRoutineParallel;
             validFunction = validRoutineParallel;
         } else {
@@ -298,14 +298,18 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
                     log.info("Starting epoch#: {}, trainList: {} , batch#: {}", epoch, trainFileIdx, batchIdx);
 
+                    long startTime = System.currentTimeMillis();
                     // train batch
                     double score = trainFunction.apply(trainList);
+                    long estimatedTime = System.currentTimeMillis() - startTime;
+
 
                     cumlTrainScore += score * batchSize;
                     cumlTrainBatch += batchSize;
 
                     log.info("Training score epoch#: {}, trainList: {} , batch#: {} => {}",
                             epoch, trainFileIdx, batchIdx, score);
+                    log.info("Elapsed Training Time: {}", estimatedTime);
 
                     // normalize accumulated derivative
                     D accDv = getAccumulatedDerivative();

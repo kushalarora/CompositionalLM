@@ -48,12 +48,12 @@ public class ParallelizerTest
     @BeforeClass
     public static void setUpClass() throws ConfigurationException {
         op = new Options();
-        op.trainOp.blockSize = 8;
+        op.trainOp.nThreads = 4;
     }
 
     @Before
     public void setUp() {
-        parallelizer = new Parallelizer(op);
+        parallelizer = new Parallelizer(op, 8);
     }
 
     @Test

@@ -14,8 +14,8 @@ import com.kushalarora.compositionalLM.options.Options;
  * Created by arorak on 12/11/15.
  */
 public class Parallelizer implements Serializable{
-    public Parallelizer(Options op) {
-        this.blockSize = op.trainOp.blockSize;
+    public Parallelizer(Options op, int blockSize) {
+        this.blockSize = blockSize;
         executor = Executors.newFixedThreadPool((int)Math.floor(Math.sqrt(2 * op.trainOp.nThreads)));
     }
 

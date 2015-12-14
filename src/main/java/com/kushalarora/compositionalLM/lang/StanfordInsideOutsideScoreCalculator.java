@@ -1,88 +1,42 @@
 package com.kushalarora.compositionalLM.lang;
 
+import static com.kushalarora.compositionalLM.utils.ObjectSizeFetcher.getSize;
+import static java.lang.Math.exp;
+import static java.lang.Math.log;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 
 import edu.stanford.nlp.ling.HasContext;
-import edu.stanford.nlp.parser.lexparser.*;
-import edu.stanford.nlp.util.Index;
+import edu.stanford.nlp.parser.lexparser.BinaryRule;
+import edu.stanford.nlp.parser.lexparser.IntTaggedWord;
+import edu.stanford.nlp.parser.lexparser.UnaryRule;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
-
-import java.util.*;
-
-import static com.kushalarora.compositionalLM.utils.ObjectSizeFetcher.getSize;
-import static java.lang.Math.exp;
-import static java.lang.Math.log;
-
-import javax.annotation.Nullable;
 
 /**
- * Most of this code is copied from Stanford ExhaustiveParser.java
- * and modified to compute inside span score and outside span score.
- * Created by karora on 6/21/15. I have removed all the extra code
- * handling dependency parsing and tags handling to keep it simple
- * and clean.
- *
- * @author Kushal Arora
+ * Created by arorak on 12/12/15.
  */
-
-// TODO:: Avoid repeatition in all functions while handling
-// unary and binary rule cases by creating sub routines
-// of the common code with arguments start, end, split
-
 @Slf4j
-public class StanfordGrammar extends AbstractGrammar {
-    private final LexicalizedParser model;
-
-    /**
-     * Created by karora on 6/24/15.
-     */
-
-    Options op;
-
-    protected final String goalStr;
-    protected final Index<String> stateIndex;
-    protected final Index<String> wordIndex;
-    protected final Index<String> tagIndex;
-
-    protected final BinaryGrammar bg;
-    protected final UnaryGrammar ug;
-    protected final Lexicon lex;
-
-    protected final int numStates;
-    protected final boolean[] isTag;
+public class StanfordInsideOutsideScoreCalculator implements IInsideOutsideScoreCalculator
+{
+    private StanfordGrammar gr;
     protected Parallelizer parallelizer;
+    protected Options op;
 
-
-    public StanfordGrammar(Options op,
-                           LexicalizedParser model) {
+    public StanfordInsideOutsideScoreCalculator(Options op, IGrammar grammar) {
+        gr = (StanfordGrammar)grammar;
+        parallelizer = new Parallelizer(op, gr.getVocabSize()/op.trainOp.blockNum);
         this.op = op;
-        this.model = model;
 
-        stateIndex = model.stateIndex;
-        wordIndex = model.wordIndex;
-        tagIndex = model.tagIndex;
-
-        goalStr = model.treebankLanguagePack().startSymbol();
-        bg = model.bg;
-        ug = model.ug;
-        lex = model.lex;
-        numStates = model.stateIndex.size();
-
-        isTag = new boolean[numStates];
-        // tag index is smaller, so we fill by iterating over the tag index
-        // rather than over the state index
-        for (String tag : tagIndex.objectsList()) {
-            int state = stateIndex.indexOf(tag);
-            if (state < 0) {
-                continue;
-            }
-            isTag[state] = true;
-        }
-
-        parallelizer = new Parallelizer(op, getVocabSize() + 1/op.trainOp.blockNum);
     }
 
     /**
@@ -101,17 +55,17 @@ public class StanfordGrammar extends AbstractGrammar {
     // Kushal::Removed all node for narrow, wide caching
     // Kushal::Added code to fill span arrays for words using unary rules
     // TODO:: Currently span and split span are unnormalized as we get p(word|tag)
-    public void doLexScores(AbstractInsideOutsideScore score) {
+    public void doLexScores(final IInsideOutsideScore score) {
         final StanfordInsideOutsideScore s = (StanfordInsideOutsideScore) score;
 
         int length = s.getLength();
         Sentence sentence = s.getSentence();
         s.words = new int[length];
-        boolean[][] tags = new boolean[length][numStates];
+        boolean[][] tags = new boolean[length][gr.numStates];
 
         for (int i = 0; i < length; i++) {
             String word = sentence.get(i).getSignature();
-            s.words[i] = wordIndex.indexOf(word);
+            s.words[i] = gr.wordIndex.indexOf(word);
         }
 
         for (int start = 0; start < length; start++) {
@@ -137,14 +91,14 @@ public class StanfordGrammar extends AbstractGrammar {
             // Use lexicon to get p(word|tag).
             // This is basically N => word unary rule.
             Iterator<IntTaggedWord> taggingI;
-            for (taggingI = lex.ruleIteratorByWord(word, start, wordContextStr);
+            for (taggingI = gr.lex.ruleIteratorByWord(word, start, wordContextStr);
                  taggingI.hasNext(); ) {
 
                 IntTaggedWord tagging = taggingI.next();
-                int state = stateIndex.indexOf(tagIndex.get(tagging.tag));
+                int state = gr.stateIndex.indexOf(gr.tagIndex.get(tagging.tag));
                 // score the cell according to P(word|tag) in the lexicon
-                 double lexScore = lex.score(tagging, start,
-                        wordIndex.get(tagging.word), wordContextStr);
+                double lexScore = gr.lex.score(tagging, start,
+                                            gr.wordIndex.get(tagging.word), wordContextStr);
 
                 if (lexScore > Double.NEGATIVE_INFINITY) {
                     assignedSomeTag = true;
@@ -177,11 +131,11 @@ public class StanfordGrammar extends AbstractGrammar {
                     @Nullable
                     public Void apply(@Nullable Integer state)
                     {
-                        if (isTag[state] && s.iScore.getAsDouble(startFinal, endFinal, state) == Double.NEGATIVE_INFINITY) {
+                        if (gr.isTag[state] && s.iScore.getAsDouble(startFinal, endFinal, state) == Double.NEGATIVE_INFINITY) {
 
-                            double lexScore = lex.score(new IntTaggedWord(word,
-                                                                          tagIndex.indexOf(stateIndex.get(state))),
-                                                        startFinal, wordIndex.get(word), wordContextStrFinal);
+                            double lexScore = gr.lex.score(new IntTaggedWord(word,
+                                                                          gr.tagIndex.indexOf(gr.stateIndex.get(state))),
+                                                        startFinal, gr.wordIndex.get(word), wordContextStrFinal);
                             if (lexScore > Double.NEGATIVE_INFINITY) {
                                 double tot = exp(lexScore);
 
@@ -204,9 +158,9 @@ public class StanfordGrammar extends AbstractGrammar {
                 };
 
                 if (op.trainOp.parallel) {
-                    parallelizer.parallelizer(0, numStates, lexFunc);
+                    parallelizer.parallelizer(0, gr.numStates, lexFunc);
                 } else {
-                    for (int state = 0; state < numStates; state++) {
+                    for (int state = 0; state < gr.numStates; state++) {
                         lexFunc.apply(state);
                     }
                 }
@@ -229,7 +183,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     iS = log(iS);
 
 
-                    UnaryRule[] unaries = ug.closedRulesByChild(state);
+                    UnaryRule[] unaries = gr.ug.closedRulesByChild(state);
                     for (UnaryRule ur : unaries) {
                         int parentState = ur.parent;
                         float pS = ur.score;
@@ -259,10 +213,10 @@ public class StanfordGrammar extends AbstractGrammar {
             };
 
             if (op.trainOp.parallel) {
-                parallelizer.parallelizer(0, numStates, unaryFunc);
+                parallelizer.parallelizer(0, gr.numStates, unaryFunc);
             } else {
                 // Apply unary rules
-                for (int state = 0; state < numStates; state++) {
+                for (int state = 0; state < gr.numStates; state++) {
                     unaryFunc.apply(state);
                 }   // end for state for unary rules
             }
@@ -273,7 +227,7 @@ public class StanfordGrammar extends AbstractGrammar {
      * Fills in the iScore array of each category over each span
      * of length 2 or more.
      */
-    public void doInsideScores(AbstractInsideOutsideScore score) {
+    public void doInsideScores(final IInsideOutsideScore score) {
         StanfordInsideOutsideScore s = (StanfordInsideOutsideScore) score;
 
         for (int diff = 2; diff <= s.length; diff++) {
@@ -295,7 +249,7 @@ public class StanfordGrammar extends AbstractGrammar {
      */
     private void doInsideChartCell(final StanfordInsideOutsideScore s, final int start, final int end) {
         log.debug("Doing iScore for span {} - {}", start, end);
-        final boolean[][] stateSplit = new boolean[numStates][s.length];
+        final boolean[][] stateSplit = new boolean[gr.numStates][s.length];
         final Set<BinaryRule> binaryRuleSet = new HashSet<BinaryRule>();
 
         Function<Integer, Void> leftStatFunc = new Function<Integer, Void>()
@@ -303,7 +257,7 @@ public class StanfordGrammar extends AbstractGrammar {
             @Nullable
             public Void apply(@Nullable Integer leftState)
             {
-                BinaryRule[] leftRules = bg.splitRulesWithLC(leftState);
+                BinaryRule[] leftRules = gr.bg.splitRulesWithLC(leftState);
                 for (BinaryRule rule : leftRules) {
 
                     int rightState = rule.rightChild;
@@ -361,9 +315,9 @@ public class StanfordGrammar extends AbstractGrammar {
         };
         if (op.trainOp.parallel)
         {
-            parallelizer.parallelizer(0, numStates, leftStatFunc);
+            parallelizer.parallelizer(0, gr.numStates, leftStatFunc);
         } else {
-            for (int leftState = 0; leftState < numStates; leftState++) {
+            for (int leftState = 0; leftState < gr.numStates; leftState++) {
                 leftStatFunc.apply(leftState);
             }
         }
@@ -374,7 +328,7 @@ public class StanfordGrammar extends AbstractGrammar {
             @Nullable
             public Void apply(@Nullable Integer rightState)
             {
-                BinaryRule[] rightRules = bg.splitRulesWithRC(rightState);
+                BinaryRule[] rightRules = gr.bg.splitRulesWithRC(rightState);
                 for (BinaryRule rule : rightRules) {
 
                     // Rule already processed by left state loop
@@ -437,9 +391,9 @@ public class StanfordGrammar extends AbstractGrammar {
         };
 
         if (op.trainOp.parallel) {
-            parallelizer.parallelizer(0, numStates, rightStateFunc);
+            parallelizer.parallelizer(0, gr.numStates, rightStateFunc);
         } else {
-            for (int rightState = 0; rightState < numStates; rightState++) {
+            for (int rightState = 0; rightState < gr.numStates; rightState++) {
                 rightStateFunc.apply(rightState);
             }
         }
@@ -456,7 +410,7 @@ public class StanfordGrammar extends AbstractGrammar {
                 }
                 iS = log(iS);
 
-                UnaryRule[] unaries = ug.closedRulesByChild(state);
+                UnaryRule[] unaries = gr.ug.closedRulesByChild(state);
                 for (UnaryRule ur : unaries) {
 
                     int parentState = ur.parent;
@@ -488,10 +442,10 @@ public class StanfordGrammar extends AbstractGrammar {
         };
 
         if (op.trainOp.parallel) {
-            parallelizer.parallelizer(0, numStates, unaryFunc);
+            parallelizer.parallelizer(0, gr.numStates, unaryFunc);
         } else {
             // do unary rules -- one could promote this loop and put start inside
-            for (int state = 0; state < numStates; state++) {
+            for (int state = 0; state < gr.numStates; state++) {
                 unaryFunc.apply(state);
             } // for unary rules
         }
@@ -501,24 +455,24 @@ public class StanfordGrammar extends AbstractGrammar {
     /**
      * Populate outside score related arrays.
      */
-    public void doOutsideScores2(AbstractInsideOutsideScore score) {
+    public void doOutsideScores2(IInsideOutsideScore score) {
         StanfordInsideOutsideScore s = (StanfordInsideOutsideScore) score;
         int initialParentIdx = s.length;
         int initialStart = 0;
         int initialEnd = s.length;
-        int startSymbol = stateIndex.indexOf(goalStr);
+        int startSymbol = gr.stateIndex.indexOf(gr.goalStr);
 //            oScore[initialStart][initialEnd][startSymbol] = 1.0f;
 //            oSpanWParentScore[initialStart][initialEnd][initialParentIdx] = 1.0f;
 //            oSpanStateScoreWParent[initialStart][initialEnd][initialParentIdx][startSymbol] = 1.0f;
 
         s.setScore(s.oScore, 1.0f,
-                initialStart, initialEnd, startSymbol);
+                   initialStart, initialEnd, startSymbol);
 
         s.setScore(s.oSpanWParentScore, 1.0f,
-                initialStart, initialEnd, initialParentIdx);
+                   initialStart, initialEnd, initialParentIdx);
 
         s.setScore(s.oSpanStateScoreWParent, 1.0f,
-                initialStart, initialEnd, initialParentIdx, startSymbol);
+                   initialStart, initialEnd, initialParentIdx, startSymbol);
 
 
         for (int diff = s.length; diff >= 1; diff--) {
@@ -527,7 +481,7 @@ public class StanfordGrammar extends AbstractGrammar {
 
                 log.debug("Doing oScore for span ({}, {})", start, end);
                 // do unaries
-                for (int parentState = 0; parentState < numStates; parentState++) {
+                for (int parentState = 0; parentState < gr.numStates; parentState++) {
                     // As this is unary rule and parent span is same as child,
                     // so consider the whole sentence to be parent ending with end
                     int parent = end;
@@ -542,7 +496,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     }
                     oS = log(oS);
 
-                    UnaryRule[] rules = ug.closedRulesByParent(parentState);
+                    UnaryRule[] rules = gr.ug.closedRulesByParent(parentState);
                     for (UnaryRule ur : rules) {
                         double pS = ur.score;
                         int childState = ur.child;
@@ -564,13 +518,13 @@ public class StanfordGrammar extends AbstractGrammar {
                 // do binaries
 
                 // Outside score with left child not expanded
-                for (int leftState = 0; leftState < numStates; leftState++) {
+                for (int leftState = 0; leftState < gr.numStates; leftState++) {
                     // Left span starts at start and ends at split.
                     // The parent ends at end and is stored, the parent
                     // begins at start
                     int lStart = start;
                     int lParent = end;
-                    BinaryRule[] rules = bg.splitRulesWithLC(leftState);
+                    BinaryRule[] rules = gr.bg.splitRulesWithLC(leftState);
                     for (BinaryRule br : rules) {
                         int rightState = br.rightChild;
                         int parentState = br.parent;
@@ -611,13 +565,13 @@ public class StanfordGrammar extends AbstractGrammar {
                 }   // end for leftState
 
                 // Outside score with right child not expanded
-                for (int rightState = 0; rightState < numStates; rightState++) {
+                for (int rightState = 0; rightState < gr.numStates; rightState++) {
                     // for right span, the span spans (split, end) with parents left endpoint
                     // stored in start, with right endpoint being end.
                     int rEnd = end;
                     int rParent = start;
 
-                    BinaryRule[] rules = bg.splitRulesWithRC(rightState);
+                    BinaryRule[] rules = gr.bg.splitRulesWithRC(rightState);
                     for (BinaryRule br : rules) {
                         int parentState = br.parent;
                         int leftState = br.leftChild;
@@ -657,25 +611,25 @@ public class StanfordGrammar extends AbstractGrammar {
     }   // end doOutsideScores
 
 
-    public void doOutsideScores(AbstractInsideOutsideScore score) {
+    public void doOutsideScores(final IInsideOutsideScore score) {
         final StanfordInsideOutsideScore s = (StanfordInsideOutsideScore) score;
 
         final int initialParentIdx = s.length;
         final int initialStart = 0;
         final int initialEnd = s.length;
-        final int startSymbol = stateIndex.indexOf(goalStr);
+        final int startSymbol = gr.stateIndex.indexOf(gr.goalStr);
 //            oScore[initialStart][initialEnd][startSymbol] = 1.0f;
 //            oSpanWParentScore[initialStart][initialEnd][initialParentIdx] = 1.0f;
 //            oSpanStateScoreWParent[initialStart][initialEnd][initialParentIdx][startSymbol] = 1.0f;
 
         s.setScore(s.oScore, 1.0f,
-                initialStart, initialEnd, startSymbol);
+                   initialStart, initialEnd, startSymbol);
 
         s.setScore(s.oSpanWParentScore, 1.0f,
-                initialStart, initialEnd, initialParentIdx);
+                   initialStart, initialEnd, initialParentIdx);
 
         s.setScore(s.oSpanStateScoreWParent, 1.0f,
-                initialStart, initialEnd, initialParentIdx, startSymbol);
+                   initialStart, initialEnd, initialParentIdx, startSymbol);
 
 
         for (int diff = s.length; diff >= 1; diff--) {
@@ -702,7 +656,7 @@ public class StanfordGrammar extends AbstractGrammar {
                         }
                         oS = log(oS);
 
-                        UnaryRule[] rules = ug.closedRulesByParent(parentState);
+                        UnaryRule[] rules = gr.ug.closedRulesByParent(parentState);
                         for (UnaryRule ur : rules) {
                             double pS = ur.score;
                             int childState = ur.child;
@@ -725,10 +679,10 @@ public class StanfordGrammar extends AbstractGrammar {
                 log.debug("Doing oScore for span ({}, {})", startFinal, endFinal);
 
                 if (op.trainOp.parallel) {
-                    parallelizer.parallelizer(0, numStates, unaryFunc);
+                    parallelizer.parallelizer(0, gr.numStates, unaryFunc);
                 } else {
                     // do unaries
-                    for (int parentState = 0; parentState < numStates; parentState++) {
+                    for (int parentState = 0; parentState < gr.numStates; parentState++) {
                         unaryFunc.apply(parentState);
                     }   // end for parentState
                 }
@@ -747,7 +701,7 @@ public class StanfordGrammar extends AbstractGrammar {
                         }
                         oS = log(oS);
 
-                        List<BinaryRule> rules = bg.ruleListByParent(parentState);
+                        List<BinaryRule> rules = gr.bg.ruleListByParent(parentState);
                         for (BinaryRule br : rules) {
                             int leftState = br.leftChild;
                             int rightState = br.rightChild;
@@ -796,10 +750,10 @@ public class StanfordGrammar extends AbstractGrammar {
                 };
 
                 if (op.trainOp.parallel) {
-                    parallelizer.parallelizer(0, numStates, binaryFunc);
+                    parallelizer.parallelizer(0, gr.numStates, binaryFunc);
                 } else {
                     // do binaries
-                    for (int parentState = 0; parentState < numStates; parentState++) {
+                    for (int parentState = 0; parentState < gr.numStates; parentState++) {
                         binaryFunc.apply(parentState);
                     }   // end for parent state
                 }
@@ -810,7 +764,7 @@ public class StanfordGrammar extends AbstractGrammar {
     /**
      * Populate mu score arrays
      */
-    public void doMuScore(AbstractInsideOutsideScore score) {
+    public void doMuScore(final IInsideOutsideScore score) {
         final StanfordInsideOutsideScore s = (StanfordInsideOutsideScore) score;
 
         // Handle lead node case.
@@ -901,9 +855,9 @@ public class StanfordGrammar extends AbstractGrammar {
             };
 
             if (op.trainOp.parallel) {
-                parallelizer.parallelizer(0, numStates, unaryFunc);
+                parallelizer.parallelizer(0, gr.numStates, unaryFunc);
             } else {
-                for (int state = 0; state < numStates; state++)
+                for (int state = 0; state < gr.numStates; state++)
                 {
                     unaryFunc.apply(state);
                 }
@@ -1005,7 +959,7 @@ public class StanfordGrammar extends AbstractGrammar {
                 if (op.trainOp.parallel) {
                     parallelizer.parallelizer(0, s.length - diff + 1, binaryFunc);
                 } else {
-                    for (int state = 0; state < numStates; state++) {
+                    for (int state = 0; state < gr.numStates; state++) {
                         binaryFunc.apply(state);
                     }
                 }   // end for start
@@ -1018,7 +972,7 @@ public class StanfordGrammar extends AbstractGrammar {
      * Compute inside and outside score for the sentence.
      * Also computes span and span split score we need.
      */
-    public void computeInsideOutsideProb(AbstractInsideOutsideScore score) {
+    public void computeInsideOutsideProb(final IInsideOutsideScore score) {
         StanfordInsideOutsideScore s = (StanfordInsideOutsideScore) score;
 
         int idx = s.sentence.getIndex();
@@ -1045,23 +999,18 @@ public class StanfordGrammar extends AbstractGrammar {
 
         if (op.debug) {
             log.info("Memory Size StanfordIOScore: {}:: {}\n" +
-                            "\t {} => {} MB\n" +
-                            "\t {} => {} MB\n" +
-                            "\t {} => {} MB\n" +
-                            "\t {} => {} MB\n" +
-                            "total => {} MB",
-                    idx, sz,
-                    "iSpanScore", getSize(s.iSpanScore),
-                    "iSpanSplitScore", getSize(s.iSpanSplitScore),
-                    "oSpanWParentScore", getSize(s.oSpanWParentScore),
-                    "muSpanSplitScoreWParent", getSize(s.muSpanSplitScoreWParent),
-                    getSize(s));
+                             "\t {} => {} MB\n" +
+                             "\t {} => {} MB\n" +
+                             "\t {} => {} MB\n" +
+                             "\t {} => {} MB\n" +
+                             "total => {} MB",
+                     idx, sz,
+                     "iSpanScore", getSize(s.iSpanScore),
+                     "iSpanSplitScore", getSize(s.iSpanSplitScore),
+                     "oSpanWParentScore", getSize(s.oSpanWParentScore),
+                     "muSpanSplitScoreWParent", getSize(s.muSpanSplitScoreWParent),
+                     getSize(s));
         }
-    }
-
-
-    public int getNumStates() {
-        return numStates;
     }
 
     /**
@@ -1070,59 +1019,9 @@ public class StanfordGrammar extends AbstractGrammar {
      * @param sentence Sentence for which inside outside score is to be calculated
      * @return InsideOutsideScore object
      */
-    @Override
-    public AbstractInsideOutsideScore getScore(Sentence sentence) {
-        StanfordInsideOutsideScore score = new StanfordInsideOutsideScore(sentence, numStates);
+    public AbstractInsideOutsideScore getScore(final Sentence sentence) {
+        StanfordInsideOutsideScore score = new StanfordInsideOutsideScore(sentence, gr.numStates);
         computeInsideOutsideProb(score);
         return score;
-    }
-
-    /**
-     * Return the vocabulary size
-     *
-     * @return vocab size
-     */
-    public int getVocabSize() {
-        return wordIndex.size();
-    }
-
-    /**
-     * Generate a word object from string by doing lex look up
-     *
-     * @param str String for the word
-     * @param loc location of word in sentence
-     * @return Returns a word object
-     */
-    public Word getToken(String str, int loc) {
-        int index = -1;
-        String signature = str;
-
-        if (true) {
-            signature = str.toLowerCase();
-        }
-
-        if (!wordIndex.contains(signature)) {
-            signature = str.toLowerCase(Locale.ENGLISH);
-            if (!wordIndex.contains(signature)) {
-                signature = str.toUpperCase();
-                if (!wordIndex.contains(signature)) {
-                    signature = StringUtils.capitalize(str);
-                    if (!wordIndex.contains(signature)) {
-                        signature = lex.getUnknownWordModel().getSignature(str, loc);
-                    }
-                }
-            }
-        }
-
-        index = wordIndex.indexOf(signature);
-
-
-        // If we aren't able to find signature
-        // lets use UNK
-        if (index == -1) {
-            signature = "UNK";
-            index = wordIndex.indexOf(signature);
-        }
-        return new Word(str, index, signature);
     }
 }
