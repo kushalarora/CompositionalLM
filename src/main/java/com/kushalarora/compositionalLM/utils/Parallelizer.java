@@ -1,6 +1,9 @@
 package com.kushalarora.compositionalLM.utils;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -25,23 +28,35 @@ public class Parallelizer implements Serializable{
         int length = end - start;
         final int blockNum = length / blockSize + 1;
 
+        List<Callable<Void>> callables = new ArrayList<Callable<Void>>();
         for (int i = 0; i < blockNum; i++)
         {
-            executor.submit(new Runnable() {
+            callables.add(new Callable<Void>() {
 
-                public void run() {
+                public Void call() throws Exception
+                {
                     for (int j = blockStartIdx; j < blockStartIdx + blockSize && j < end; j++) {
                         parallizableFunc.apply(j);
                     }
+                    return null;
                 }
 
-                public Runnable init(int blockIndex) {
+                public Callable<Void> init(int blockIndex) {
                     this.blockStartIdx = blockIndex;
                     return this;
                 }
 
                 private int blockStartIdx;
             }.init(start + i * blockSize));
+        }
+
+        try
+        {
+            executor.invokeAll(callables);
+        }
+        catch (InterruptedException e)
+        {
+            throw new RuntimeException(e);
         }
     }
 }
