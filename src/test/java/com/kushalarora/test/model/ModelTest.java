@@ -1,6 +1,7 @@
 package com.kushalarora.test.model;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
+import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.val;
@@ -28,8 +29,10 @@ public class ModelTest {
     public static void setUpClass() throws ConfigurationException {
         Options op = new Options();
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
+        IGrammar grammar = GrammarFactory.getGrammar(op);
         model = new Model(
-                10, GrammarFactory.getGrammar(op),
+                10, grammar.getVocabSize(),
+                op.grammarOp.grammarType,
                 Activations.sigmoid(),
                 Activations.linear());
     }

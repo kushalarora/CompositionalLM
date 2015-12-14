@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.caching;
 
+import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
@@ -41,10 +42,10 @@ public class CacheFactory {
         }
     }
 
-    private final Model model;
+    private final IGrammar grammar;
 
-    public CacheFactory(Model model) {
-        this.model = model;
+    public CacheFactory(IGrammar grammar) {
+        this.grammar = grammar;
     }
 
     public CacheWrapper getCache(Options op) throws IOException {
@@ -54,7 +55,7 @@ public class CacheFactory {
 
                     @Override
                     public IInsideOutsideScore load(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                        return grammar.computeScore(input);
                     }
 
                     @Override
@@ -71,7 +72,7 @@ public class CacheFactory {
 
                     @Override
                     public IInsideOutsideScore load(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                        return grammar.computeScore(input);
                     }
 
                     @Override
@@ -81,7 +82,7 @@ public class CacheFactory {
 
                     @Override
                     public IInsideOutsideScore getRoutine(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                        return grammar.computeScore(input);
                     }
 
                     @Override
@@ -99,7 +100,7 @@ public class CacheFactory {
 
                     @Override
                     public IInsideOutsideScore load(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                        return grammar.computeScore(input);
                     }
 
                     @Override
@@ -117,7 +118,7 @@ public class CacheFactory {
 
                     @Override
                     public IInsideOutsideScore load(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                        return grammar.computeScore(input);
                     }
 
                     @Override
@@ -137,7 +138,7 @@ public class CacheFactory {
 
                     @Override
                     public IInsideOutsideScore load(Sentence input) {
-                        return (IInsideOutsideScore)model.getGrammar().computeScore(input);
+                        return (IInsideOutsideScore)grammar.computeScore(input);
                     }
 
                     @Override

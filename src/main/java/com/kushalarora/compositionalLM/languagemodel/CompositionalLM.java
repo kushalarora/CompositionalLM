@@ -51,22 +51,24 @@ public class CompositionalLM {
 
     private final Options op;
     private final CompositionalGrammar compGrammar;
+    private final IGrammar grammar;
     private final DocumentProcessorFactory docProcessorFactory;
     private final Model model;
     CacheWrapper<Sentence, IInsideOutsideScore> cache;
 
 
-    public CompositionalLM(Model model, Options op) throws IOException {
+    public CompositionalLM(Model model, IGrammar grammar, Options op) throws IOException {
         this.model = model;
+        this.grammar = grammar;
         this.compGrammar = new CompositionalGrammar(model, op);
         this.op = op;
-        cache = new CacheFactory(model).getCache(op);
+        cache = new CacheFactory(grammar).getCache(op);
 
         docProcessorFactory =
                 new DocumentProcessorFactory(
                         op,
                         new TokenizerFactory(
-                                op, model.getGrammar()));
+                                op, grammar));
     }
 
     @SneakyThrows
@@ -309,6 +311,7 @@ public class CompositionalLM {
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);
 
+        @NonNull IGrammar grammar = GrammarFactory.getGrammar(op);
 
         Model model;
         if (!op.train) {
@@ -317,12 +320,12 @@ public class CompositionalLM {
                 throw new RuntimeException("You must specify model file using -model argument");
             }
         } else {
-
-            @NonNull IGrammar grammar = GrammarFactory.getGrammar(op);
-            model = new Model(op.modelOp.dimensions, grammar);
+            model = new Model(op.modelOp.dimensions,
+                              grammar.getVocabSize(),
+                              op.grammarOp.grammarType);
         }
 
-        final CompositionalLM cLM = new CompositionalLM(model, op);
+        final CompositionalLM cLM = new CompositionalLM(model, grammar, op);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override

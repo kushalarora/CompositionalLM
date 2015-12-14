@@ -33,6 +33,7 @@ public class TrainOptions implements Serializable {
     public int validBatchSize;
     public boolean saveVisualization;
     public String visualizationFilename;
+    public int blockSize;
 
     public TrainOptions(Configuration config) throws IOException {
         trainFiles =
@@ -84,6 +85,9 @@ public class TrainOptions implements Serializable {
 
         saveVisualization =
                 config.getBoolean("saveVisualization", false);
+
+        blockSize =
+                config.getInt("blockSize", 6);
     }
 
 

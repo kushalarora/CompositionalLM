@@ -44,11 +44,11 @@ public class CompositionLMTest {
         op.grammarOp.filename =  absoluteFilePath;
 
         StanfordGrammar sg = (StanfordGrammar)getGrammar(op);
-        trueModel = new Model(10, sg);
+        trueModel = new Model(10, sg.getVocabSize(), op.grammarOp.grammarType);
         out.writeObject(trueModel);
         out.close();
 
-        compositionalLM = new CompositionalLM(trueModel, op);
+        compositionalLM = new CompositionalLM(trueModel, sg, op);
         PropertyConfigurator.configure("log4j.properties");
 
     }

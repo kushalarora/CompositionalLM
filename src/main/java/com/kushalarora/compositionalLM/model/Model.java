@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import lombok.Getter;
@@ -24,17 +25,18 @@ public class Model implements Serializable {
     Parameters params;
     private ActivationFunction f;
     private ActivationFunction g;
-    private IGrammar grammar;
+    private GrammarFactory.GrammarType grammarType;
 
     public Model(@NonNull int dimensions,
-                 @NonNull IGrammar iGrammar,
+                 @NonNull int vocabSize,
+                 @NonNull GrammarFactory.GrammarType grammarType,
                  @NonNull ActivationFunction composition,
                  @NonNull ActivationFunction output) {
 
 
-        this.grammar = iGrammar;
+        this.grammarType = grammarType;
         this.dimensions = dimensions;
-        this.vocabSize = iGrammar.getVocabSize();
+        this.vocabSize = vocabSize;
         this.params = new Parameters(dimensions, vocabSize);
 
         f = composition;                                // default composition activation
@@ -43,14 +45,15 @@ public class Model implements Serializable {
     }
 
     public Model(@NonNull int dimensions,
-                 @NonNull IGrammar iGrammar) {
-        this(dimensions, iGrammar, Activations.tanh(), Activations.linear());
+                 @NonNull int vocabSize,
+                 @NonNull GrammarFactory.GrammarType grammarType) {
+        this(dimensions, vocabSize, grammarType,  Activations.tanh(), Activations.linear());
     }
 
-    public Model(@NonNull Parameters params, @NonNull IGrammar iGrammar) {
-        this.grammar = iGrammar;
+    public Model(@NonNull Parameters params, @NonNull GrammarFactory.GrammarType grammarType) {
+        this.grammarType = grammarType;
         this.dimensions = params.getDimensions();
-        this.vocabSize = iGrammar.getVocabSize();
+        this.vocabSize = params.getVocabSize();
         this.params = params;
 
         f = Activations.tanh();                                // default composition activation

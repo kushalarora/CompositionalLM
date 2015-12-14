@@ -64,7 +64,7 @@ public class CompositionalInsideOutsideScorerTest {
 
         length = defaultSentence.size();
 
-        model = new Model(10, sg);
+        model = new Model(10, sg.getVocabSize(), op.grammarOp.grammarType);
         dim = model.getDimensions();
 
         cg = new CompositionalGrammar(model, op);
