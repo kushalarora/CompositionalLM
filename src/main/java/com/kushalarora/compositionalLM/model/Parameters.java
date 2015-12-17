@@ -98,7 +98,7 @@ public class Parameters implements IParameter<Sentence> {
         log.info("new u = \n {}", u);
 
         log.info("old X = \n {}", X);
-        log.info("dX = \n {}", dq.getDqdxw().getDQdXw());
+        log.info("dX = \n {}", dq.getDqdxw().getIndexToxMap());
         X = X.add(dq.getDqdxw().getDQdXw());
         X = X.subRowVector(X.mean(0));
         INDArray normVec =  X.norm2(0);

@@ -76,7 +76,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         return new dQdu(adaGrad.getGradient(((dQdu) gradient).dQdu), data);
     }
 
-    public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
+    public void calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
         double[][][] compositionMu = scorer.getMuScore();
@@ -135,7 +135,5 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
             log.error("dQdu contains Nan Or Inf. for data {}", data);
             dQdu = Nd4j.rand(dimensions, 1, -1, 1, new JDKRandomGenerator());
         }
-
-        return dQdu;
     }
 }

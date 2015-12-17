@@ -9,49 +9,51 @@ import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by karora on 6/21/15.
  */
 public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
     @Getter
-    private INDArray dQdXw;
     private int dim;
     private int V;
     private T data;
     private int length;
+    @Getter
+    private Map<Integer, INDArray> indexToxMap;
 
     public dQdXw(int dimensions, int vocabSize, T data) {
         super(new int[]{dimensions, dimensions});
+        indexToxMap = new HashMap<Integer, INDArray>();
         dim = dimensions;
         V = vocabSize;
-        dQdXw = Nd4j.zeros(dim, V);
         this.data = data;
         length = data.size();
     }
 
 
     public dQdXw(dQdXw dqdxw, T data) {
-        super(dqdxw.dQdXw.shape());
-        dQdXw = dqdxw.dQdXw.dup();
+        super(new int[] {dqdxw.dim, dqdxw.V});
+        indexToxMap = dqdxw.indexToxMap;
         dim = dqdxw.dim;
         V = dqdxw.V;
         this.data = data;
         length = data.size();
     }
 
-    private dQdXw(INDArray dqdxw, T data) {
-        super(dqdxw.shape());
-        dQdXw = dqdxw;
-        int[] shape = dqdxw.shape();
-        dim = shape[0];
-        V = shape[1];
+    private dQdXw(Map<Integer, INDArray> indexToxMap, dQdXw dqdxw, T data) {
+        super(new int[]{dqdxw.dim, dqdxw.V});
+        dim = dqdxw.dim;
+        V = dqdxw.V;
         this.data = data;
         length = data.size();
+        this.indexToxMap = indexToxMap;
     }
 
-    public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
+    public void calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
 
         // Save indexes
         int[] indexes = new int[length];
@@ -121,48 +123,76 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
                     }
                 }
             }
-            int index = indexes[i];
-            for (int d = 0; d < dim; d++) {
-                dQdXw.putScalar(new int[]{d, index}, dQdXw_i.getFloat(d));
+
+            dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
+            if (containsNanOrInf(dQdXw_i)) {
+                dQdXw_i = Nd4j.rand(dim, 1, -1, 1, new JDKRandomGenerator());
             }
+
+            indexToxMap.put(indexes[i], dQdXw_i);
         }
 
         if (compositionalIScore[0][length] == 0) {
             throw new RuntimeException("Z is zero for sentence " + data);
         }
+    }
 
-        dQdXw = dQdXw.div(compositionalIScore[0][length]);
+    public void clear() {
+       indexToxMap.clear();
+    }
 
-        if (containsNanOrInf()) {
-            dQdXw = Nd4j.rand(dim, V, -1, 1, new JDKRandomGenerator());
+    public void add(IDerivative other) {
+        dQdXw odqdxw = (dQdXw)other;
+
+        // for all the values in argument
+        for (Map.Entry<Integer,INDArray> entry : ((Map<Integer, INDArray>)(odqdxw.indexToxMap)).entrySet()) {
+            INDArray value = entry.getValue();
+            Integer key = entry.getKey();
+            if (indexToxMap.containsKey(key)) {
+                // if key is present in me, add their value to me and store in new map
+                indexToxMap.put(key, value.add(indexToxMap.get(key)));
+            } else {
+                // store them in new map
+                indexToxMap.put(key, value);
+            }
+        }
+    }
+
+    public void mul(double learningRate) {
+        for (Map.Entry<Integer, INDArray> entry : indexToxMap.entrySet()) {
+            indexToxMap.put(entry.getKey(), entry.getValue().mul(learningRate));
+        }
+    }
+
+    public boolean containsNanOrInf() {
+        for (INDArray value : indexToxMap.values()) {
+            if (containsNanOrInf(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public INDArray getDQdXw() {
+        INDArray dQdXw = Nd4j.zeros(dim, V);
+        for (Map.Entry<Integer, INDArray> entry : indexToxMap.entrySet()) {
+            dQdXw.putColumn(entry.getKey(), entry.getValue());
         }
         return dQdXw;
     }
 
-    public void clear() {
-        // wipe the array
-        for (int d = 0; d < dim; d++) {
-            for (int v = 0; v < V; v++) {
-                dQdXw.putScalar(new int[]{d, v}, 0f);
-            }
-        }
-
-    }
-
-    public void add(IDerivative other) {
-        dQdXw = dQdXw.add(((dQdXw) other).getDQdXw());
-    }
-
-    public void mul(double learningRate) {
-        dQdXw = dQdXw.mul(learningRate);
-    }
-
-    public boolean containsNanOrInf() {
-        return containsNanOrInf(dQdXw);
-    }
-
     public IDerivative adaGrad(IDerivative gradient) {
-        return new dQdXw(adaGrad.getGradient(((dQdXw) gradient).dQdXw), data);
+        dQdXw other = (dQdXw)gradient;
+        Map<Integer, INDArray> newIndexToxMap = new HashMap<Integer, INDArray>();
+        int[] shape = new int[]{dim, V};
+        for (Map.Entry<Integer, INDArray> entry : ((Map<Integer, INDArray>)other.indexToxMap).entrySet()) {
+            Integer key = entry.getKey();
+            INDArray value = entry.getValue();
+
+            newIndexToxMap.put(key,
+                               adaGrad.getGradient(value, key, shape));
+        }
+        return new dQdXw(newIndexToxMap, this, data);
     }
 
 }

@@ -10,7 +10,7 @@ import java.util.List;
  * Created by karora on 6/21/15.
  */
 public interface IDerivative<T extends List> {
-    public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer);
+    public void calcDerivative(Model model, CompositionalInsideOutsideScore scorer);
 
     public void add(IDerivative<T> other);
 

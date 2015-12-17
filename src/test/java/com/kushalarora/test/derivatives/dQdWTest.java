@@ -44,7 +44,8 @@ public class dQdWTest extends AbstractDerivativeTest {
     public void testClear() {
         INDArray zeros = Nd4j.zeros(dim, 2 * dim);
         INDArray dW;
-        dW = dqdw.calcDerivative(model, cScorer);
+        dqdw.calcDerivative(model, cScorer);
+        dW = dqdw.getDQdW();
 
         assertEquals(dim*dim*2,
                 zeros.neq(dW)
@@ -61,7 +62,7 @@ public class dQdWTest extends AbstractDerivativeTest {
 
     @Test
     public void testCalcDerivative() {
-        INDArray dW = dqdw.calcDerivative(model, cScorer);
+        dqdw.calcDerivative(model, cScorer);
 
         INDArray truedW = Nd4j.zeros(dim, 2 * dim);
 
@@ -77,7 +78,7 @@ public class dQdWTest extends AbstractDerivativeTest {
         truedW = truedW.div(compIScore[0][length]);
 
         assertEquals(dim*dim*2,
-                truedW.eq(dW)
+                truedW.eq(dqdw.getDQdW())
                         .sum(Integer.MAX_VALUE)
                         .getFloat(0,0), 1e-1);
     }

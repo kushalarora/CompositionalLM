@@ -46,7 +46,7 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         length = data.size();
     }
 
-    public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
+    public void calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
         INDArray[][][][][] dxdwArr = new dXdW(dim, data).calcDerivative(model, scorer);
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         double[][][] compositionalMu = scorer.getMuScore();
@@ -90,7 +90,6 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         if (containsNanOrInf()) {
             dQdW = Nd4j.rand(dim, 2*dim, -1, 1, new JDKRandomGenerator());
         }
-        return dQdW;
     }
 
     public void clear() {

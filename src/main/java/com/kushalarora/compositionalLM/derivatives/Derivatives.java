@@ -95,14 +95,14 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
 
         if (op.debug) {
             log.info("Memory Size Derivatives: {}:: {}\n" +
-                            "\t {} => {} , {} MB\n" +
-                            "\t {} => {}, {} MB\n" +
-                            "\t {} => {}, {} MB\n" +
+                            "\t {} => {}  MB\n" +
+                            "\t {} => {} MB\n" +
+                            "\t {} => {} MB\n" +
                             "total => {} MB",
                     idx, sz,
-                    "dQdu", getSize(dqdu.getDQdu()), getSize(dqdu),
-                    "dQdW", getSize(dqdw.getDQdW()), getSize(dqdw),
-                    "dqdxw", getSize(dqdxw.getDQdXw()), getSize(dqdxw),
+                    "dQdu", getSize(dqdu),
+                    "dQdW", getSize(dqdw),
+                    "dqdxw", getSize(dqdxw),
                     getSize(this));
         }
     }

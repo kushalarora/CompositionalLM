@@ -30,7 +30,7 @@ public class dQduTest extends AbstractDerivativeTest {
      */
     @Test
     public void testCalcDerivative() {
-        INDArray arr = dQdu.calcDerivative(model, cScorer);
+        dQdu.calcDerivative(model, cScorer);
 
         INDArray trueArray = Nd4j.zeros(dim, 1);
 
@@ -55,14 +55,15 @@ public class dQduTest extends AbstractDerivativeTest {
         trueArray = trueArray.div(compIScore[0][length]);
 
         assertEquals(dim,
-                trueArray.eq(arr).sum(Integer.MAX_VALUE).getFloat(0),
+                trueArray.eq(dQdu.getDQdu()).sum(Integer.MAX_VALUE).getFloat(0),
                 1e-1);
     }
 
-
     @Test
     public void testClean() {
-        INDArray arr = dQdu.calcDerivative(model, cScorer);
+        dQdu.calcDerivative(model, cScorer);
+        INDArray arr = dQdu.getDQdu();
+
         INDArray trueArray = Nd4j.zeros(dim, 1);
 
         // As we called calcDerivative, the arr shouldn't be all zeros

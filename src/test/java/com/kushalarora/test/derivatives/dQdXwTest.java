@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -65,7 +66,7 @@ public class dQdXwTest extends AbstractDerivativeTest {
     @Test
     public void testCalcDerivative() {
 
-        INDArray dqdxwArr  = dqdxw.calcDerivative(model, cScorer);
+        dqdxw.calcDerivative(model, cScorer);
 
         INDArray ones = Nd4j.ones(dim, 1);
 
@@ -83,17 +84,13 @@ public class dQdXwTest extends AbstractDerivativeTest {
             }
 
             truedQdxwi = truedQdxwi.div(compIScore[0][length]);
-
+            Map<Integer, INDArray> indexToxMap = dqdxw.getIndexToxMap();
             List<Word> sentence = defaultSentence;
             assertEquals(dim ,
-                    truedQdxwi.eq(
-                            dqdxwArr
-                                    .getColumn(
-                                            sentence.get(idx).getIndex()))
+                    truedQdxwi.eq(indexToxMap.get(idx))
                             .sum(Integer.MAX_VALUE).getFloat(0),
                     1e-1);
         }
-
     }
 }
 
