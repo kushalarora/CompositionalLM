@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.options.Options;
@@ -16,7 +15,7 @@ import com.kushalarora.compositionalLM.options.Options;
 public class Parallelizer implements Serializable{
     public Parallelizer(Options op, int blockSize) {
         this.blockSize = blockSize;
-        executor = Executors.newFixedThreadPool((int)Math.floor(Math.sqrt(2 * op.trainOp.nThreads)));
+        executor = Executor.getInstance();
     }
 
 

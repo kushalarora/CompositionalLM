@@ -1,5 +1,7 @@
 package com.kushalarora.compositionalLM.model;
 
+import java.util.Map;
+
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.lang.Sentence;
@@ -99,7 +101,14 @@ public class Parameters implements IParameter<Sentence> {
 
         log.info("old X = \n {}", X);
         log.info("dX = \n {}", dq.getDqdxw().getIndexToxMap());
-        X = X.add(dq.getDqdxw().getDQdXw());
+
+        for (Map.Entry<Integer, INDArray> entry :
+                ((Map<Integer, INDArray>)dq.getDqdxw().getIndexToxMap()).entrySet()) {
+            Integer key = entry.getKey();
+            INDArray value = entry.getValue();
+            X.putColumn(key, value.add(X.getColumn(key)));
+        }
+
         X = X.subRowVector(X.mean(0));
         INDArray normVec =  X.norm2(0);
         X = X.divRowVector(normVec);

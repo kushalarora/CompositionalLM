@@ -110,11 +110,11 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
         return matrix.getAsDouble(indexes);
     }
 
-    protected void setScore(SparseMatrix matrix, double value, long... indexes) {
+    protected synchronized void setScore(SparseMatrix matrix, double value, long... indexes) {
         matrix.setAsDouble(value, indexes);
     }
 
-    protected void addToScore(SparseMatrix matrix, double value, long... indexes) {
+    protected synchronized void addToScore(SparseMatrix matrix, double value, long... indexes) {
         setScore(matrix, value + getScore(matrix, indexes), indexes);
     }
 

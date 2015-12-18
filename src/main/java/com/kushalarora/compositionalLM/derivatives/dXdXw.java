@@ -31,8 +31,6 @@ public class dXdXw<T extends List<? extends IIndexed>> {
         V = vocab;
         this.data = data;
         length = data.size();
-        dXdXw = new INDArray[V][][][];
-
         dXdXw = new INDArray[length][][][];
         dXdXwi = new INDArray[length][length + 1];
 

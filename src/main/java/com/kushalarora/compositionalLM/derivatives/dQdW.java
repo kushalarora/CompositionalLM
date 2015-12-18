@@ -117,5 +117,10 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
                         ((dQdW) gradient).dQdW), data);
     }
 
+    public double norm()
+    {
+        return Nd4j.norm2(dQdW).sum(Integer.MAX_VALUE).getFloat(0);
+    }
+
 
 }

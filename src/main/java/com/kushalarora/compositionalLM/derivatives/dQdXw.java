@@ -26,7 +26,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
     private Map<Integer, INDArray> indexToxMap;
 
     public dQdXw(int dimensions, int vocabSize, T data) {
-        super(new int[]{dimensions, dimensions});
+        super(new int[]{dimensions, vocabSize});
         indexToxMap = new HashMap<Integer, INDArray>();
         dim = dimensions;
         V = vocabSize;
@@ -69,7 +69,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
 
 
         INDArray dcdc = Nd4j.eye(dim);
-        INDArray dQdXw_i = Nd4j.zeros(dim, 1);
+        INDArray dQdXw_i = Nd4j.zeros(dim);
         for (int i = 0; i < length; i++) {
 
             // wipe the array clean
@@ -126,7 +126,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
 
             dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
             if (containsNanOrInf(dQdXw_i)) {
-                dQdXw_i = Nd4j.rand(dim, 1, -1, 1, new JDKRandomGenerator());
+                dQdXw_i = Nd4j.rand(new int[]{dim}, -1, 1, new JDKRandomGenerator());
             }
 
             indexToxMap.put(indexes[i], dQdXw_i);
@@ -173,26 +173,31 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
         return false;
     }
 
-    public INDArray getDQdXw() {
-        INDArray dQdXw = Nd4j.zeros(dim, V);
-        for (Map.Entry<Integer, INDArray> entry : indexToxMap.entrySet()) {
-            dQdXw.putColumn(entry.getKey(), entry.getValue());
-        }
-        return dQdXw;
-    }
-
     public IDerivative adaGrad(IDerivative gradient) {
         dQdXw other = (dQdXw)gradient;
+
+        INDArray dqdxw = Nd4j.zeros(dim, V);
+        for (Map.Entry<Integer, INDArray> entry : ((Map<Integer, INDArray>)other.indexToxMap).entrySet()) {
+            dqdxw.putColumn(entry.getKey(), entry.getValue());
+        }
+
+        dqdxw = adaGrad.getGradient(dqdxw);
+
         Map<Integer, INDArray> newIndexToxMap = new HashMap<Integer, INDArray>();
-        int[] shape = new int[]{dim, V};
         for (Map.Entry<Integer, INDArray> entry : ((Map<Integer, INDArray>)other.indexToxMap).entrySet()) {
             Integer key = entry.getKey();
-            INDArray value = entry.getValue();
-
-            newIndexToxMap.put(key,
-                               adaGrad.getGradient(value, key, shape));
+            INDArray value = dqdxw.getColumn(key);
+            newIndexToxMap.put(key, value);
         }
         return new dQdXw(newIndexToxMap, this, data);
     }
 
+    public double norm()
+    {
+        double norm = 0;
+        for (Map.Entry<Integer, INDArray> entry : indexToxMap.entrySet()) {
+            norm += Nd4j.norm2(entry.getValue()).sum(Integer.MAX_VALUE).getFloat(0);
+        }
+        return norm;
+    }
 }

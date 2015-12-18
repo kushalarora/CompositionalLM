@@ -82,7 +82,7 @@ public class StanfordGrammar extends AbstractGrammar {
             isTag[state] = true;
         }
 
-        parallelizer = new Parallelizer(op, getVocabSize() + 1/op.trainOp.blockNum);
+        parallelizer = new Parallelizer(op, (getVocabSize() + 1)/op.trainOp.blockNum);
     }
 
     /**
@@ -334,8 +334,9 @@ public class StanfordGrammar extends AbstractGrammar {
                         }
                         rS = log(rS);
 
-                        binaryRuleSet.add(rule);
-
+                        synchronized(this) {
+                            binaryRuleSet.add(rule);
+                        }
                         stateSplit[parentState][split] = true;
 
                         double tot = exp(pS + lS + rS);
@@ -378,9 +379,13 @@ public class StanfordGrammar extends AbstractGrammar {
                 for (BinaryRule rule : rightRules) {
 
                     // Rule already processed by left state loop
-                    if (binaryRuleSet.contains(rule)) {
-                        log.debug("Rule {} already processed by left child loop.Skipping", rule);
-                        continue;
+                    synchronized(this)
+                    {
+                        if (binaryRuleSet.contains(rule))
+                        {
+                            log.debug("Rule {} already processed by left child loop.Skipping", rule);
+                            continue;
+                        }
                     }
 
                     int leftState = rule.leftChild;
@@ -410,8 +415,9 @@ public class StanfordGrammar extends AbstractGrammar {
                         }
                         rS = log(rS);
 
-                        binaryRuleSet.add(rule);
-
+                        synchronized(this) {
+                            binaryRuleSet.add(rule);
+                        }
                         stateSplit[parentState][split] = true;
 
                         double tot = exp(pS + lS + rS);

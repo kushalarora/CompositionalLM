@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.List;
 import java.util.Map;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -50,17 +51,15 @@ public class dQdXwTest extends AbstractDerivativeTest {
 
         dqdxw.calcDerivative(model, cScorer);
 
-        INDArray dqdxwArr = dqdxw.getDQdXw();
+        Map<Integer, INDArray> dqdxwArr = dqdxw.getIndexToxMap();
 
-        INDArray zeros = Nd4j.zeros(V, dim);
-
-        assertEquals(dim * length, zeros.neq(dqdxwArr).sum(Integer.MAX_VALUE).getFloat(0, 0), 1e-1);
+        assertTrue(dqdxwArr.keySet().size() > 0);
 
         dqdxw.clear();
 
-        dqdxwArr = dqdxw.getDQdXw();
+        dqdxwArr = dqdxw.getIndexToxMap();
 
-        assertEquals(dim * V, zeros.eq(dqdxwArr).sum(Integer.MAX_VALUE).getFloat(0, 0), 1e-1);
+        assertEquals(0, dqdxwArr.keySet().size());
     }
 
     @Test

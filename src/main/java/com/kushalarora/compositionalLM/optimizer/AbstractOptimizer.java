@@ -4,11 +4,16 @@ import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Executor;
+
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 /**
  * Created by karora on 7/14/15.
@@ -52,7 +57,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
                     for (final T sample : trainBatch) {
                         log.info("****Started Training#{}: {}****",
-                                sample.getIndex(), sample);
+                                 sample.getIndex(), sample);
 
                         Future<D> future = executor.submit(
                                 new Callable<D>() {
@@ -62,15 +67,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                                 });
                         futureList.add(new AbstractMap.SimpleEntry<T, Future<D>>(sample, future));
                     }
-
-                    Collections.sort(futureList, new Comparator<AbstractMap.SimpleEntry<T, Future<D>>>()
-                    {
-                        public int compare(AbstractMap.SimpleEntry<T, Future<D>> o1, AbstractMap.SimpleEntry<T, Future<D>> o2)
-                        {
-                            return (int)(o1.getKey().getSize() - o2.getKey().getSize());
-                        }
-                    });
-
 
                     Iterator < AbstractMap.SimpleEntry<T, Future<D>>> it = futureList.iterator();
                     while (it.hasNext()) {
@@ -90,6 +86,9 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                         }
                         it.remove();
                     }
+                    // Hint system to do garbage collection as there
+                    // might be a lot of unused object right now.
+                    System.gc();
                     return cumlTrainingScore/cumlTrainingSize;
                 }
             };
@@ -120,16 +119,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             new Function<List<T>, Double>() {
                 @Nullable
                 public Double apply(final @Nullable List<T> validList) {
-
-                    Collections.sort(validList, new Comparator<T>()
-                    {
-
-                        public int compare(T o1, T o2)
-                        {
-                            return (int)(o1.getSize() - o2.getSize());
-                        }
-                    });
-
                     double validationScore = 0;
                     List<Future<Double>> futureList =
                             new ArrayList<Future<Double>>();
@@ -250,8 +239,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         if (op.trainOp.parallel) {
             log.info("Running in parallel mode");
             log.info("NumThreads#: {}", op.trainOp.nThreads);
-            executor =
-                    Executors.newFixedThreadPool((int)Math.floor(Math.sqrt(2 * op.trainOp.nThreads)));
+            executor = Executor.getInstance();
             trainFunction = fitRoutineParallel;
             validFunction = validRoutineParallel;
         } else {

@@ -76,6 +76,11 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         return new dQdu(adaGrad.getGradient(((dQdu) gradient).dQdu), data);
     }
 
+    public double norm()
+    {
+        return Nd4j.norm2(dQdu.sum(Integer.MAX_VALUE)).getFloat(0);
+    }
+
     public void calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
         INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         INDArray[][] phraseMatrix = scorer.getPhraseMatrix();

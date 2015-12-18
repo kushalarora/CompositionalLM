@@ -19,6 +19,8 @@ public interface IDerivative<T extends List> {
     public boolean containsNanOrInf();
 
     public IDerivative adaGrad(IDerivative gradient);
+
+    public double norm();
 }
 
 

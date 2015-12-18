@@ -86,11 +86,12 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         int sz = data.size();
 
         dqdu.calcDerivative(model, scorer);
-        log.info("dQdu Norm2:{}(len={}) = {}", idx, sz, Nd4j.norm2(dqdu.getDQdu()));
         dqdw.calcDerivative(model, scorer);
-        log.info("dQdW Norm2:{}(len={}) = {}", idx, sz, Nd4j.norm2(dqdw.getDQdW()));
         dqdxw.calcDerivative(model, scorer);
-        log.info("dQdXw Norm2:{}(len={}) = {}", idx, sz, Nd4j.norm2(dqdxw.getDQdXw()));
+
+        log.info("dQdu Norm2:{}(len={}) = {}", idx, sz, dqdu.norm());
+        log.info("dQdW Norm2:{}(len={}) = {}", idx, sz, dqdw.norm());
+        log.info("dQdXw Norm2:{}(len={}) = {}", idx, sz, dqdxw.norm());
         score = scorer.getSentenceScore();
 
         if (op.debug) {
