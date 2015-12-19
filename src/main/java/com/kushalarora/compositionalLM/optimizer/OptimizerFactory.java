@@ -51,7 +51,7 @@ public class OptimizerFactory {
         int vocabSize = model.getVocabSize();
         switch (op.trainOp.optimizer) {
             case SGD:
-                return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(dimension, vocabSize), documentProcessorWrapper) {
+                return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(dimension, vocabSize, op), documentProcessorWrapper) {
                     public Derivatives calcDerivative(Sentence sample) {
                         return derivativeCalculator.apply(sample);
                     }
@@ -70,7 +70,7 @@ public class OptimizerFactory {
                 };
             case ADAGRAD:
                 return new AbstractAdaGradOptimzer<Sentence, Derivatives>(
-                        op, new Derivatives(dimension, vocabSize), new Derivatives(dimension, vocabSize), documentProcessorWrapper) {
+                        op, new Derivatives(dimension, vocabSize, op), new Derivatives(dimension, vocabSize, op), documentProcessorWrapper) {
 
                     public Derivatives calcDerivative(Sentence sample) {
                         return derivativeCalculator.apply(sample);

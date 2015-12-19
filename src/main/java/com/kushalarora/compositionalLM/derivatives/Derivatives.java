@@ -28,9 +28,9 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
         // initialized
-        dqdu = new dQdu(dimensions, sentence);
-        dqdw = new dQdW(dimensions, sentence);
-        dqdxw = new dQdXw(dimensions, vocabSize, sentence);
+        dqdu = new dQdu(dimensions, sentence, op);
+        dqdw = new dQdW(dimensions, sentence, op);
+        dqdxw = new dQdXw(dimensions, vocabSize, sentence, op);
         this.op = op;
     }
 
@@ -45,14 +45,14 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     /**
      * This is just used for accumulation
      * */
-    public Derivatives(int dimension, int vocabSize) {
+    public Derivatives(int dimension, int vocabSize, Options op) {
         super(new Sentence(-1));
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
         // initialized
-        dqdu = new dQdu(dimension, new Sentence(-1));
-        dqdw = new dQdW(dimension, new Sentence(-1));
-        dqdxw = new dQdXw(dimension, vocabSize, new Sentence(-1));
+        dqdu = new dQdu(dimension, new Sentence(-1), op);
+        dqdw = new dQdW(dimension, new Sentence(-1), op);
+        dqdxw = new dQdXw(dimension, vocabSize, new Sentence(-1), op);
     }
 
     public void add(IDerivatives derivatives) {

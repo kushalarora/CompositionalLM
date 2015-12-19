@@ -1,135 +1,157 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
-import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.optimizer.IIndexed;
-import lombok.Getter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.google.common.base.Function;
+import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
+import com.kushalarora.compositionalLM.model.Model;
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
+import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
+
+import lombok.Getter;
 
 /**
  * Created by karora on 6/21/15.
  */
-public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
+public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T>
+{
     @Getter
     private int dim;
     private int V;
     private T data;
     private int length;
+    private Options op;
+    private Parallelizer parallelizer;
+
     @Getter
     private Map<Integer, INDArray> indexToxMap;
 
-    public dQdXw(int dimensions, int vocabSize, T data) {
-        super(new int[]{dimensions, vocabSize});
+    public dQdXw(int dimensions, int vocabSize, T data, Options op) {
+        super(new int[] {dimensions, vocabSize});
         indexToxMap = new HashMap<Integer, INDArray>();
         dim = dimensions;
         V = vocabSize;
         this.data = data;
         length = data.size();
+        this.op = op;
+        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
 
 
-    public dQdXw(dQdXw dqdxw, T data) {
+    public dQdXw(dQdXw dqdxw, T data, Options op) {
         super(new int[] {dqdxw.dim, dqdxw.V});
         indexToxMap = dqdxw.indexToxMap;
         dim = dqdxw.dim;
         V = dqdxw.V;
         this.data = data;
         length = data.size();
+        this.op = op;
+        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
 
-    private dQdXw(Map<Integer, INDArray> indexToxMap, dQdXw dqdxw, T data) {
-        super(new int[]{dqdxw.dim, dqdxw.V});
+    private dQdXw(Map<Integer, INDArray> indexToxMap, dQdXw dqdxw, T data, Options op) {
+        super(new int[] {dqdxw.dim, dqdxw.V});
         dim = dqdxw.dim;
         V = dqdxw.V;
         this.data = data;
         length = data.size();
         this.indexToxMap = indexToxMap;
+        this.op = op;
+        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
 
-    public void calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
+    public void calcDerivative(final Model model, final CompositionalInsideOutsideScore scorer) {
 
         // Save indexes
-        int[] indexes = new int[length];
+        final int[] indexes = new int[length];
         for (int i = 0; i < length; i++) {
             indexes[i] = data.get(i).getIndex();
         }
 
-        INDArray[][][][] dxdxwArr = new dXdXw(dim, V, data).calcDerivative(model, scorer);
-        INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
-        double[][][] compositionalMu = scorer.getMuScore();
-        INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        double[][] compositionalIScore = scorer.getInsideSpanProb();
+        final INDArray[][][][] dxdxwArr = new dXdXw(dim, V, data, op).calcDerivative(model, scorer);
+        final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
+        final double[][][] compositionalMu = scorer.getMuScore();
+        final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
+        final double[][] compositionalIScore = scorer.getInsideSpanProb();
 
 
-        INDArray dcdc = Nd4j.eye(dim);
-        INDArray dQdXw_i = Nd4j.zeros(dim);
-        for (int i = 0; i < length; i++) {
+        final INDArray dcdc = Nd4j.eye(dim);
+        Function<Integer, Void> func = new Function<Integer, Void>() {
+            @Nullable
+            public Void apply(Integer i) {
+                INDArray dQdXw_i = Nd4j.zeros(dim);
 
-            // wipe the array clean
-            for (int d = 0; d < dim; d++) {
-                dQdXw_i.putScalar(d, 0f);
-            }
+                // handle leaf node
+                INDArray vector = phraseMatrix[i][i + 1];
+                double dE = model.energyDerivative(vector);
 
-            // handle leaf node
-            INDArray vector = phraseMatrix[i][i + 1];
-            double dE = model.energyDerivative(vector);
+                // diff wrt to self returns eye
+                INDArray udXdXwArr =
+                        model.getParams().getU()
+                             .mmul(dcdc);
 
-            // diff wrt to self returns eye
-            INDArray udXdXwArr =
-                    model.getParams().getU()
-                            .mmul(dcdc);
+                int[] udXdXwShape = udXdXwArr.shape();
+                if (udXdXwShape.length != 1 ||
+                        udXdXwShape[0] != dim) {
+                    throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1 " + udXdXwShape.toString());
+                }
 
-            int[] udXdXwShape = udXdXwArr.shape();
-            if (udXdXwShape.length != 1 ||
-                    udXdXwShape[0] != dim) {
-                throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1 " + udXdXwShape.toString());
-            }
+                dQdXw_i = dQdXw_i.add(udXdXwArr
+                        .muli(compositionalMu[i][i + 1][i]))
+                        .muli(dE);
 
-            dQdXw_i = dQdXw_i.add(udXdXwArr
-                    .muli(compositionalMu[i][i + 1][i]))
-                    .muli(dE);
+                // handle the composition case
+                for (int diff = 2; diff <= length; diff++) {
+                    for (int start = 0; start + diff <= length; start++) {
+                        int end = start + diff;
+                        for (int split = start + 1; split < end; split++) {
+                            dE = model.energyDerivative(compositionMatrix[start][end][split],
+                                    phraseMatrix[start][split], phraseMatrix[split][end]);
 
-            // handle the composition case
-            for (int diff = 2; diff <= length; diff++) {
-                for (int start = 0; start + diff <= length; start++) {
-                    int end = start + diff;
-                    for (int split = start + 1; split < end; split++) {
-                        dE = model.energyDerivative(compositionMatrix[start][end][split],
-                                phraseMatrix[start][split], phraseMatrix[split][end]);
-
-                        udXdXwArr =
-                                model
-                                        .getParams()
-                                        .getU()
-                                        .mmul(dxdxwArr[i][start][end][split]);
+                            udXdXwArr =
+                                    model
+                                            .getParams()
+                                            .getU()
+                                            .mmul(dxdxwArr[i][start][end][split]);
 
 
-                        udXdXwShape = udXdXwArr.shape();
-                        if (udXdXwShape.length != 1 ||
-                                udXdXwShape[0] != dim) {
-                            throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
+                            udXdXwShape = udXdXwArr.shape();
+                            if (udXdXwShape.length != 1 ||
+                                    udXdXwShape[0] != dim) {
+                                throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
+                            }
+
+                            dQdXw_i = dQdXw_i.add(udXdXwArr.muli(compositionalMu[start][end][split]))
+                                    .muli(dE);
                         }
-
-                        dQdXw_i = dQdXw_i.add(udXdXwArr
-                                .muli(compositionalMu[start][end][split]))
-                                .muli(dE);
                     }
                 }
-            }
 
-            dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
-            if (containsNanOrInf(dQdXw_i)) {
-                dQdXw_i = Nd4j.rand(new int[]{dim}, -1, 1, new JDKRandomGenerator());
-            }
+                dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
+                if (containsNanOrInf(dQdXw_i)) {
+                    dQdXw_i = Nd4j.rand(new int[]{dim}, -1, 1, new JDKRandomGenerator());
+                }
 
-            indexToxMap.put(indexes[i], dQdXw_i);
+                indexToxMap.put(indexes[i], dQdXw_i);
+                return null;
+            }
+        };
+
+        if (op.trainOp.parallel) {
+            parallelizer.parallelizer(0, length, func);
+        } else {
+            for (int i = 0; i < length; i++) {
+                func.apply(i);
+            }
         }
 
         if (compositionalIScore[0][length] == 0) {
@@ -189,7 +211,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
             INDArray value = dqdxw.getColumn(key);
             newIndexToxMap.put(key, value);
         }
-        return new dQdXw(newIndexToxMap, this, data);
+        return new dQdXw(newIndexToxMap, this, data, op);
     }
 
     public double norm()
