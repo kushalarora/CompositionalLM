@@ -139,6 +139,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
                 dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
                 if (containsNanOrInf(dQdXw_i)) {
                     dQdXw_i = Nd4j.rand(new int[]{dim}, -1, 1, new JDKRandomGenerator());
+                    dQdXw_i = dQdXw_i.div(Nd4j.norm2(dQdXw_i));
                 }
 
                 indexToxMap.put(indexes[i], dQdXw_i);

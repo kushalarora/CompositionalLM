@@ -92,7 +92,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
 
     public double norm()
     {
-        return Nd4j.norm2(dQdu.sum(Integer.MAX_VALUE)).getFloat(0);
+        return Nd4j.norm2(dQdu).sum(Integer.MAX_VALUE).getFloat(0);
     }
 
     public void calcDerivative(final Model model, final CompositionalInsideOutsideScore scorer) {
@@ -189,6 +189,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         if (containsNanOrInf()) {
             log.error("dQdu contains Nan Or Inf. for data {}", data);
             dQdu = Nd4j.rand(dimensions, 1, -1, 1, new JDKRandomGenerator());
+            dQdu = dQdu.div(Nd4j.norm2(dQdu));
         }
     }
 }
