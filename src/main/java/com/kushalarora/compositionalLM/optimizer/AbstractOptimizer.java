@@ -316,7 +316,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                             (iter + 1) % op.trainOp.validationFreq == 0) {
 
                         double mean = getValidationScore(validFunction, validSet);
-                        log.info("Mean validation score epoch#{}, iter#{}: {}",
+                        log.info("$Validation$ Mean validation score epoch#{}, iter#{}: {}",
                                 epoch, iter, mean);
 
                         // is better than the bestt
@@ -324,7 +324,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
                             // save model
                             bestValidationScore = mean;
-                            log.info("Updated best validation score epoch# {}, iter# {}:: {}",
+                            log.info("$Updated Validation$ Updated best validation score epoch# {}, iter# {}:: {}",
                                     epoch, iter, mean);
                             saveModel(iter, epoch);
 
@@ -342,7 +342,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     batchIdx += 1;
                 } // end for batch
 
-                log.info("Training score epoch#: {}, trainList: {}  => {}",
+                log.info("$Training$: Training score epoch#: {}, trainList: {}  => {}",
                         epoch, trainFileIdx, cumlTrainScore / cumlTrainBatch);
 
                 epoch += 1;
