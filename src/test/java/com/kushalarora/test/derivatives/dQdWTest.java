@@ -2,6 +2,9 @@ package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dQdW;
 import com.kushalarora.compositionalLM.derivatives.dXdW;
+import com.kushalarora.compositionalLM.options.Options;
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,9 +21,11 @@ import static org.mockito.Mockito.when;
  */
 public class dQdWTest extends AbstractDerivativeTest {
     private dQdW dqdw;
+    private static Options op;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException
+    {
         AbstractDerivativeTest.setUpClass();
         INDArray W = mock(INDArray.class);
         when(W.mmul((INDArray)any()))
@@ -33,11 +38,14 @@ public class dQdWTest extends AbstractDerivativeTest {
                 .thenReturn(Nd4j.ones(1));
 
         params.setU(u);
+
+        op = new Options();
+        op.trainOp.parallel = true;
     }
 
     @Before
     public void setUp() {
-        dqdw = new dQdW(dim, defaultSentence);
+        dqdw = new dQdW(dim, defaultSentence,op);
     }
 
     @Test

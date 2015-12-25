@@ -1,6 +1,9 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dQdu;
+import com.kushalarora.compositionalLM.options.Options;
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -16,8 +19,11 @@ public class dQduTest extends AbstractDerivativeTest {
     protected dQdu dQdu;
 
     @Before
-    public void setUp() {
-        dQdu = new dQdu(dim, defaultSentence);
+    public void setUp() throws ConfigurationException
+    {
+        Options op = new Options();
+        op.trainOp.parallel = true;
+        dQdu = new dQdu(dim, defaultSentence, op);
     }
 
     /**

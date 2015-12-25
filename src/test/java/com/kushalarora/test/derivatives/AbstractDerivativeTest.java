@@ -4,6 +4,8 @@ import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.model.Parameters;
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.BeforeClass;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,7 +31,8 @@ public class AbstractDerivativeTest {
     protected static List<Word> defaultSentence;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException
+    {
         model = mock(Model.class);
         params = new Parameters(dim, V);
         cScorer = mock(CompositionalInsideOutsideScore.class);
