@@ -116,13 +116,20 @@ public class CompositionalInsideOutsideScore {
     public double getSentenceScore() {
         double score = compositionalIScore[0][length];
         if (score > 10) {
+            log.error("Score is greater than 10 for sentence: {}", sentence);
             return 0;
         }
         if (score == 0) {
+            log.error("Score is 0 for sentence : {}", sentence);
             return 0;
         }
         if (Double.isInfinite(compositionalIScore[0][length])) {
+            log.error("Score is Nan or Inf for sentence : {}", sentence);
             return 0;
+        }
+
+        if (compositionalIScore[0][length] < 0) {
+            log.error("Score is negative for sentence: {}", sentence);
         }
         return Math.log(compositionalIScore[0][length]);
     }
