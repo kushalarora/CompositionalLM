@@ -188,8 +188,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
 
         if (containsNanOrInf()) {
             log.error("dQdu contains Nan Or Inf. for data {}", data);
-            dQdu = Nd4j.rand(dimensions, 1, -1, 1, new JDKRandomGenerator());
-            dQdu = dQdu.div(Nd4j.norm2(dQdu));
+            dQdu = Nd4j.zeros(dimensions, 1);
         }
     }
 }

@@ -166,12 +166,12 @@ public class CompositionalLM {
                 CompositionalInsideOutsideScore score =
                         compGrammar.getScore(data,
                                 preScore);
-                Double logP = score.getLogScore();
+                Double logP = score.getSentenceScore();
                 writer.println(score.getSentence());
                 writer.println(String.format("Length: %d, logProp: %.4f",
-                                             score.getSentence().size(), score.getLogScore()));
+                                             score.getSentence().size(), score.getSentenceScore()));
                 log.info(String.format("Length: %d, logProp: %.4f",
-                                       score.getSentence().size(), score.getLogScore()));
+                                       score.getSentence().size(), score.getSentenceScore()));
                 logScore += logP;
             }
         }

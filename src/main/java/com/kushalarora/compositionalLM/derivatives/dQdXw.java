@@ -18,10 +18,12 @@ import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by karora on 6/21/15.
  */
+@Slf4j
 public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T>
 {
     @Getter
@@ -138,8 +140,8 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
 
                 dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
                 if (containsNanOrInf(dQdXw_i)) {
-                    dQdXw_i = Nd4j.rand(new int[]{dim}, -1, 1, new JDKRandomGenerator());
-                    dQdXw_i = dQdXw_i.div(Nd4j.norm2(dQdXw_i));
+                    log.error("dQdXw contains Nan Or Inf for index: {} data: {}", i, data);
+                    dQdXw_i = Nd4j.zeros(dim);
                 }
 
                 indexToxMap.put(indexes[i], dQdXw_i);
