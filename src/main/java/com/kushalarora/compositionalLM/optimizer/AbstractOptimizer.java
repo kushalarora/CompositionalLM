@@ -324,7 +324,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
                             // save model
                             bestValidationScore = mean;
-                            log.info("$Updated Validation$ Updated best validation score epoch# {}, iter# {}:: {}",
+                            log.info("$Updated Validation$  Updated best validation score epoch# {}, iter# {}:: {}",
                                     epoch, iter, mean);
                             saveModel(iter, epoch);
 
