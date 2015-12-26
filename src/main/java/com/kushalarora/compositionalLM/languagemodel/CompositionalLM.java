@@ -80,7 +80,6 @@ public class CompositionalLM {
         // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
-                        docProcessorFactory.getDocumentProcessor(),
                         new Function<Sentence, Double>() {
                             @Nullable
                             public Double apply(Sentence data) {                // scorer
@@ -115,9 +114,21 @@ public class CompositionalLM {
                             }
                         });
 
+        DocumentProcessorWrapper<Sentence> docProcessor =
+                docProcessorFactory.getDocumentProcessor();
+
+        List<Iterator<Sentence>> trainSentIter = Lists.newArrayList();
+        for (String filename : op.trainOp.trainFiles) {
+            trainSentIter.add(docProcessor.getIterator(filename));
+        }
+
+        List<Iterator<Sentence>> validSentIter = Lists.newArrayList();
+        for (String filename : op.trainOp.validationFiles) {
+            validSentIter.add(docProcessor.getIterator(filename));
+        }
+
         // Fit training data with validation on validation file.
-        optimizer.fit(Lists.newArrayList(op.trainOp.trainFiles),
-                Lists.newArrayList(op.trainOp.validationFiles));
+        optimizer.fit(trainSentIter, validSentIter);
 
         if (op.trainOp.saveVisualization) {
             visualize(op.trainOp.visualizationFilename);

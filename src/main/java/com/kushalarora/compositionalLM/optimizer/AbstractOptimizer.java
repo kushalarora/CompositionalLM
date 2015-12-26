@@ -15,9 +15,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-/**
- * Created by karora on 7/14/15.
- */
 @Slf4j
 public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDerivatives<T>>
         implements IOptimizer<T, D> {
@@ -28,14 +25,12 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
     protected int epoch;
     protected double bestValidationScore;
     protected boolean done;
-    private DocumentProcessorWrapper<T> documentProcessor;
 
     D dvAcc;
 
-    protected AbstractOptimizer(Options op, D dvAcc, DocumentProcessorWrapper<T> documentProcessor) {
+    protected AbstractOptimizer(Options op, D dvAcc) {
         this.op = op;
         this.dvAcc = dvAcc;
-        this.documentProcessor = documentProcessor;
         rand = new Random();
         iter = 0;
         epoch = 0;
@@ -183,14 +178,13 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 }
             };
 
-    private double getValidationScore(Function<List<T>, Double> validFunction, List<String> validFileList) {
+    private double getValidationScore(Function<List<T>, Double> validFunction, List<Iterator<T>> validFileList) {
         // calc mean for validation set
         double cumlScore = 0;
         double cumlSize = 0;
         for (int validListIdx = 0; validListIdx < validFileList.size(); validListIdx++) {
-            String validFilename = validFileList.get(validListIdx);
 
-            Iterator<T> validIter = documentProcessor.getIterator(validFilename);
+            Iterator<T> validIter = validFileList.get(validListIdx);
             List<T> validList = new ArrayList<T>();
 
             int validBatchIdx = 0;
@@ -232,7 +226,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         dvAcc.clear();
     }
 
-    public void fit(List<String> trainFileList, List<String> validSet) {
+    public void fit(List<Iterator<T>> trainFileList, List<Iterator<T>> validSet) {
 
         Function<List<T>, Double> trainFunction;
         Function<List<T>, Double> validFunction;
@@ -252,7 +246,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
         epoch = 0;
         iter = 0;
-        bestValidationScore = Double.MAX_VALUE;
+        bestValidationScore = Double.MIN_VALUE;
         done = false;
 
         // do training these many times
@@ -267,15 +261,11 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             // process all these lists
             for (int trainFileIdx = 0; trainFileIdx < trainFileList.size(); trainFileIdx++) {
 
-                Iterator<T> trainIter = null;
-                String trainFilename = trainFileList.get(trainFileIdx);
-                trainIter = documentProcessor.getIterator(trainFilename);
+                Iterator<T> trainIter = trainFileList.get(trainFileIdx);
 
                 int batchIdx = 0;
-
                 while (trainIter.hasNext()) {
                     trainList.clear();
-
 
                     for (int idx = 0; idx < op.trainOp.batchSize && trainIter.hasNext(); idx++) {
                         trainList.add(trainIter.next());
@@ -320,7 +310,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                                 epoch, iter, mean);
 
                         // is better than the bestt
-                        if (mean < bestValidationScore) {
+                        if (mean > bestValidationScore) {
 
                             // save model
                             bestValidationScore = mean;
@@ -330,7 +320,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
                             // good enough for us?
                             if (mean > bestValidationScore * (1 - op.trainOp.tolerance)) {
-                                done = true;
+                             //   done = true;
                                 log.info("Done training");
                             } // end if mean > bestValidationScore
 
