@@ -10,7 +10,6 @@ import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -133,8 +132,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         } else
         {
             // do leaf nodes
-            for (int start = 0; start < length; start++)
-            {
+            for (int start = 0; start < length; start++) {
                 unaryFunc.apply(start);
             }
         }
@@ -187,7 +185,9 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         dQdu = dQdu.div(compositionalIScore[0][length]);
 
         if (containsNanOrInf()) {
-            log.error("dQdu contains Nan Or Inf. for data {}", data);
+            log.error("dQdu contains Nan Or Inf. {} for data {}", dQdu, data);
+            log.error("CompositionalMu: {}", compositionMu);
+            log.error("CompositionalIScore: {}", compositionalIScore[0][length]);
             dQdu = Nd4j.zeros(dimensions, 1);
         }
     }

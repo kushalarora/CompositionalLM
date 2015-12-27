@@ -15,8 +15,8 @@ public abstract class AbstractSGDOptimizer<T extends IIndexedSized, D extends ID
     private int count;
     D dvAcc;
 
-    protected AbstractSGDOptimizer(Options op, D dvAcc, DocumentProcessorWrapper<T> documentProcessorWrapper) {
-        super(op, dvAcc, documentProcessorWrapper);
+    protected AbstractSGDOptimizer(Options op, D dvAcc) {
+        super(op, dvAcc);
         count = 0;
     }
 

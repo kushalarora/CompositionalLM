@@ -94,6 +94,7 @@ public class CompositionalGrammar implements Serializable {
 
                         // comp iScore for a leaf node is iScore of span (start, start + 1)
                         // into composition score of (start, start + 1)
+                        // p(r)\theta_r
                         // This is like re-writing unary rule a=>w_i
                         double iScore_start_end = preScores.getScore(iScores, start, end);
                         s.compositionalIScore[start][end] += score * iScore_start_end;
@@ -149,7 +150,7 @@ public class CompositionalGrammar implements Serializable {
                                         s.compositionMatrix[start][end][split],
                                         child1, child2);
 
-                                double score = ((double)exp(-energy));
+                                double score = exp(-energy);
 
                                 s.compositionScore[start][end][split] += score;
 

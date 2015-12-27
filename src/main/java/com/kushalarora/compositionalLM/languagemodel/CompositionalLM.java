@@ -80,7 +80,6 @@ public class CompositionalLM {
         // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
-                        docProcessorFactory.getDocumentProcessor(),
                         new Function<Sentence, Double>() {
                             @Nullable
                             public Double apply(Sentence data) {                // scorer
@@ -94,13 +93,13 @@ public class CompositionalLM {
                         new Function<Sentence, Derivatives>() {
                             @Nullable
                             public Derivatives apply(@Nullable Sentence sentence) {              // derivative calculator
-                                Derivatives derivatives = new Derivatives(op,
-                                        model.getDimensions(), model.getVocabSize(), sentence);
                                 IInsideOutsideScore preScore = cache.get(sentence);
                                 CompositionalInsideOutsideScore score =
                                         compGrammar.getScore(sentence,
                                                 preScore);
-                                derivatives.calcDerivative(model, score);
+                                Derivatives derivatives = new Derivatives(op,
+                                        model, score);
+                                derivatives.calcDerivative();
                                 return derivatives;
                             }
                         },
@@ -115,9 +114,21 @@ public class CompositionalLM {
                             }
                         });
 
+        DocumentProcessorWrapper<Sentence> docProcessor =
+                docProcessorFactory.getDocumentProcessor();
+
+        List<List<Sentence>> trainSentFileList = Lists.newArrayList();
+        for (String filename : op.trainOp.trainFiles) {
+            trainSentFileList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
+        }
+
+        List<List<Sentence>> validSentFileList = Lists.newArrayList();
+        for (String filename : op.trainOp.validationFiles) {
+            validSentFileList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
+        }
+
         // Fit training data with validation on validation file.
-        optimizer.fit(Lists.newArrayList(op.trainOp.trainFiles),
-                Lists.newArrayList(op.trainOp.validationFiles));
+        optimizer.fit(trainSentFileList, validSentFileList);
 
         if (op.trainOp.saveVisualization) {
             visualize(op.trainOp.visualizationFilename);

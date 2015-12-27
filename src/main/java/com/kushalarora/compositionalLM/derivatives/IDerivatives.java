@@ -11,7 +11,7 @@ public interface IDerivatives<T> extends Cloneable {
 
     public void mul(double learningRate);
 
-    public void calcDerivative(Model model, CompositionalInsideOutsideScore scorer);
+    public void calcDerivative();
 
     public void clear();
 

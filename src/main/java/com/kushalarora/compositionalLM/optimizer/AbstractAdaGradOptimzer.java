@@ -12,8 +12,8 @@ public abstract class AbstractAdaGradOptimzer<T extends IIndexedSized, D extends
 
     D dvGrad;
 
-    protected AbstractAdaGradOptimzer(Options op, D dvAcc, D dvGrad, DocumentProcessorWrapper<T> documentProcessorWrapper) {
-        super(op, dvAcc, documentProcessorWrapper);
+    protected AbstractAdaGradOptimzer(Options op, D dvAcc, D dvGrad) {
+        super(op, dvAcc);
         this.dvGrad = dvGrad;
     }
 

@@ -9,8 +9,6 @@ import lombok.Getter;
  */
 public abstract class AbstractDerivatives<T extends IIndexed> implements IDerivatives<T> {
     protected T data;
-    @Getter
-    protected double score;
     public AbstractDerivatives(T data) {
         this.data = data;
     }

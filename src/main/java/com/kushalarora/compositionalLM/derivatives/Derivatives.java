@@ -22,20 +22,24 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     private dQdW dqdw;
     private dQdu dqdu;
     private dQdXw dqdxw;
-
-    public Derivatives(Options op, int dimensions, int vocabSize, Sentence sentence) {
-        super(sentence);
+    private CompositionalInsideOutsideScore score;
+    private Model model;
+    public Derivatives(Options op, Model model, CompositionalInsideOutsideScore score) {
+        super(score.getSentence());
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
         // initialized
-        dqdu = new dQdu(dimensions, sentence, op);
-        dqdw = new dQdW(dimensions, sentence, op);
-        dqdxw = new dQdXw(dimensions, vocabSize, sentence, op);
+        this.model = model;
+        this.score = score;
+        dqdu = new dQdu(model.getDimensions(), data, op);
+        dqdw = new dQdW(model.getDimensions(), data, op);
+        dqdxw = new dQdXw(model.getDimensions(), model.getVocabSize(), data, op);
         this.op = op;
     }
 
-    public Derivatives(Options op, Sentence sentence, dQdW dqdw, dQdu dqdu, dQdXw dqdxw) {
-        super(sentence);
+    public Derivatives(Options op, Model model, dQdW dqdw, dQdu dqdu, dQdXw dqdxw) {
+        super(new Sentence(-1));
+        this.model = model;
         this.dqdw = dqdw;
         this.dqdu = dqdu;
         this.dqdxw = dqdxw;
@@ -45,14 +49,15 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     /**
      * This is just used for accumulation
      * */
-    public Derivatives(int dimension, int vocabSize, Options op) {
+    public Derivatives(Model model, Options op) {
         super(new Sentence(-1));
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
         // initialized
-        dqdu = new dQdu(dimension, new Sentence(-1), op);
-        dqdw = new dQdW(dimension, new Sentence(-1), op);
-        dqdxw = new dQdXw(dimension, vocabSize, new Sentence(-1), op);
+        this.model = model;
+        dqdu = new dQdu(model.getDimensions(), new Sentence(-1), op);
+        dqdw = new dQdW(model.getDimensions(), new Sentence(-1), op);
+        dqdxw = new dQdXw(model.getDimensions(), model.getVocabSize(), new Sentence(-1), op);
     }
 
     public void add(IDerivatives derivatives) {
@@ -81,18 +86,17 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     }
 
     public void
-    calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
+    calcDerivative() {
         int idx = data.getIndex();
         int sz = data.size();
 
-        dqdu.calcDerivative(model, scorer);
-        dqdw.calcDerivative(model, scorer);
-        dqdxw.calcDerivative(model, scorer);
+        dqdu.calcDerivative(model, score);
+        dqdw.calcDerivative(model, score);
+        dqdxw.calcDerivative(model, score);
 
         log.info("dQdu Norm2:{}(len={}) = {}", idx, sz, dqdu.norm());
         log.info("dQdW Norm2:{}(len={}) = {}", idx, sz, dqdw.norm());
         log.info("dQdXw Norm2:{}(len={}) = {}", idx, sz, dqdxw.norm());
-        score = scorer.getSentenceScore();
 
         if (op.debug) {
             log.info("Memory Size Derivatives: {}:: {}\n" +
@@ -119,7 +123,7 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     }
 
     public Derivatives adaGrad(IDerivatives<Sentence> derivatives) {
-        return new Derivatives(op, data,
+        return new Derivatives(op, model,
                 (dQdW) dqdw.adaGrad(
                         ((Derivatives) derivatives).dqdw),
                 (dQdu) dqdu.adaGrad(
@@ -127,5 +131,9 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
                 (dQdXw) dqdxw.adaGrad(
                         ((Derivatives) derivatives).dqdxw)
         );
+    }
+
+    public double getScore() {
+        return score.getSentenceScore();
     }
 }
