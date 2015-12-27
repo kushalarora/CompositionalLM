@@ -5,11 +5,16 @@ import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Executor;
-
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +34,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
     protected double bestValidationScore;
     protected boolean done;
     private DocumentProcessorWrapper<T> documentProcessor;
+    private Parallelizer parallelizer;
 
     D dvAcc;
 
@@ -41,8 +47,10 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         epoch = 0;
         bestValidationScore = Double.MAX_VALUE;
         done = false;
+        parallelizer = new Parallelizer(op, 1);
 
     }
+
 
 
     private Function<List<T>, Double> fitRoutineParallel =
@@ -86,6 +94,8 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                         }
                         it.remove();
                     }
+
+
                     // Hint system to do garbage collection as there
                     // might be a lot of unused object right now.
                     System.gc();
@@ -232,7 +242,8 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         dvAcc.clear();
     }
 
-    public void fit(List<String> trainFileList, List<String> validSet) {
+    public void fit(List<String> trainFileList, List<String> validSet) throws ExecutionException, InterruptedException
+    {
 
         Function<List<T>, Double> trainFunction;
         Function<List<T>, Double> validFunction;
@@ -257,19 +268,18 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
         // do training these many times
         while (epoch < op.trainOp.maxEpochs && !done) {
+            log.info("Starting epoch: {}", epoch);
+            long epochStartTime = System.currentTimeMillis();
+
             double cumlTrainScore = 0.0;
             int cumlTrainBatch = 0;
-
-            log.info("Starting epoch: {}", epoch);
-            List<T> trainList = new ArrayList<T>();
-
+            final List<T> trainList = new ArrayList<T>();
 
             // process all these lists
             for (int trainFileIdx = 0; trainFileIdx < trainFileList.size(); trainFileIdx++) {
 
-                Iterator<T> trainIter = null;
                 String trainFilename = trainFileList.get(trainFileIdx);
-                trainIter = documentProcessor.getIterator(trainFilename);
+                Iterator<T> trainIter = documentProcessor.getIterator(trainFilename);
 
                 int batchIdx = 0;
 
@@ -282,34 +292,50 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     }
 
                     int batchSize = trainList.size();
+
                     Collections.shuffle(trainList, rand);
 
-                    log.info("Starting epoch#: {}, trainList: {} , batch#: {}", epoch, trainFileIdx, batchIdx);
+                    log.info("Starting epoch#: {}, trainList: {} , batch#: {}",
+                            epoch, trainFileIdx, batchIdx);
 
                     long startTime = System.currentTimeMillis();
+
+                    Function<Integer, D> fitRoutine =
+                            new Function<Integer, D>() {
+                                @Nullable
+                                public D apply(@Nullable Integer integer) {
+                                    return fitOne(trainList.get(integer));
+                                }
+                            };
+
+                    int batchScore = 0;
+                    if (op.trainOp.parallel) {
+                        List<Future<D>> futures =
+                                parallelizer.parallelizer(0, batchSize, fitRoutine);
+
+                        for (Future<D> future : futures)
+                        {
+                            D derivative = future.get();
+                            derivativeAcc(derivative);
+                            cumlTrainScore += derivative.getScore();
+                            batchScore += derivative.getScore();
+                        }
+                    } else {
+                        for (int i = 0; i < batchSize; i++) {
+                            D derivative = fitRoutine.apply(i);
+                            derivativeAcc(derivative);
+                            cumlTrainScore += derivative.getScore();
+                            batchScore += derivative.getScore();
+                        }
+                    }
+
                     // train batch
-                    double score = trainFunction.apply(trainList);
                     long estimatedTime = System.currentTimeMillis() - startTime;
+                    log.info("Training score epoch#: {}, trainList: {} , batch#: {}, time: {} => {}",
+                            epoch, trainFileIdx, batchIdx, estimatedTime, batchScore);
 
-
-                    cumlTrainScore += score * batchSize;
                     cumlTrainBatch += batchSize;
 
-                    log.info("Training score epoch#: {}, trainList: {} , batch#: {} => {}",
-                            epoch, trainFileIdx, batchIdx, score);
-                    log.info("Elapsed Training Time: {}", estimatedTime);
-
-                    // normalize accumulated derivative
-                    D accDv = getAccumulatedDerivative();
-                    accDv.mul(1.0 / batchSize);
-
-                    // update param for this batch
-                    updateParams(accDv);
-
-                    // clear accumulator and
-                    // re-initialize learing rate
-                    clearLearningRate();
-                    flushDerivaiveAcc();
 
                     // shall validate?
                     if (op.trainOp.validate &&
@@ -341,6 +367,20 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     iter += 1;
                     batchIdx += 1;
                 } // end for batch
+
+
+                // normalize accumulated derivative
+                    D accDv = getAccumulatedDerivative();
+                    accDv.mul(1.0 / batchSize);
+
+                    // update param for this batch
+                    updateParams(accDv);
+
+                    // clear accumulator and
+                    // re-initialize learing rate
+                    clearLearningRate();
+                    flushDerivaiveAcc();
+
 
                 log.info("$Training$: Training score epoch#: {}, trainList: {}  => {}",
                         epoch, trainFileIdx, cumlTrainScore / cumlTrainBatch);

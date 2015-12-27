@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.options.Options;
@@ -12,7 +13,7 @@ import com.kushalarora.compositionalLM.options.Options;
 /**
  * Created by arorak on 12/11/15.
  */
-public class Parallelizer implements Serializable{
+public class Parallelizer {
     public Parallelizer(Options op, int blockSize) {
         this.blockSize = blockSize;
         executor = Executor.getInstance();
@@ -22,17 +23,16 @@ public class Parallelizer implements Serializable{
     private int blockSize;
     protected ExecutorService executor;
 
-    public void parallelizer(final int start, final int end, final Function<Integer, Void> parallizableFunc)
-    {
+    public <D> List<Future<D>> parallelizer(final int start, final int end, final Function<Integer, D> parallizableFunc) {
         int length = end - start;
         final int blockNum = length / blockSize + 1;
 
-        List<Callable<Void>> callables = new ArrayList<Callable<Void>>();
+        List<Callable<D>> callables = new ArrayList<Callable<D>>();
         for (int i = 0; i < blockNum; i++)
         {
-            callables.add(new Callable<Void>() {
+            callables.add(new Callable<D>() {
 
-                public Void call() throws Exception
+                public D call() throws Exception
                 {
                     for (int j = blockStartIdx; j < blockStartIdx + blockSize && j < end; j++) {
                         parallizableFunc.apply(j);
@@ -40,7 +40,7 @@ public class Parallelizer implements Serializable{
                     return null;
                 }
 
-                public Callable<Void> init(int blockIndex) {
+                public Callable<D> init(int blockIndex) {
                     this.blockStartIdx = blockIndex;
                     return this;
                 }
@@ -51,7 +51,7 @@ public class Parallelizer implements Serializable{
 
         try
         {
-            executor.invokeAll(callables);
+            return executor.invokeAll(callables);
         }
         catch (InterruptedException e)
         {
