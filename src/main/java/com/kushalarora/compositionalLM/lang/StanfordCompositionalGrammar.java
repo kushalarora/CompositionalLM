@@ -602,10 +602,9 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     }
                     oS = log(oS);
 
-
-                    double tot;
-                    tot = exp(iS + oS);
-                    s.compositionalMu[start][end][split] = tot;
+                    synchronized (s.compositionalMu) {
+                        s.compositionalMu[start][end][split] += exp(iS + oS);
+                    }
 
                     return null;
                 }
@@ -648,17 +647,15 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                             }
                             oS = log(oS);
 
-
-                            double tot;
-
-                            tot = exp(oS + iS);
-                            s.compositionalMu[start][end][split] += tot;
+                            synchronized (s.compositionalMu) {
+                                s.compositionalMu[start][end][split] += exp(oS + iS);
+                            }
                             return null;
                         }
                     };
 
                     if (op.trainOp.parallel) {
-                        parallelizer.parallelizer(0, s.length - df + 1, binaryFunc);
+                        parallelizer.parallelizer(0, numStates, binaryFunc);
                     } else {
                         for (int state = 0; state < numStates; state++) {
                             binaryFunc.apply(state);
@@ -690,7 +687,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         log.info("Start outside score computation:{}::{}", idx, sz);
         doOutsideScores(s);
         log.info("Computed outside score computation:{}::{}", idx, sz);
-
 
 
         log.info("Start mu score computation:{}::{}", idx, sz);
