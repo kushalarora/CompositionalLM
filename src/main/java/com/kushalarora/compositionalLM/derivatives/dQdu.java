@@ -1,21 +1,18 @@
 package com.kushalarora.compositionalLM.derivatives;
 
 import com.google.common.base.Function;
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.List;
-
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * Created by karora on 6/21/15.
@@ -26,18 +23,17 @@ import javax.annotation.Nullable;
  * dQdu = \sum{start}{end}{split} dEdu(start, end, split) * \mu(start, end, split)
  */
 @Slf4j
-public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
+public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass<T> implements IDerivative<T> {
     @Getter
     private INDArray dQdu;
     private int dimensions;
-    private T data;
     private int length;
     private Options options;
     private Parallelizer parallelizer;
 
 
     public dQdu(int dim, T data, Options op) {
-        super(new int[]{dim, 1});
+        super(new int[]{dim, 1}, data);
         dQdu = Nd4j.zeros(dim, 1);
         dimensions = dim;
         this.data = data;
@@ -47,20 +43,18 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
     }
 
     public dQdu(dQdu dqdu, T data, Options op) {
-        super(dqdu.dQdu.shape());
+        super(dqdu.dQdu.shape(), data);
         dQdu = dqdu.dQdu.dup();
         dimensions = dqdu.dQdu.shape()[0];
-        this.data = data;
         length = data.size();
         options = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
     }
 
     private dQdu(INDArray dqdu, T data, Options op) {
-        super(dqdu.shape());
+        super(dqdu.shape(), data);
         this.dQdu = dqdu;
         dimensions = dqdu.shape()[0];
-        this.data = data;
         length = data.size();
         options = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
@@ -91,20 +85,19 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
 
     public double norm()
     {
-        return Nd4j.norm2(dQdu).sum(Integer.MAX_VALUE).getFloat(0);
+        return Nd4j.norm2(dQdu).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
-    public void calcDerivative(final Model model, final CompositionalInsideOutsideScore scorer) {
+    public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
         final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        final double[][][] compositionMu = scorer.getMuScore();
-        final double[][] compositionalIScore = scorer.getInsideSpanProb();
+        final double[][][] compositionMu = scorer.getCompMuScores();
+        final double[][] compositionalIScore = scorer.getCompIScores();
 
 
         Function<Integer, Void> unaryFunc = new Function<Integer, Void>()
         {
-            public Void apply(Integer start)
-            {
+            public Void apply(Integer start) {
                 int end = start + 1;
                 int split = start;
 
@@ -115,12 +108,11 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
                 double dE = model.energyDerivative(phraseVector);
 
                 // dEdu = dE * p = g'(u.t().dot(p)) * p
-                INDArray dEdu = phraseVector.muli(dE);
-                synchronized (dQdu)
-                {
-                    // dQdu += dEdu * \mu[start][end][split]
+                INDArray dEdu = phraseVector.mul(dE);
+                synchronized (dQdu) {
+                    // dQdu * p(w) += dEdu * \mu[start][end][split]
                     dQdu = dQdu.add(
-                            dEdu.muli(
+                            dEdu.mul(
                                     compositionMu[start][end][split]));
                 }
                 return null;
@@ -129,8 +121,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
 
         if (options.trainOp.parallel) {
             parallelizer.parallelizer(0, length, unaryFunc);
-        } else
-        {
+        } else {
             // do leaf nodes
             for (int start = 0; start < length; start++) {
                 unaryFunc.apply(start);
@@ -138,16 +129,15 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         }
 
 
-
         for (int diff = 2; diff <= length; diff++) {
             final int diffFinal = diff;
-            Function<Integer, Void> binaryFunc = new Function<Integer, Void>()
-            {
-                @Nullable
-                public Void apply(Integer start)
-                {
-                    int end = start + diffFinal;
-                    for (int split = start + 1; split < end; split++) {
+            for (int st = 0; st + diff <= length; st++) {
+                final int start = st;
+                final int end = start + diffFinal;
+
+                Function<Integer, Void> binaryFunc = new Function<Integer, Void>() {
+                    @Nullable
+                    public Void apply(final Integer split) {
 
                         // Composition vector is parent's(start, end) embedding generated by
                         // child1 (start, split) and child2 (split, end)
@@ -157,31 +147,31 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
                         double dE = model.energyDerivative(compositionVector);
 
                         // dEdu = dE * p = g'(u.t().dot(p)) * p
-                        INDArray dEdu = compositionVector.muli(dE);
-                        synchronized (dQdu)
-                        {
-                            // dQdu += dEdu * \mu[start][end][split]
+                        INDArray dEdu = compositionVector.mul(dE);
+                        synchronized (dQdu) {
+                            // dQdu * p(w) += dEdu * \mu[start][end][split]
                             dQdu = dQdu.add(
-                                    dEdu.muli(
+                                    dEdu.mul(
                                             compositionMu[start][end][split]));
                         }
+                        return null;
                     }
-                    return null;
-                }
-            };
+                };
 
-            if (options.trainOp.parallel) {
-                parallelizer.parallelizer(0, length - diff, binaryFunc);
-            }
-            for (int start = 0; start + diff < length; start++) {
-                binaryFunc.apply(start);
+                if (options.trainOp.parallel) {
+                    parallelizer.parallelizer(start + 1, end, binaryFunc);
+                } else {
+                    for (int split = start + 1; split < end; split++) {
+                        binaryFunc.apply(split);
+                    }
+                }
             }
         }
-
         if (compositionalIScore[0][length] == 0) {
             throw new RuntimeException("Z is zero for sentence " + data);
         }
 
+        // dQdu = dQdu * p(w)/p(w)
         dQdu = dQdu.div(compositionalIScore[0][length]);
 
         if (containsNanOrInf()) {
@@ -190,5 +180,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
             log.error("CompositionalIScore: {}", compositionalIScore[0][length]);
             dQdu = Nd4j.zeros(dimensions, 1);
         }
+
+        dQdu = clampDerivativeIfNeeded(dQdu);
     }
 }

@@ -65,8 +65,7 @@ public class CompositionalGrammar implements Serializable {
         final SparseMatrix iSplitScores = preScores.getInsideSpanSplitProb();
 
         Function<Integer, Void> insideFuncUnary =
-                new Function<Integer, Void>()
-                {
+                new Function<Integer, Void>() {
                     @Nullable
                     public Void apply(Integer start)
                     {
@@ -84,10 +83,10 @@ public class CompositionalGrammar implements Serializable {
 
                         // For leaf nodes, the energy of the node is
                         // a function of phrase representation
-                        val energy = model.energy(s.phraseMatrix[start][end]);
+                        double energy = model.energy(s.phraseMatrix[start][end]);
 
                         // un-normalized prob or score, is negative exp of energy
-                        double score = ((double) exp(-energy));
+                        double score = exp(-energy);
 
                         s.cumlCompositionScore[start][end] += score;
                         s.compositionScore[start][end][split] += score;
@@ -128,8 +127,7 @@ public class CompositionalGrammar implements Serializable {
                             final double iScore_start_end = preScores.getScore(iScores, start, end);
 
                             // if grammar iScores is 0, so will be comp score
-                            if (iScore_start_end == 0)
-                            {
+                            if (iScore_start_end == 0) {
                                 return null;
                             }
 
@@ -146,7 +144,7 @@ public class CompositionalGrammar implements Serializable {
 
                                 // Composition energy of parent (start,end)
                                 // by children (start, split), (split, end)
-                                val energy = model.energy(
+                                double energy = model.energy(
                                         s.compositionMatrix[start][end][split],
                                         child1, child2);
 
@@ -414,9 +412,9 @@ public class CompositionalGrammar implements Serializable {
                     "phraseMatrix", getSize(s.phraseMatrix),
                     "compositionMatrix", getSize(s.compositionMatrix),
                     "compositionalMu", getSize(s.compositionalMu),
-                    "compositionalIScore", getSize(s.compositionalIScore),
-                    "compositionISplitScore", getSize(s.compositionISplitScore),
-                    "compositionalOScore", getSize(s.compositionalOScore),
+                    "compIScore", getSize(s.compositionalIScore),
+                    "compISplitScore", getSize(s.compositionISplitScore),
+                    "compOScore", getSize(s.compositionalOScore),
                     "compositionScore", getSize(s.compositionScore),
                     "cumlCompositionScore", getSize(s.cumlCompositionScore),
                     "preScores", getSize(preScores),

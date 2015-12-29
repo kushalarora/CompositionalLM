@@ -1,6 +1,7 @@
 package com.kushalarora.test.languagemodel;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalGrammar;
 import com.kushalarora.compositionalLM.lang.StanfordGrammar;
 import com.kushalarora.compositionalLM.languagemodel.CompositionalLM;
 import com.kushalarora.compositionalLM.model.Model;
@@ -43,12 +44,11 @@ public class CompositionLMTest {
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         op.grammarOp.filename =  absoluteFilePath;
 
-        StanfordGrammar sg = (StanfordGrammar)getGrammar(op);
-        trueModel = new Model(10, sg.getVocabSize(), op.grammarOp.grammarType);
+        StanfordCompositionalGrammar sg = (StanfordCompositionalGrammar)getGrammar(op);
         out.writeObject(trueModel);
         out.close();
 
-        compositionalLM = new CompositionalLM(trueModel, sg, op);
+        compositionalLM = new CompositionalLM(sg, op, trueModel);
         PropertyConfigurator.configure("log4j.properties");
 
     }
@@ -87,7 +87,7 @@ public class CompositionLMTest {
     public void testTrain() throws Exception {
         String[] args =
                 new String[] {"-train", "src/resources/train10",
-                        "-validate", "src/resources/valid4",
+                     //   "-validate", "src/resources/valid4",
                         "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
@@ -119,7 +119,7 @@ public class CompositionLMTest {
     public void testMainParallel() throws Exception {
         String[] args =
                 new String[] {"-train", "src/resources/train10",
-                        "-validate", "src/resources/valid4",
+                      //  "-validate", "src/resources/valid4",
                         "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",

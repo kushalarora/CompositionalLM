@@ -64,11 +64,14 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             }
         };
         if (op.trainOp.parallel) {
-            List<Future<Double>> validScoreFutures =
+            List<Future<List<Double>>> validScoreFutures =
                     parallelizer.parallelizer(0, validBatchSize, validFunc);
 
-            for (Future<Double> future : validScoreFutures) {
-                validBatchScore += future.get();
+            for (Future<List<Double>> future : validScoreFutures) {
+                List<Double> scoreList = future.get();
+                for (double score : scoreList) {
+                    validBatchScore += score;
+                }
             }
         } else {
             for (int i = 0; i < validBatchSize; i++) {
@@ -81,7 +84,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
     private double fitBatch(final List<T> trainList) throws ExecutionException, InterruptedException {
         Collections.shuffle(trainList, rand);
         int batchSize = trainList.size();
-        int batchScore = 0;
+        double batchScore = 0;
 
         Function<Integer, D> fitRoutine =
                 new Function<Integer, D>() {
@@ -92,13 +95,14 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 };
 
         if (op.trainOp.parallel) {
-            List<Future<D>> futures =
+            List<Future<List<D>>> futures =
                     parallelizer.parallelizer(0, batchSize, fitRoutine);
 
-            for (Future<D> future : futures) {
-                D derivative = future.get();
-                derivativeAcc(derivative);
-                batchScore += derivative.getScore();
+            for (Future<List<D>> future : futures) {
+                for (D derivative : future.get()) {
+                    derivativeAcc(derivative);
+                    batchScore += derivative.getScore();
+                }
             }
         } else {
             for (int i = 0; i < batchSize; i++) {
@@ -108,8 +112,11 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             }
         }
 
+        D dAcc = getAccumulatedDerivative();
+        dAcc.mul(1.0/batchSize);
+
         // update param for this batch
-        updateParams(getAccumulatedDerivative());
+        updateParams(dAcc);
 
         // clear accumulator and
         // re-initialize learing rate
@@ -231,11 +238,5 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             log.info("Training score epoch#: {},  time: {} , score => {}",
                     epoch, estimatedEpochTime, cumlTrainScore);
         }   // end while epoch
-
-
-        // shutdown if parallel
-        if (op.trainOp.parallel) {
-            executor.shutdown();
-        }
     }
 }

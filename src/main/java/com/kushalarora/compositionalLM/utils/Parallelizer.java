@@ -23,24 +23,23 @@ public class Parallelizer {
     private int blockSize;
     protected ExecutorService executor;
 
-    public <D> List<Future<D>> parallelizer(final int start, final int end, final Function<Integer, D> parallizableFunc) {
+    public <D> List<Future<List<D>>> parallelizer(final int start, final int end, final Function<Integer, D> parallizableFunc) {
         int length = end - start;
         final int blockNum = length / blockSize + 1;
 
-        List<Callable<D>> callables = new ArrayList<Callable<D>>();
-        for (int i = 0; i < blockNum; i++)
-        {
-            callables.add(new Callable<D>() {
+        List<Callable<List<D>>> callables = new ArrayList<Callable<List<D>>>();
+        for (int i = 0; i < blockNum; i++) {
+            callables.add(new Callable<List<D>>() {
 
-                public D call() throws Exception
-                {
+                public List<D> call() throws Exception {
+                    List<D> dList = new ArrayList<D>();
                     for (int j = blockStartIdx; j < blockStartIdx + blockSize && j < end; j++) {
-                        parallizableFunc.apply(j);
+                        dList.add(parallizableFunc.apply(j));
                     }
-                    return null;
+                    return dList;
                 }
 
-                public Callable<D> init(int blockIndex) {
+                public Callable<List<D>> init(int blockIndex) {
                     this.blockStartIdx = blockIndex;
                     return this;
                 }

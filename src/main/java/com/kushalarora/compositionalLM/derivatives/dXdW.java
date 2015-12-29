@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.derivatives;
 
 import com.google.common.base.Function;
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.IIndexed;
@@ -50,12 +51,11 @@ public class dXdW<T extends List<? extends IIndexed>> {
     }
 
     public INDArray[][][][][] calcDerivative(final Model model,
-                                             final CompositionalInsideOutsideScore scorer) {
+                                             final StanfordCompositionalInsideOutsideScore scorer) {
 
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        final double[][][] compositionISplitScore = scorer.getCompositionISplitScore();
-        final double[][] compositionIScore = scorer.getInsideSpanProb();
-
+        final double[][][] compositionISplitScore = scorer.getCompISplitScore();
+        final double[][] compositionIScore = scorer.getCompIScores();
 
 
         for (int i = 0; i < dim; i++) {
@@ -92,16 +92,15 @@ public class dXdW<T extends List<? extends IIndexed>> {
                                     INDArray vec = Nd4j.zeros(dim, 1);
                                     vec.putScalar((j < dim ? j : j - dim),
                                                   (j < dim ?
-                                                          child1.getFloat(j) :
-                                                          child2.getFloat(j - dim)));
+                                                          child1.getDouble(j) :
+                                                          child2.getDouble(j - dim)));
 
                                     // [dc_1dW_ij dc_2dW_ij].transpose()
                                     INDArray dC12 = Nd4j.concat(0,
                                                                 dXdWij[start][split],
                                                                 dXdWij[split][end]);
 
-                                    synchronized (dXdW)
-                                    {
+                                    synchronized (dXdW) {
                                         dXdW[iFinal][j][start][end][split] =
                                                 // (
                                                 // 1_j \dot c_12 + (
@@ -111,7 +110,7 @@ public class dXdW<T extends List<? extends IIndexed>> {
                                                                 .getParams()
                                                                 .getW().mmul(
                                                                 // [dc_1 dc_2]^T)) *
-                                                                dC12)).muli(
+                                                                dC12)).mul(
                                                         // \dot  f'(c_1, c_2)
                                                         dC);
                                     }
@@ -120,14 +119,15 @@ public class dXdW<T extends List<? extends IIndexed>> {
                                     // dXdW_ij += dXW_ij[k] * \pi(start,end,split)
                                     dXdWij[start][end] =
                                             dXdWij[start][end].add(
-                                                    dXdW[iFinal][j][start][end][split].muli(
+                                                    dXdW[iFinal][j][start][end][split].mul(
                                                             // \pi[start][end][split]
                                                             compositionISplitScore[start][end][split]));
                                 }
-
-                                // dXdW_ij /= \pi(start,end)
-                                dXdWij[start][end] = dXdWij[start][end].divi(
-                                        compositionIScore[start][end]);
+                                if (compositionIScore[start][end] != 0){
+                                    // dXdW_ij /= \pi(start,end)
+                                    dXdWij[start][end] = dXdWij[start][end].div(
+                                            compositionIScore[start][end]);
+                                }
                             }
                         }
                         return null;

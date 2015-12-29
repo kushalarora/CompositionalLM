@@ -32,11 +32,8 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
     protected int length;
     protected int numStates;
 
-    public AbstractInsideOutsideScore(Sentence sentence, int numStates) {
-        this.sentence = new Sentence(sentence.getIndex());
-        this.sentence.addAll(sentence);
-        this.sentence.add(new Word(Lexicon.BOUNDARY, length));
-        length = this.sentence.size();
+    public AbstractInsideOutsideScore(int length, int numStates) {
+        this.length = length;
         this.numStates = numStates;
 
         // zero out some stuff first in case we recently

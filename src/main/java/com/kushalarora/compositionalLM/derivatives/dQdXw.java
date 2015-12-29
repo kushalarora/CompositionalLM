@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -24,12 +25,11 @@ import lombok.extern.slf4j.Slf4j;
  * Created by karora on 6/21/15.
  */
 @Slf4j
-public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T>
+public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass<T> implements IDerivative<T>
 {
     @Getter
     private int dim;
     private int V;
-    private T data;
     private int length;
     private Options op;
     private Parallelizer parallelizer;
@@ -38,11 +38,10 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
     private Map<Integer, INDArray> indexToxMap;
 
     public dQdXw(int dimensions, int vocabSize, T data, Options op) {
-        super(new int[] {dimensions, vocabSize});
+        super(new int[] {dimensions, vocabSize}, data);
         indexToxMap = new HashMap<Integer, INDArray>();
         dim = dimensions;
         V = vocabSize;
-        this.data = data;
         length = data.size();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
@@ -50,28 +49,26 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
 
 
     public dQdXw(dQdXw dqdxw, T data, Options op) {
-        super(new int[] {dqdxw.dim, dqdxw.V});
+        super(new int[] {dqdxw.dim, dqdxw.V}, data);
         indexToxMap = dqdxw.indexToxMap;
         dim = dqdxw.dim;
         V = dqdxw.V;
-        this.data = data;
         length = data.size();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
 
     private dQdXw(Map<Integer, INDArray> indexToxMap, dQdXw dqdxw, T data, Options op) {
-        super(new int[] {dqdxw.dim, dqdxw.V});
+        super(new int[] {dqdxw.dim, dqdxw.V}, data);
         dim = dqdxw.dim;
         V = dqdxw.V;
-        this.data = data;
         length = data.size();
         this.indexToxMap = indexToxMap;
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
 
-    public void calcDerivative(final Model model, final CompositionalInsideOutsideScore scorer) {
+    public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
 
         // Save indexes
         final int[] indexes = new int[length];
@@ -81,9 +78,9 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
 
         final INDArray[][][][] dxdxwArr = new dXdXw(dim, V, data, op).calcDerivative(model, scorer);
         final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
-        final double[][][] compositionalMu = scorer.getMuScore();
+        final double[][][] compositionalMu = scorer.getCompMuScores();
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        final double[][] compositionalIScore = scorer.getInsideSpanProb();
+        final double[][] compositionalIScore = scorer.getCompIScores();
 
 
         final INDArray dcdc = Nd4j.eye(dim);
@@ -108,8 +105,8 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
                 }
 
                 dQdXw_i = dQdXw_i.add(udXdXwArr
-                        .muli(compositionalMu[i][i + 1][i]))
-                        .muli(dE);
+                        .mul(compositionalMu[i][i + 1][i]))
+                        .mul(dE);
 
                 // handle the composition case
                 for (int diff = 2; diff <= length; diff++) {
@@ -132,10 +129,13 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
                                 throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
                             }
 
-                            dQdXw_i = dQdXw_i.add(udXdXwArr.muli(compositionalMu[start][end][split]))
-                                    .muli(dE);
+                            dQdXw_i = dQdXw_i.add(udXdXwArr.mul(compositionalMu[start][end][split]).mul(dE));
                         }
                     }
+                }
+
+                if (compositionalIScore[0][length] == 0) {
+                    throw new RuntimeException("Z is zero for sentence " + data);
                 }
 
                 dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
@@ -144,7 +144,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
                     dQdXw_i = Nd4j.zeros(dim);
                 }
 
-                indexToxMap.put(indexes[i], dQdXw_i);
+                indexToxMap.put(indexes[i], clampDerivativeIfNeeded(dQdXw_i));
                 return null;
             }
         };
@@ -155,10 +155,6 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
             for (int i = 0; i < length; i++) {
                 func.apply(i);
             }
-        }
-
-        if (compositionalIScore[0][length] == 0) {
-            throw new RuntimeException("Z is zero for sentence " + data);
         }
     }
 
@@ -221,7 +217,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
     {
         double norm = 0;
         for (Map.Entry<Integer, INDArray> entry : indexToxMap.entrySet()) {
-            norm += Nd4j.norm2(entry.getValue()).sum(Integer.MAX_VALUE).getFloat(0);
+            norm += Nd4j.norm2(entry.getValue()).sum(Integer.MAX_VALUE).getDouble(0);
         }
         return norm;
     }

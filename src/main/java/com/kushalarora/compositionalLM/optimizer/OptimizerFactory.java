@@ -46,8 +46,6 @@ public class OptimizerFactory {
             final Function<Sentence, Derivatives> derivativeCalculator,
             final Function<IntTuple, Void> functionSaver) {
 
-        int dimension = model.getDimensions();
-        int vocabSize = model.getVocabSize();
         switch (op.trainOp.optimizer) {
             case SGD:
                 return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(model, op)) {

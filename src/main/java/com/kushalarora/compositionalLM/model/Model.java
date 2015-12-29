@@ -117,39 +117,38 @@ public class Model implements Serializable {
      * @param child2 right child embedding. d dimension column vector
      * @return energy value for the composition.
      */
-    public float energy(@NonNull INDArray node, INDArray child1, INDArray child2) {
+    public double energy(@NonNull INDArray node, INDArray child1, INDArray child2) {
         if (!node.isColumnVector()) {
             throw new RuntimeException("Composed node should be a column vector");
         } else if (node.size(0) != dimensions) {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
-        INDArray valObj = params.getU().mmul(g.apply(node));
+        INDArray valObj = g.apply(params.getU().mmul(node));
         int[] valShape = valObj.shape();
         if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
         }
-        return valObj.getFloat(0);
+        return valObj.getDouble(0);
     }
 
 
-    public float energyDerivative(@NonNull INDArray node, INDArray child1, INDArray child2) {
+    public double energyDerivative(@NonNull INDArray node, INDArray child1, INDArray child2) {
         if (!node.isColumnVector()) {
             throw new RuntimeException("Composed node should be a column vector");
         } else if (node.size(0) != dimensions) {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
-        INDArray valObj = params.getU().mmul(g.applyDerivative(node));
+        INDArray valObj = g.applyDerivative(params.getU().mmul(node));
         int[] valShape = valObj.shape();
         if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valShape.toString());
         }
-        return valObj.getFloat(0);
-
+        return valObj.getDouble(0);
     }
 
-    public float energyDerivative(@NonNull INDArray node) {
+    public double energyDerivative(@NonNull INDArray node) {
         return energyDerivative(node, null, null);
     }
 
@@ -159,7 +158,7 @@ public class Model implements Serializable {
      * @param node Leaf node embedding. d dimension column vector.
      * @return energy value for the leaf node.
      */
-    public float energy(@NonNull INDArray node) {
+    public double energy(@NonNull INDArray node) {
         return this.energy(node, null, null);
     }
 

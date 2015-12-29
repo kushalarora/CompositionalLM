@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -22,22 +23,19 @@ import lombok.extern.slf4j.Slf4j;
  * Created by karora on 6/21/15.
  */
 @Slf4j
-public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T>
+public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass<T> implements IDerivative<T>
 {
     @Getter
     private INDArray dQdW;
     private int dim;
-    private T data;
     private int length;
     private Options op;
     private Parallelizer parallelizer;
 
-    public dQdW(int dimension, T data, Options op)
-    {
-        super(new int[] {dimension, 2 * dimension});
+    public dQdW(int dimension, T data, Options op) {
+        super(new int[] {dimension, 2 * dimension}, data);
         dim = dimension;
         this.dQdW = Nd4j.zeros(dim, 2 * dim);
-        this.data = data;
         length = data.size();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
@@ -45,10 +43,9 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
 
     public dQdW(dQdW dqdW, T data, Options op)
     {
-        super(dqdW.dQdW.shape());
+        super(dqdW.dQdW.shape(), data);
         dQdW = dqdW.dQdW.dup();
         dim = dqdW.dim;
-        this.data = data;
         length = data.size();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
@@ -56,22 +53,21 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
 
     private dQdW(INDArray dqdw, T data, Options op)
     {
-        super(dqdw.shape());
+        super(dqdw.shape(), data);
         this.dQdW = dqdw;
         int[] shape = dqdw.shape();
         dim = shape[0];
-        this.data = data;
         length = data.size();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
 
-    public void calcDerivative(final Model model, final CompositionalInsideOutsideScore scorer)
+    public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer)
     {
         final INDArray[][][][][] dxdwArr = new dXdW(dim, data, op).calcDerivative(model, scorer);
         final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
-        final double[][][] compositionalMu = scorer.getMuScore();
-        final double[][] compositionalIScore = scorer.getInsideSpanProb();
+        final double[][][] compositionalMu = scorer.getCompMuScores();
+        final double[][] compositionalIScore = scorer.getCompIScores();
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
 
         for (int i = 0; i < dim; i++)
@@ -87,8 +83,11 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
                     for (int start = 0; start < length; start++) {
                         for (int end = start + 1; end <= length; end++) {
                             for (int split = start + 1; split < end; split++) {
-                                double dE = model.energyDerivative(compositionMatrix[start][end][split],
-                                          phraseMatrix[start][split], phraseMatrix[split][end]);
+                                double dE = model.energyDerivative(
+                                        compositionMatrix[start][end][split],
+                                        phraseMatrix[start][split],
+                                        phraseMatrix[split][end]);
+
                                 INDArray udXdWArr = model.getParams().getU().mmul(
                                         dxdwArr[iF][j][start][end][split]);
 
@@ -98,7 +97,7 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
                                     throw new RuntimeException("udXdWArr was expected to be a matrix of shape 1 X 1");
                                 }
 
-                                double udXdW = udXdWArr.getFloat(0);
+                                double udXdW = udXdWArr.getDouble(0);
                                 dEdW_ij += dE * udXdW * compositionalMu[start][end][split];
                             }
                         }
@@ -128,6 +127,8 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
             log.error("dQdW contains Nan Or Inf. for data {}", data);
             dQdW = Nd4j.zeros(dim, 2 * dim);
         }
+
+        dQdW = clampDerivativeIfNeeded(dQdW);
     }
 
     public void clear() {
@@ -153,7 +154,7 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
 
     public double norm()
     {
-        return Nd4j.norm2(dQdW).sum(Integer.MAX_VALUE).getFloat(0);
+        return Nd4j.norm2(dQdW).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
 

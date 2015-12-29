@@ -60,7 +60,7 @@ public class ModelTest {
     @Test
     public void testLeafEnergy() {
         val vec = Nd4j.rand(10, 1);
-        float modelEnergy = model.energy(vec);
+        double modelEnergy = model.energy(vec);
 
         float trueEnergy = identity(
                 model
@@ -78,7 +78,7 @@ public class ModelTest {
         val child1Vec = Nd4j.rand(10, 1);
         val child2Vec = Nd4j.rand(10, 1);
         val parentVec = model.compose(child1Vec, child2Vec);
-        float modelEnergy = model.energy(parentVec, child1Vec, child2Vec);
+        double modelEnergy = model.energy(parentVec, child1Vec, child2Vec);
 
         float trueEnergy = identity(
                 model

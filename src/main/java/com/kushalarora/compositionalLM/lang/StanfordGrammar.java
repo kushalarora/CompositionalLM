@@ -106,16 +106,16 @@ public class StanfordGrammar extends AbstractGrammar {
 
         int length = s.getLength();
         Sentence sentence = s.getSentence();
-        s.words = new int[length];
+        int [] words = new int[length];
         boolean[][] tags = new boolean[length][numStates];
 
         for (int i = 0; i < length; i++) {
             String word = sentence.get(i).getSignature();
-            s.words[i] = wordIndex.indexOf(word);
+            words[i] = wordIndex.indexOf(word);
         }
 
         for (int start = 0; start < length; start++) {
-            final int word = s.words[start];
+            final int word = words[start];
             final int startFinal = start;
             final int endFinal = start + 1;
             Arrays.fill(tags[start], false);

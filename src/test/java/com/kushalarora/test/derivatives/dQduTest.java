@@ -57,7 +57,7 @@ public class dQduTest extends AbstractDerivativeTest {
             }
         }
 
-        double[][] compIScore = cScorer.getInsideSpanProb();
+        double[][] compIScore = cScorer.getCompIScores();
         trueArray = trueArray.div(compIScore[0][length]);
 
         assertEquals(dim,

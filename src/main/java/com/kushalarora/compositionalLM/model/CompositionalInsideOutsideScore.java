@@ -42,6 +42,7 @@ public class CompositionalInsideOutsideScore {
     @Getter
     protected Sentence sentence;
 
+    @Getter
     protected int length;
 
 

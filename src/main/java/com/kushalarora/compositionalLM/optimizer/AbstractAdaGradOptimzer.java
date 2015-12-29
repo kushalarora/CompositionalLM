@@ -19,7 +19,7 @@ public abstract class AbstractAdaGradOptimzer<T extends IIndexedSized, D extends
 
     public void updateParams(D derivatives) {
         derivatives = (D) dvGrad.adaGrad(derivatives);
-        derivatives.mul(op.trainOp.learningRate);
+        derivatives.mul(-1 * op.trainOp.learningRate);
         getParams().update(derivatives);
     }
 

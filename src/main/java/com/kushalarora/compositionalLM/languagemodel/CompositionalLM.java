@@ -50,20 +50,14 @@ import java.util.regex.Pattern;
 public class CompositionalLM {
 
     private final Options op;
-    private final CompositionalGrammar compGrammar;
-    private final IGrammar grammar;
+    private final StanfordCompositionalGrammar grammar;
     private final DocumentProcessorFactory docProcessorFactory;
     private final Model model;
-    CacheWrapper<Sentence, IInsideOutsideScore> cache;
 
-
-    public CompositionalLM(Model model, IGrammar grammar, Options op) throws IOException {
-        this.model = model;
+    public CompositionalLM(StanfordCompositionalGrammar grammar, Options op, Model model) throws IOException {
         this.grammar = grammar;
-        this.compGrammar = new CompositionalGrammar(model, op);
+        this.model = model;
         this.op = op;
-        cache = new CacheFactory(grammar).getCache(op);
-
         docProcessorFactory =
                 new DocumentProcessorFactory(
                         op,
@@ -83,20 +77,16 @@ public class CompositionalLM {
                         new Function<Sentence, Double>() {
                             @Nullable
                             public Double apply(Sentence data) {                // scorer
-                                IInsideOutsideScore preScore = cache.get(data);
-                                CompositionalInsideOutsideScore score =
-                                        compGrammar.getScore(data,
-                                                preScore);
+                                StanfordCompositionalInsideOutsideScore score =
+                                        (StanfordCompositionalInsideOutsideScore)grammar.getScore(data);
                                 return score.getSentenceScore();
                             }
                         },
                         new Function<Sentence, Derivatives>() {
                             @Nullable
                             public Derivatives apply(@Nullable Sentence sentence) {              // derivative calculator
-                                IInsideOutsideScore preScore = cache.get(sentence);
-                                CompositionalInsideOutsideScore score =
-                                        compGrammar.getScore(sentence,
-                                                preScore);
+                                StanfordCompositionalInsideOutsideScore score =
+                                        (StanfordCompositionalInsideOutsideScore) grammar.getScore(sentence);
                                 Derivatives derivatives = new Derivatives(op,
                                         model, score);
                                 derivatives.calcDerivative();
@@ -135,10 +125,6 @@ public class CompositionalLM {
         }
 
         saveModelSerialized(op.modelOp.outFilename);
-        // Closing cache. Ecache doesn't do eternal caching
-        // until and unless closed
-        cache.close();
-
     }
 
     public void parse() {
@@ -173,10 +159,8 @@ public class CompositionalLM {
 
             while (testIter.hasNext()) {
                 Sentence data = testIter.next();
-                IInsideOutsideScore preScore = cache.get(data);
-                CompositionalInsideOutsideScore score =
-                        compGrammar.getScore(data,
-                                preScore);
+                StanfordCompositionalInsideOutsideScore score =
+                        (StanfordCompositionalInsideOutsideScore)grammar.getScore(data);
                 Double logP = score.getSentenceScore();
                 writer.println(score.getSentence());
                 writer.println(String.format("Length: %d, logProp: %.4f",
@@ -322,30 +306,23 @@ public class CompositionalLM {
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);
 
-        @NonNull IGrammar grammar = GrammarFactory.getGrammar(op);
-
-        Model model;
+        Model model = null;
         if (!op.train) {
-            model =loadModel(op);
+            model = loadModel(op);
             if (model == null) {
                 throw new RuntimeException("You must specify model file using -model argument");
             }
-        } else {
-            model = new Model(op.modelOp.dimensions,
-                              grammar.getVocabSize(),
-                              op.grammarOp.grammarType);
         }
 
-        final CompositionalLM cLM = new CompositionalLM(model, grammar, op);
+        StanfordCompositionalGrammar grammar;
+        if (model != null) {
+            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, model);
+        } else {
+            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op);
+            model = grammar.getModel();
+        }
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                log.error("Exiting Closing Cache");
-                // Ecache needs to be closed in all cases
-                cLM.cache.close();
-            }
-        });
+        final CompositionalLM cLM = new CompositionalLM(grammar, op, model);
 
         if (op.train) {
             log.info("starting training");

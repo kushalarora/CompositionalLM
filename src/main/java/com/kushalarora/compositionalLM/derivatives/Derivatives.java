@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.derivatives;
 
 import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.AbstractDerivatives;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
@@ -22,9 +23,9 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     private dQdW dqdw;
     private dQdu dqdu;
     private dQdXw dqdxw;
-    private CompositionalInsideOutsideScore score;
+    private StanfordCompositionalInsideOutsideScore score;
     private Model model;
-    public Derivatives(Options op, Model model, CompositionalInsideOutsideScore score) {
+    public Derivatives(Options op, Model model, StanfordCompositionalInsideOutsideScore score) {
         super(score.getSentence());
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
@@ -89,7 +90,6 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     calcDerivative() {
         int idx = data.getIndex();
         int sz = data.size();
-
         dqdu.calcDerivative(model, score);
         dqdw.calcDerivative(model, score);
         dqdxw.calcDerivative(model, score);

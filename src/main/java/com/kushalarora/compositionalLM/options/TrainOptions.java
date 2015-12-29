@@ -55,7 +55,7 @@ public class TrainOptions implements Serializable {
                 config.getInt("nThreads", 0);
 
         learningRate =
-                config.getDouble("learningRate", 0.0);
+                config.getDouble("learningRate", 0.4);
 
         optimizer =
                 OptimizerFactory.OptimizerType.fromString(

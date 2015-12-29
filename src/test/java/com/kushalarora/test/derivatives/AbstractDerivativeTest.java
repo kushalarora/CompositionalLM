@@ -1,5 +1,6 @@
 package com.kushalarora.test.derivatives;
 
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
@@ -25,7 +26,7 @@ public class AbstractDerivativeTest {
     protected static Model model;
     protected static int dim = 10;
     protected static int V = 100;
-    protected static CompositionalInsideOutsideScore cScorer;
+    protected static StanfordCompositionalInsideOutsideScore cScorer;
     protected static int length;
     protected static Parameters params;
     protected static List<Word> defaultSentence;
@@ -35,7 +36,7 @@ public class AbstractDerivativeTest {
     {
         model = mock(Model.class);
         params = new Parameters(dim, V);
-        cScorer = mock(CompositionalInsideOutsideScore.class);
+        cScorer = mock(StanfordCompositionalInsideOutsideScore.class);
         defaultSentence = new ArrayList<Word>();
         int index = 0;
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {
@@ -88,25 +89,25 @@ public class AbstractDerivativeTest {
                 .thenReturn(phraseMatrix);
 
         // mu score is mocked to be 1 for all spans and splits
-        when(cScorer.getMuScore())
+        when(cScorer.getCompMuScores())
                 .thenReturn(compMu);
 
         // iSplit score is mocked to all 1
-        when(cScorer.getCompositionISplitScore())
+        when(cScorer.getCompISplitScore())
                 .thenReturn(compISplitScore);
 
         // inside score is mocked to keep the sanity
         // with iSplitScore
-        when(cScorer.getInsideSpanProb())
+        when(cScorer.getCompIScores())
                 .thenReturn(compIScore);
 
         // When asked for energy derivative, mock it to 1.0f
         when(model.energyDerivative((INDArray) any()))
-                .thenReturn(1.0f);
+                .thenReturn(1.0d);
 
         when(model.energyDerivative(
                 (INDArray) any(), (INDArray) any(), (INDArray) any()))
-                .thenReturn(1.0f);
+                .thenReturn(1.0d);
 
         when(model.getDimensions())
                 .thenReturn(dim);

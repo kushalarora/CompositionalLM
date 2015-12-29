@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -55,11 +56,11 @@ public class dXdXw<T extends List<? extends IIndexed>> {
     }
 
     public INDArray[][][][] calcDerivative(final Model model,
-                                           final CompositionalInsideOutsideScore scorer) {
+                                           final StanfordCompositionalInsideOutsideScore scorer) {
 
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        final double[][][] compositionISplitScore = scorer.getCompositionISplitScore();
-        final double[][] compositionIScore = scorer.getInsideSpanProb();
+        final double[][][] compositionISplitScore = scorer.getCompISplitScore();
+        final double[][] compositionIScore = scorer.getCompIScores();
 
         Function<Integer, Void> func = new Function<Integer, Void>() {
             @Nullable
@@ -93,24 +94,26 @@ public class dXdXw<T extends List<? extends IIndexed>> {
 
                             dXdXw[i][start][end][split] =
                                     // f'(c1, c2) \dot
-                                    dC.muli(
-                                    // W *
-                                    model
-                                            .getParams()
-                                            .getW().mmul(
-                                            // [dc_1 dc_2]^T))
-                                            dC12));
+                                    dC.mul(
+                                            // W *
+                                            model
+                                                    .getParams()
+                                                    .getW().mmul(
+                                                    // [dc_1 dc_2]^T))
+                                                    dC12));
 
                             // weighted marginalization over split
                             dXdXwi[start][end] = dXdXwi[start][end].add(
-                                    dXdXw[i][start][end][split].muli(
+                                    dXdXw[i][start][end][split].mul(
                                             // \pi[start][end][split]
                                             compositionISplitScore[start][end][split]));
                         }
+                        if (compositionIScore[start][end] != 0) {
+                            // dXdXwi /= \pi[start][end]
+                            dXdXwi[start][end] = dXdXwi[start][end].div(
+                                    compositionIScore[start][end]);
 
-                        // dXdXwi /= \pi[start][end]
-                        dXdXwi[start][end] = dXdXwi[start][end].divi(
-                                compositionIScore[start][end]);
+                        }
                     }
                 }
                 return null;
