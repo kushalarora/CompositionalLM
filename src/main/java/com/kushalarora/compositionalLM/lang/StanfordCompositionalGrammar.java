@@ -8,7 +8,6 @@ import edu.stanford.nlp.parser.lexparser.*;
 import edu.stanford.nlp.util.Index;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.lang.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -135,9 +134,14 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                         s.addToScore(s.iSplitSpanStateScore, compScore, start, end, split, state);
                         s.addToScore(s.iScore, compScore, start, end, state);
 
-                        // \pi (w_i^j) += = \zeta_{A->w_i}
-                        s.compISplitScore[start][end][split] += compScore;
-                        s.compIScore[start][end] += compScore;
+                            // \pi (w_i^j) += = \zeta_{A->w_i}
+                        synchronized (s.compISplitScore) {
+                            s.compISplitScore[start][end][split] += compScore;
+                        }
+
+                        synchronized (s.compIScore) {
+                            s.compIScore[start][end] += compScore;
+                        }
                     }
                 }
 
@@ -163,8 +167,13 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                             s.addToScore(s.iScore, compScore, start, end, parentState);
 
                             // \pi (w_i^j) += \zeta_{A->w_i}
-                            s.compISplitScore[start][end][split] += compScore;
-                            s.compIScore[start][end] += compScore;
+                            synchronized (s.compISplitScore) {
+                                s.compISplitScore[start][end][split] += compScore;
+                            }
+
+                            synchronized (s.compIScore) {
+                                s.compIScore[start][end] += compScore;
+                            }
                         }
                         return null;
                     }
@@ -181,7 +190,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             }
         };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.parallel ) {
             parallelizer.parallelizer(0, length, lexFunc);
         } else {
             for (int start = 0; start < length; start++) {
