@@ -31,14 +31,15 @@ public abstract class AbstractBaseDerivativeClass<T extends List<? extends IInde
      */
     protected boolean containsNanOrInf(INDArray arr) {
         double sum = arr.sum(Integer.MAX_VALUE).getDouble();
-        return !Double.isFinite(sum);
+        double norm2 = Nd4j.norm2(arr).getDouble(0);
+        return !Double.isFinite(sum) || (norm2 > 10000);
     }
 
     protected INDArray clampDerivativeIfNeeded(INDArray arr) {
         double norm2 = Nd4j.norm2(arr).getDouble(0);
-        if ((norm2 > 10000)) {
+        if ((norm2 > 100)) {
             log.error("Clipping gradiant of shape {} for data: {}. Norm was {}", shape, data, norm2);
-            return arr.div(norm2).mul(10000);
+            return arr.div(norm2).mul(100);
         }
         return arr;
     }

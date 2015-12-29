@@ -228,7 +228,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                 (StanfordCompositionalInsideOutsideScore)score;
 
         log.debug("Doing iScore for span {} - {}", start, end);
-        final boolean[][] stateSplit = new boolean[numStates][s.length];
         final Set<BinaryRule> binaryRuleSet = new HashSet<BinaryRule>();
 
         // calculate iScore for state by summing over split
@@ -284,7 +283,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                             synchronized (this) {
                                 binaryRuleSet.add(rule);
                             }
-                            stateSplit[parentState][split] = true;
 
                             // \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j) =
                             //          \zeta_{A,w_i^j -> BC, w_i^k w_{k+1}^j} *
@@ -353,8 +351,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                             synchronized (this) {
                                 binaryRuleSet.add(rule);
                             }
-                            stateSplit[parentState][split] = true;
-
 
                             // \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j) =
                             //          \zeta_{A,w_i^j -> BC, w_i^k w_{k+1}^j} *
@@ -404,11 +400,14 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                             s.addToScore(s.iScore, tot, start, end, parentState);
                             s.compIScore[start][end] += tot;
 
-                            if (stateSplit[state][split]) {
-                                s.addToScore(s.iSplitSpanStateScore, tot, start, end, split);
-                                s.compISplitScore[start][end][split] += tot;
+                            double iSS = s.getScore(s.iSplitSpanStateScore, start, end, split, state);
+                            if (iSS == 0d) {
+                                continue;
                             }
-
+                            iSS = log(iSS);
+                            double totS =  exp(iSS + pS);
+                            s.addToScore(s.iSplitSpanStateScore, totS, start, end, split, parentState);
+                            s.compISplitScore[start][end][split] += totS;
                         } // for UnaryRule r
                         return null;
                     }
@@ -459,8 +458,8 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
         for (int diff = s.length; diff >= 1; diff--) {
             for (int st = 0; st + diff <= s.length; st++) {
-                final int end = st + diff;
                 final int start = st;
+                final int end = st + diff;
 
                 Function<Integer, Void> unaryFunc = new Function<Integer, Void>() {
                     @Nullable
@@ -529,28 +528,22 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
                                     double pS = -energy + br.score;
 
-                                    int lStart = start, lEnd = split, lParent = end;
-                                    int rStart = split, rEnd = end, rParent = start;
-
+                                    int lStart = start, lEnd = split;
                                     double rS = s.getScore(s.iScore, split, end, rightState);
                                     if (rS > 0f) {
                                         rS = log(rS);
-
-                                        double totR = exp(pS + rS + oS);
-
-                                        s.addToScore(s.oScore, totR, lStart, lEnd, leftState);
+                                        s.addToScore(s.oScore, exp(pS + rS + oS), lStart, lEnd, leftState);
                                     } // end if rs > 0
 
 
                                     // If iScore of the left span is zero, so is the
                                     // oScore of left span
+                                    int rStart = split, rEnd = end;
                                     double lS = s.getScore(s.iScore, start, split, leftState);
                                     if (lS > 0f) {
                                         lS = log(lS);
-                                        double totL = exp(pS + lS + oS);
-                                        s.addToScore(s.oScore, totL, rStart, rEnd, rightState);
+                                        s.addToScore(s.oScore, exp(pS + lS + oS), rStart, rEnd, rightState);
                                     }   // end if ls > 0
-
                                 }
                                 return null;
                             }
