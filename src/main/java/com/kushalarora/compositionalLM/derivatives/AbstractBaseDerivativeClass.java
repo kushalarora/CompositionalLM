@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.derivatives;
 
 import com.kushalarora.compositionalLM.optimizer.IIndexed;
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -14,7 +15,7 @@ import java.util.List;
  */
 
 @Slf4j
-public abstract class AbstractBaseDerivativeClass<T extends List<? extends IIndexed>> implements Serializable {
+public abstract class AbstractBaseDerivativeClass<T extends IIndexedSized> implements Serializable {
     protected AdaGrad adaGrad;
     protected T data;
     protected int[] shape;
@@ -32,14 +33,15 @@ public abstract class AbstractBaseDerivativeClass<T extends List<? extends IInde
     protected boolean containsNanOrInf(INDArray arr) {
         double sum = arr.sum(Integer.MAX_VALUE).getDouble();
         double norm2 = Nd4j.norm2(arr).getDouble(0);
-        return !Double.isFinite(sum) || (norm2 > 10000);
+        return !Double.isFinite(sum);
     }
 
     protected INDArray clampDerivativeIfNeeded(INDArray arr) {
         double norm2 = Nd4j.norm2(arr).getDouble(0);
-        if ((norm2 > 100)) {
-            log.error("Clipping gradiant of shape {} for data: {}. Norm was {}", shape, data, norm2);
-            return arr.div(norm2).mul(100);
+        if ((norm2 > 500)) {
+            log.error("Clipping gradiant of shape {} for data:{}::{}. Norm = {}",
+                    shape, data.getIndex(), data.getSize(),  norm2);
+            return arr.div(norm2).mul(500);
         }
         return arr;
     }
