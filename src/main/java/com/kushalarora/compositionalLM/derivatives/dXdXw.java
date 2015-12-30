@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -23,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 
 @Slf4j
-public class dXdXw<T extends List<? extends IIndexed>> {
+public class dXdXw<T extends IIndexedSized> {
     @Getter
     private INDArray[][][][] dXdXw;
     private int dim;
@@ -37,7 +38,7 @@ public class dXdXw<T extends List<? extends IIndexed>> {
         dim = dimension;
         V = vocab;
         this.data = data;
-        length = data.size();
+        length = data.getSize();
         dXdXw = new INDArray[length][][][];
 
         for (int idx = 0; idx < length; idx++) {

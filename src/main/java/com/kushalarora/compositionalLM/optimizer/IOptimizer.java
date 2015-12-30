@@ -6,7 +6,7 @@ import com.kushalarora.compositionalLM.model.IParameter;
 /**
  * Created by karora on 7/7/15.
  */
-public interface IOptimizer<T extends IIndexed, D extends IDerivatives<T>> {
+public interface IOptimizer<T extends IIndexedSized, D extends IDerivatives<T>> {
 
     public D calcDerivative(final T sample);
 

@@ -5,14 +5,12 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
-import org.apache.commons.math3.random.JDKRandomGenerator;
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import com.google.common.base.Function;
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 
@@ -23,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  * Created by karora on 6/21/15.
  */
 @Slf4j
-public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass<T> implements IDerivative<T>
+public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T> implements IDerivative<T>
 {
     @Getter
     private INDArray dQdW;
@@ -36,7 +34,7 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         super(new int[] {dimension, 2 * dimension}, data);
         dim = dimension;
         this.dQdW = Nd4j.zeros(dim, 2 * dim);
-        length = data.size();
+        length = data.getSize();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
@@ -46,7 +44,7 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         super(dqdW.dQdW.shape(), data);
         dQdW = dqdW.dQdW.dup();
         dim = dqdW.dim;
-        length = data.size();
+        length = data.getSize();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
@@ -57,7 +55,7 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         this.dQdW = dqdw;
         int[] shape = dqdw.shape();
         dim = shape[0];
-        length = data.size();
+        length = data.getSize();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
@@ -124,7 +122,7 @@ public class dQdW<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         dQdW = dQdW.div(compositionalIScore[0][length]);
 
         if (containsNanOrInf()) {
-            log.error("dQdW contains Nan Or Inf. for data {}", data);
+            log.error("dQdW contains Nan Or Inf. for data {}::{}. Norm::{}", data.getIndex(), data.getSize(), norm());
             dQdW = Nd4j.zeros(dim, 2 * dim);
         }
 

@@ -3,7 +3,7 @@ package com.kushalarora.compositionalLM.derivatives;
 import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.optimizer.IIndexed;
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.Getter;
@@ -23,7 +23,7 @@ import java.util.List;
  * dQdu = \sum{start}{end}{split} dEdu(start, end, split) * \mu(start, end, split)
  */
 @Slf4j
-public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass<T> implements IDerivative<T> {
+public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T> implements IDerivative<T> {
     @Getter
     private INDArray dQdu;
     private int dimensions;
@@ -37,7 +37,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         dQdu = Nd4j.zeros(dim, 1);
         dimensions = dim;
         this.data = data;
-        length = data.size();
+        length = data.getSize();
         options = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
     }
@@ -46,7 +46,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         super(dqdu.dQdu.shape(), data);
         dQdu = dqdu.dQdu.dup();
         dimensions = dqdu.dQdu.shape()[0];
-        length = data.size();
+        length = data.getSize();
         options = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
     }
@@ -55,7 +55,7 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         super(dqdu.shape(), data);
         this.dQdu = dqdu;
         dimensions = dqdu.shape()[0];
-        length = data.size();
+        length = data.getSize();
         options = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
     }
@@ -175,9 +175,8 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
         dQdu = dQdu.div(compositionalIScore[0][length]);
 
         if (containsNanOrInf()) {
-            log.error("dQdu contains Nan Or Inf. {} for data {}", dQdu, data);
-            log.error("CompositionalMu: {}", compositionMu);
-            log.error("CompositionalIScore: {}", compositionalIScore[0][length]);
+            log.error("dQdu contains Nan Or Inf. data {}::{}. Norm::{}",
+                    data.getIndex(), data.getSize(), norm());
             dQdu = Nd4j.zeros(dimensions, 1);
         }
 

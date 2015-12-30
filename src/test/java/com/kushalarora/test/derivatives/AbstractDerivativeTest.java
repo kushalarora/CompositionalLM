@@ -1,5 +1,6 @@
 package com.kushalarora.test.derivatives;
 
+import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
@@ -29,7 +30,7 @@ public class AbstractDerivativeTest {
     protected static StanfordCompositionalInsideOutsideScore cScorer;
     protected static int length;
     protected static Parameters params;
-    protected static List<Word> defaultSentence;
+    protected static Sentence defaultSentence;
 
     @BeforeClass
     public static void setUpClass() throws ConfigurationException
@@ -37,7 +38,7 @@ public class AbstractDerivativeTest {
         model = mock(Model.class);
         params = new Parameters(dim, V);
         cScorer = mock(StanfordCompositionalInsideOutsideScore.class);
-        defaultSentence = new ArrayList<Word>();
+        defaultSentence = new Sentence(0);
         int index = 0;
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {
             defaultSentence.add(new Word(str, index++));

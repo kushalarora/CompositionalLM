@@ -7,6 +7,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -25,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
  * Created by karora on 6/21/15.
  */
 @Slf4j
-public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass<T> implements IDerivative<T>
+public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T> implements IDerivative<T>
 {
     @Getter
     private int dim;
@@ -42,7 +43,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
         indexToxMap = new HashMap<Integer, INDArray>();
         dim = dimensions;
         V = vocabSize;
-        length = data.size();
+        length = data.getSize();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
@@ -53,7 +54,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
         indexToxMap = dqdxw.indexToxMap;
         dim = dqdxw.dim;
         V = dqdxw.V;
-        length = data.size();
+        length = data.getSize();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
@@ -62,7 +63,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
         super(new int[] {dqdxw.dim, dqdxw.V}, data);
         dim = dqdxw.dim;
         V = dqdxw.V;
-        length = data.size();
+        length = data.getSize();
         this.indexToxMap = indexToxMap;
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
@@ -140,7 +141,8 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
 
                 dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
                 if (containsNanOrInf(dQdXw_i)) {
-                    log.error("dQdXw contains Nan Or Inf for index: {} data: {}", i, data);
+                    log.error("dQdXw contains Nan Or Inf for index: {} data {}::{}. Norm::{}",
+                            i, data.getIndex(), data.getSize(), Nd4j.norm2(dQdXw_i));
                     dQdXw_i = Nd4j.zeros(dim);
                 }
 
@@ -217,7 +219,7 @@ public class dQdXw<T extends List<? extends IIndexed>> extends AbstractBaseDeriv
     {
         double norm = 0;
         for (Map.Entry<Integer, INDArray> entry : indexToxMap.entrySet()) {
-            norm += Nd4j.norm2(entry.getValue()).sum(Integer.MAX_VALUE).getDouble(0);
+            norm += Nd4j.norm2(entry.getValue()).getDouble(0);
         }
         return norm;
     }

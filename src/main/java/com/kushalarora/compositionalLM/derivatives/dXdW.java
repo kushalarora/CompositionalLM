@@ -5,6 +5,7 @@ import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideSc
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.IIndexed;
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 
@@ -19,7 +20,7 @@ import javax.annotation.Nullable;
 /**
  * Created by karora on 6/21/15.
  */
-public class dXdW<T extends List<? extends IIndexed>> {
+public class dXdW<T extends IIndexedSized> {
     // d X 2d array of column vectors
     @Getter
     private INDArray[][][][][] dXdW;
@@ -33,7 +34,7 @@ public class dXdW<T extends List<? extends IIndexed>> {
         dim = dimension;
         dXdW = new INDArray[dim][2 * dim][][][];
         this.data = data;
-        length = data.size();
+        length = data.getSize();
         this.op = op;
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
 

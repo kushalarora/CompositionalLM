@@ -31,7 +31,7 @@ public class Sentence extends ArrayList<Word> implements IIndexedSized
         return index;
     }
 
-    public long getSize() {
+    public int getSize() {
         return size();
     }
 
