@@ -3,9 +3,11 @@ package optimizer;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
+import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.optimizer.AbstractOptimizer;
 import com.kushalarora.compositionalLM.optimizer.AbstractSGDOptimizer;
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.Getter;
@@ -19,6 +21,17 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class AbstractOptimizerTest {
+/*
+    public class InputWord extends Word  {
+
+        public InputWord(String word, int index) {
+            super(word, index);
+        }
+
+        public int getIndex() {
+            return 0;
+        }
+    }
 
     public class Input extends ArrayList<Integer> implements IIndexedSized {
         private int index;
@@ -26,12 +39,17 @@ public class AbstractOptimizerTest {
             this.index = index;
         }
 
-        public long getSize() {
+        public int getSize() {
             return size();
         }
 
         public int getIndex() {
             return index;
+        }
+
+        @Override
+        public IIndexed get(int index) {
+            return get(index);
         }
     };
 
@@ -180,4 +198,5 @@ public class AbstractOptimizerTest {
 
         abstractOptimizer.fit(listOfList, listOfList);
     }
+    */
 }
