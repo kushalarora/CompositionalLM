@@ -25,6 +25,7 @@ public class Parallelizer {
 
     public <D> List<Future<List<D>>> parallelizer(final int start, final int end, final Function<Integer, D> parallizableFunc) {
         int length = end - start;
+        // Contains one extra block. Do something about it.
         final int blockNum = length / blockSize + 1;
 
         List<Callable<List<D>>> callables = new ArrayList<Callable<List<D>>>();
