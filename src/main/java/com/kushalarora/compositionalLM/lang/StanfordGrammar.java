@@ -470,6 +470,8 @@ public class StanfordGrammar extends AbstractGrammar {
                     double tot = exp(iS + pS);
 //                    iScore[start][end][parentState] += tot;
                     s.addToScore(s.iScore, tot, start, end, parentState);
+//                    iSpanScore[start][end] += tot;
+                    s.addToScore(s.iSpanScore, tot, start, end);
 
 
                     // We are marginalizing over all states and this state
@@ -482,9 +484,6 @@ public class StanfordGrammar extends AbstractGrammar {
 
 //                            iSplitSpanStateScore[start][end][split][parentState] += tot;
                             s.addToScore(s.iSplitSpanStateScore, tot, start, end, split, parentState);
-
-//                            iSpanScore[start][end] += tot;
-                            s.addToScore(s.iSpanScore, tot, start, end);
                         }
                     }
 
