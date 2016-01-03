@@ -208,7 +208,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             // usually stop one short because boundary symbol only combines
             // with whole sentence span. So for 3 word sentence + boundary = 4,
             // length == 4, and do [0,2], [1,3]; [0,3]; [0,4]
-            for (int start = 0; start + diff <=  score.length ; start++) {
+            for (int start = 0; start < ((diff == score.length) ? 1 : score.length - diff); start++) {
                 doInsideChartCell(score, start, start + diff);
             } // for start
         } // for diff (i.e., span)
@@ -875,7 +875,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         doMuScore(s);
         log.info("Computed mu score computation:{}::{}", idx, sz);
 
-        s.postProcess();
+  //      s.postProcess();
 
         log.info("Compositional Score for sentence#{}:: {} => {}",
                 idx, sz, s.getSentenceScore());
