@@ -937,7 +937,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         int index = -1;
         String signature = str;
 
-        if (true) {
+        if (op.grammarOp.lowerCase) {
             signature = str.toLowerCase();
         }
 

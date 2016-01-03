@@ -43,7 +43,7 @@ public class GrammarOptions implements Serializable {
                         config.getString("tokenizerType",
                                 "stanfordPTB"));
 
-        lowerCase = config.getBoolean("lowercase", false);
+        lowerCase = config.getBoolean("lowerCase", false);
 
         newLineDelimiter = config.getBoolean("nlDelim", false);
 
