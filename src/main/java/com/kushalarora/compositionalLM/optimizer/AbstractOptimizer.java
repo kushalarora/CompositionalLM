@@ -90,6 +90,9 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 new Function<Integer, D>() {
                     @Nullable
                     public D apply(@Nullable Integer integer) {
+                        log.info("Training sentence#{}:: {}",
+                                trainList.get(integer).getIndex(),
+                                trainList.get(integer));
                         return fitOne(trainList.get(integer));
                     }
                 };
