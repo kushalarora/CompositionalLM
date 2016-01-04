@@ -875,7 +875,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         doMuScore(s);
         log.info("Computed mu score computation:{}::{}", idx, sz);
 
-  //      s.postProcess();
+        // s.postProcess();
 
         log.info("Compositional Score for sentence#{}:: {} => {}",
                 idx, sz, s.getSentenceScore());
