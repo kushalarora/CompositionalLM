@@ -30,15 +30,15 @@ public class Parameters implements IParameter<Sentence> {
 
     public Parameters(int dimensions, int vocabSize) {
         RandomGenerator rng = new JDKRandomGenerator();
-        rng.setSeed(1032);
+        rng.setSeed(2204);
         this.dimensions = dimensions;
         this.vocabSize = vocabSize;
         W = Nd4j.rand(dimensions, 2 * dimensions, -1, 1, rng);      // d X 2d matrix
         u = Nd4j.rand(1, dimensions, -1, 1, rng);                   // row vector with d entries
         X = Nd4j.rand(dimensions, vocabSize, -1, 1, rng);           // d X V matrix
 
-        INDArray normVec =  X.norm2(0);
-        X = X.divRowVector(normVec);
+//        INDArray normVec =  X.norm2(0);
+//        X = X.divRowVector(normVec);
 
     }
 
@@ -109,9 +109,9 @@ public class Parameters implements IParameter<Sentence> {
             X.putColumn(key, value.add(X.getColumn(key)));
         }
 
-        X = X.subRowVector(X.mean(0));
-        INDArray normVec =  X.norm2(0);
-        X = X.divRowVector(normVec);
+//        X = X.subRowVector(X.mean(0));
+//        INDArray normVec =  X.norm2(0);
+//        X = X.divRowVector(normVec);
         log.info("new X = \n {}", X);
     }
 }

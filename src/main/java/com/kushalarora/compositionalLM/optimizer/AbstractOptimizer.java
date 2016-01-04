@@ -90,9 +90,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 new Function<Integer, D>() {
                     @Nullable
                     public D apply(@Nullable Integer integer) {
-                        log.info("Training sentence#{}:: {}",
-                                trainList.get(integer).getIndex(),
-                                trainList.get(integer));
                         return fitOne(trainList.get(integer));
                     }
                 };
@@ -155,7 +152,10 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 while (trainIter.hasNext()) {
                     final List<T> trainList = new ArrayList<T>();
                     for (int idx = 0; idx < op.trainOp.batchSize && trainIter.hasNext(); idx++) {
-                        trainList.add(trainIter.next());
+                        T data = trainIter.next();
+                        trainList.add(data);
+                        log.info("Training sentence#{}:: {}", data.getIndex(), data);
+
                     }
                     int batchSize = trainList.size();
 
