@@ -32,7 +32,6 @@ public abstract class AbstractBaseDerivativeClass<T extends IIndexedSized> imple
      */
     protected boolean containsNanOrInf(INDArray arr) {
         double sum = arr.sum(Integer.MAX_VALUE).getDouble();
-        double norm2 = Nd4j.norm2(arr).getDouble(0);
         return !Double.isFinite(sum);
     }
 
