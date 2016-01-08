@@ -41,8 +41,8 @@ public abstract class AbstractBaseDerivativeClass<T extends IIndexedSized> imple
             numElements *= arr.shape()[i];
         }
         double norm2 = Nd4j.norm2(arr).getDouble(0);
-        double cutoff = 1;
-        if (norm2/numElements > 1) {
+        double cutoff = 50;
+        if (norm2/numElements > cutoff) {
             log.error("Clipping gradiant of shape {} for data:{}::{}. Norm = {}",
                     shape, data.getIndex(), data.getSize(),  norm2);
             return arr.div(norm2).mul(cutoff * numElements);
