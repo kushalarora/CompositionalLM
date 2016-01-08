@@ -37,8 +37,8 @@ public class Parameters implements IParameter<Sentence> {
         u = Nd4j.rand(1, dimensions, -1, 1, rng);                   // row vector with d entries
         X = Nd4j.rand(dimensions, vocabSize, -1, 1, rng);           // d X V matrix
 
-//        INDArray normVec =  X.norm2(0);
-//        X = X.divRowVector(normVec);
+        INDArray normVec =  X.norm2(0);
+        X = X.divRowVector(normVec);
 
     }
 
@@ -109,9 +109,9 @@ public class Parameters implements IParameter<Sentence> {
             X.putColumn(key, value.add(X.getColumn(key)));
         }
 
-//        X = X.subRowVector(X.mean(0));
-//        INDArray normVec =  X.norm2(0);
-//        X = X.divRowVector(normVec);
+        X = X.subRowVector(X.mean(0));
+        INDArray normVec =  X.norm2(0);
+        X = X.divRowVector(normVec);
         log.info("new X = \n {}", X);
     }
 }
