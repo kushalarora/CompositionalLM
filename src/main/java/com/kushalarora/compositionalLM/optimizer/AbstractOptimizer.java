@@ -111,6 +111,10 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 batchScore += derivative.getScore();
             }
         }
+        // update param for this batch
+        D dAcc = getAccumulatedDerivative();
+        dAcc.mul(1.0 / batchSize);
+        updateParams(dAcc);
         return batchScore;
     }
 
@@ -223,11 +227,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                         epoch, trainFileIdx, estimatedTrainfileTime,
                                 cumlTrainScore / cumlTrainBatchSize);
             }   // end for trainList
-
-            // update param for this batch
-            D dAcc = getAccumulatedDerivative();
-            dAcc.mul(1.0 / cumlTrainBatchSize);
-            updateParams(dAcc);
 
             // clear accumulator and
             // re-initialize learing rate
