@@ -459,9 +459,11 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
         // normalize weights to get them to sum to 1.
         // X(i,j) = X(i,k) * \pi(i,j)/\pi(i,j)
-        s.phraseMatrix[start][end] =
-                s.phraseMatrix[start][end]
-                        .div(s.compIScore[start][end]);
+        if (s.compIScore[start][end] != 0) {
+            s.phraseMatrix[start][end] =
+                    s.phraseMatrix[start][end]
+                            .div(s.compIScore[start][end]);
+        }
     }
 
 
