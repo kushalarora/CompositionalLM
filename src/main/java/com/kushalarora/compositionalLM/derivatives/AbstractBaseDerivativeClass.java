@@ -36,16 +36,12 @@ public abstract class AbstractBaseDerivativeClass<T extends IIndexedSized> imple
     }
 
     protected INDArray clampDerivativeIfNeeded(INDArray arr) {
-        int numElements = 1;
-        for (int i = 0; i < arr.shape().length; i++) {
-            numElements *= arr.shape()[i];
-        }
         double norm2 = Nd4j.norm2(arr).getDouble(0);
-        double cutoff = 2;
-        if (norm2/numElements > cutoff) {
+        double cutoff = 500;
+        if (norm2 > cutoff) {
             log.error("Clipping gradiant of shape {} for data:{}::{}. Norm = {}",
                     shape, data.getIndex(), data.getSize(),  norm2);
-            return arr.div(norm2).mul(cutoff * numElements);
+            return arr.div(norm2).mul(cutoff);
         }
         return arr;
     }
