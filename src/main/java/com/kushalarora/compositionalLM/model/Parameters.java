@@ -113,5 +113,11 @@ public class Parameters implements IParameter<Sentence> {
         INDArray normVec =  X.norm2(0);
         X = X.divRowVector(normVec);
         log.info("new X = \n {}", X);
+
+
+        log.info("$#Norm2 u : {}", Nd4j.norm2(u));
+        log.info("$#Norm2 W : {}", Nd4j.norm2(W));
+        log.info("$#Norm2 X : {}", Nd4j.norm2(X));
+        
     }
 }
