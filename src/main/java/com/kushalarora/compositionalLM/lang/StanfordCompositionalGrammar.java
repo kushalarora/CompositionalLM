@@ -869,12 +869,12 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         log.info("Computed inside score computation:{}::{}", idx, sz);
 
         log.info("Start outside score computation:{}::{}", idx, sz);
-        doOutsideScores2(s);
+       // doOutsideScores2(s);
         log.info("Computed outside score computation:{}::{}", idx, sz);
 
 
         log.info("Start mu score computation:{}::{}", idx, sz);
-        doMuScore(s);
+     //   doMuScore(s);
         log.info("Computed mu score computation:{}::{}", idx, sz);
 
         s.postProcess();
