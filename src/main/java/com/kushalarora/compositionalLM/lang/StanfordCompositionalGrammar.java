@@ -869,12 +869,12 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         log.info("Computed inside score computation:{}::{}", idx, sz);
 
         log.info("Start outside score computation:{}::{}", idx, sz);
-       // doOutsideScores2(s);
+        doOutsideScores2(s);
         log.info("Computed outside score computation:{}::{}", idx, sz);
 
 
         log.info("Start mu score computation:{}::{}", idx, sz);
-     //   doMuScore(s);
+        doMuScore(s);
         log.info("Computed mu score computation:{}::{}", idx, sz);
 
         s.postProcess();
@@ -898,6 +898,23 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     "phraseMatrix", getSize(s.phraseMatrix),
                     getSize(s));
         }
+    }
+
+    public AbstractInsideOutsideScore getInsideScore(Sentence sentence) {
+        StanfordCompositionalInsideOutsideScore s =
+                new StanfordCompositionalInsideOutsideScore(
+                        sentence, op.modelOp.dimensions, numStates);
+
+        int idx = s.sentence.getIndex();
+        int sz = s.sentence.size();
+
+        log.info("Starting inside score computation:{}::{}", idx, sz);
+        doLexScores(s);
+
+        doInsideScores(s);
+        log.info("Computed inside score computation:{}::{}", idx, sz);
+
+        return s;
     }
 
 

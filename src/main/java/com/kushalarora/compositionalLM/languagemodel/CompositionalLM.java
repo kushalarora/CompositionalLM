@@ -54,21 +54,18 @@ public class CompositionalLM {
     private final DocumentProcessorFactory docProcessorFactory;
     private final Model model;
 
-    public CompositionalLM(StanfordCompositionalGrammar grammar, Options op, Model model) throws IOException {
+    public CompositionalLM(StanfordCompositionalGrammar grammar, Options op, Model model)
+            throws IOException {
         this.grammar = grammar;
         this.model = model;
         this.op = op;
-        docProcessorFactory =
-                new DocumentProcessorFactory(
-                        op,
-                        new TokenizerFactory(
-                                op, grammar));
+        docProcessorFactory = new DocumentProcessorFactory(
+                                op, new TokenizerFactory( op, grammar));
     }
 
     @SneakyThrows
     public void train() {
         // List of validation documents. Documents are list of sentences.
-
         final Map<Integer, String> trainIndexSet = new HashMap<Integer, String>();
 
         // Optimizer with scorer, derivative calculator and saver as argument.
@@ -76,17 +73,21 @@ public class CompositionalLM {
                 OptimizerFactory.getOptimizer(op, model,
                         new Function<Sentence, Double>() {
                             @Nullable
-                            public Double apply(Sentence data) {                // scorer
+                            // scorer
+                            public Double apply(Sentence data) {
                                 StanfordCompositionalInsideOutsideScore score =
-                                        (StanfordCompositionalInsideOutsideScore)grammar.getScore(data);
+                                        (StanfordCompositionalInsideOutsideScore)
+                                                grammar.getInsideScore(data);
                                 return score.getSentenceScore();
                             }
                         },
                         new Function<Sentence, Derivatives>() {
                             @Nullable
-                            public Derivatives apply(@Nullable Sentence sentence) {              // derivative calculator
+                            // derivative calculator
+                            public Derivatives apply(@Nullable Sentence sentence) {
                                 StanfordCompositionalInsideOutsideScore score =
-                                        (StanfordCompositionalInsideOutsideScore) grammar.getScore(sentence);
+                                        (StanfordCompositionalInsideOutsideScore)
+                                                grammar.getScore(sentence);
                                 Derivatives derivatives = new Derivatives(op,
                                         model, score);
                                 derivatives.calcDerivative();
@@ -95,7 +96,8 @@ public class CompositionalLM {
                         },
                         new Function<IntTuple, Void>() {
                             @Nullable
-                            public Void apply(@Nullable IntTuple tuple) {           // saver
+                            // saver
+                            public Void apply(@Nullable IntTuple tuple) {
                                 String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
                                 str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
                                 String outFilename = String.join(".", str);
@@ -160,7 +162,7 @@ public class CompositionalLM {
             while (testIter.hasNext()) {
                 Sentence data = testIter.next();
                 StanfordCompositionalInsideOutsideScore score =
-                        (StanfordCompositionalInsideOutsideScore)grammar.getScore(data);
+                        (StanfordCompositionalInsideOutsideScore)grammar.getInsideScore(data);
                 Double logP = score.getSentenceScore();
                 writer.println(score.getSentence());
                 writer.println(String.format("Length: %d, logProp: %.4f",
