@@ -2,6 +2,7 @@ package com.kushalarora.compositionalLM.lang;
 
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import edu.berkeley.nlp.PCFGLA.Grammar;
 import edu.berkeley.nlp.PCFGLA.Lexicon;
 import edu.berkeley.nlp.PCFGLA.ParserData;
@@ -44,23 +45,23 @@ public class GrammarFactory {
         }
     }
 
-    public static IGrammar getGrammar(Options op, Model model) {
+    public static IGrammar getGrammar(Options op, Model model, Parallelizer parallelizer) {
         switch (op.grammarOp.grammarType) {
             case STANFORD_GRAMMAR:
                 // TODO: Do similar thing for stanford grammar
                 LexicalizedParser lexicalizedParser = LexicalizedParser.loadModel(op.grammarOp.filename);
-                    return new StanfordCompositionalGrammar(op, lexicalizedParser, model);
+                    return new StanfordCompositionalGrammar(op, lexicalizedParser, model, parallelizer);
             default:
                 throw new RuntimeException("Invalid Grammar Type: " + op.grammarOp.grammarType);
         }
     }
 
-    public static IGrammar getGrammar(Options op) {
+    public static IGrammar getGrammar(Options op, Parallelizer parallelizer) {
         switch (op.grammarOp.grammarType) {
             case STANFORD_GRAMMAR:
                 // TODO: Do similar thing for stanford grammar
                 LexicalizedParser lexicalizedParser = LexicalizedParser.loadModel(op.grammarOp.filename);
-                return new StanfordCompositionalGrammar(op, lexicalizedParser);
+                return new StanfordCompositionalGrammar(op, lexicalizedParser, parallelizer);
             default:
                 throw new RuntimeException("Invalid Grammar Type: " + op.grammarOp.grammarType);
         }

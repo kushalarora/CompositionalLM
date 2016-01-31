@@ -3,25 +3,21 @@ package com.kushalarora.compositionalLM.languagemodel;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.kushalarora.compositionalLM.caching.CacheFactory;
-import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorFactory;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.lang.*;
-import com.kushalarora.compositionalLM.model.CompositionalGrammar;
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.AbstractOptimizer;
 import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import com.kushalarora.compositionalLM.utils.Visualization;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
 import edu.stanford.nlp.util.IntTuple;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -37,7 +33,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
@@ -53,14 +48,17 @@ public class CompositionalLM {
     private final StanfordCompositionalGrammar grammar;
     private final DocumentProcessorFactory docProcessorFactory;
     private final Model model;
+    private Parallelizer parallelizer;
 
-    public CompositionalLM(StanfordCompositionalGrammar grammar, Options op, Model model)
+    public CompositionalLM(StanfordCompositionalGrammar grammar, Options op, Model model,
+                           Parallelizer parallelizer)
             throws IOException {
         this.grammar = grammar;
         this.model = model;
         this.op = op;
         docProcessorFactory = new DocumentProcessorFactory(
                                 op, new TokenizerFactory( op, grammar));
+        this.parallelizer = parallelizer;
     }
 
     @SneakyThrows
@@ -104,7 +102,7 @@ public class CompositionalLM {
                                 saveModelSerialized(outFilename);
                                 return null;
                             }
-                        });
+                        }, parallelizer);
 
         DocumentProcessorWrapper<Sentence> docProcessor =
                 docProcessorFactory.getDocumentProcessor();
@@ -151,31 +149,70 @@ public class CompositionalLM {
 
     }
 
-    public void contrastiveEntropy() throws IOException {
+    public void entropy() throws IOException, ExecutionException, InterruptedException {
         double logScore = 0f;
-        PrintWriter writer = new PrintWriter(new File(op.testOp.outputFile), "UTF-8");
+        final PrintWriter writer = new PrintWriter(new File(op.testOp.outputFile), "UTF-8");
+        int testFileIdx = 0;
         for (String testFile : op.testOp.testFiles) {
+            float logScoreFile = 0f;
+            long epochTestfileTime = System.currentTimeMillis();
             DocumentProcessorWrapper<Sentence> documentProcessor =
                     docProcessorFactory.getDocumentProcessor();
             Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
 
             while (testIter.hasNext()) {
-                Sentence data = testIter.next();
-                StanfordCompositionalInsideOutsideScore score =
-                        (StanfordCompositionalInsideOutsideScore)grammar.getInsideScore(data);
-                Double logP = score.getSentenceScore();
-                writer.println(score.getSentence());
-                writer.println(String.format("Length: %d, logProp: %.4f",
-                                             score.getSentence().size(), score.getSentenceScore()));
-                log.info(String.format("Length: %d, logProp: %.4f",
-                                       score.getSentence().size(), score.getSentenceScore()));
-                logScore += logP;
+                final List<Sentence> testList = new ArrayList<Sentence>();
+
+                for (int idx = 0; idx < op.testOp.testBatchSize && testIter.hasNext(); idx++) {
+                    testList.add(testIter.next());
+                }
+
+                int testBatchSize = testList.size();
+
+                Function<Integer, Double> testFunc = new Function<Integer, Double>() {
+                    @Nullable
+                    public Double apply(@Nullable Integer integer) {
+                        StanfordCompositionalInsideOutsideScore score =
+                                (StanfordCompositionalInsideOutsideScore)
+                                        grammar.getInsideScore(testList.get(integer));
+                        Sentence sentence = score.getSentence();
+                        Double logP = score.getSentenceScore();
+                        synchronized (writer) {
+                            writer.println(sentence);
+                            writer.println(String.format("Length: %d, logProp: %.4f", sentence.size(), logP));
+                            log.info(String.format("Length: %d, logProp: %.4f", sentence.size(), logP));
+                        }
+                        return logP;
+                    }
+                };
+
+                if (op.trainOp.parallel) {
+                    List<Future<List<Double>>> testScoreFutures =
+                            parallelizer.parallelizer(0, testBatchSize, testFunc);
+
+                    for (Future<List<Double>> future : testScoreFutures) {
+                        List<Double> scoreList = future.get();
+                        for (double score : scoreList) {
+                            logScoreFile += score;
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < testBatchSize; i++) {
+                        double score = testFunc.apply(i);
+                        logScoreFile += score;
+                    }
+                }
             }
+            double estimatedTestfileTime = System.currentTimeMillis() - epochTestfileTime;
+            log.info("$Testing$:: Constrastive Entropy calculated for file Idx:{}, time: {} => {}",
+                        testFileIdx, estimatedTestfileTime, logScoreFile);
+            logScore += logScoreFile;
+            testFileIdx++;
         }
+
         writer.println(String.format("Total logProb:%.4f", logScore));
         log.info("Total logProb:{}", logScore);
         writer.close();
-
     }
 
     @SneakyThrows
@@ -316,15 +353,17 @@ public class CompositionalLM {
             }
         }
 
+        Parallelizer parallelizer = new Parallelizer(op, 1);
+
         StanfordCompositionalGrammar grammar;
         if (model != null) {
-            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, model);
+            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, model, parallelizer);
         } else {
-            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op);
+            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, parallelizer);
             model = grammar.getModel();
         }
 
-        final CompositionalLM cLM = new CompositionalLM(grammar, op, model);
+        final CompositionalLM cLM = new CompositionalLM(grammar, op, model, parallelizer);
 
         if (op.train) {
             log.info("starting training");
@@ -336,7 +375,7 @@ public class CompositionalLM {
         } else if (op.parse) {
             cLM.parse();
         } else if (op.test) {
-            cLM.contrastiveEntropy();
+            cLM.entropy();
         } // end processing if statement
 
 

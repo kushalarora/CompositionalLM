@@ -4,6 +4,7 @@ import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.val;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.BeforeClass;
@@ -29,7 +30,7 @@ public class ModelTest {
     public static void setUpClass() throws ConfigurationException {
         Options op = new Options();
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
-        IGrammar grammar = GrammarFactory.getGrammar(op);
+        IGrammar grammar = GrammarFactory.getGrammar(op, new Parallelizer(op, 1));
         model = new Model(
                 10, grammar.getVocabSize(),
                 op.grammarOp.grammarType,

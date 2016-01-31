@@ -7,6 +7,7 @@ import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import edu.stanford.nlp.util.IntTuple;
 
 /**
@@ -44,11 +45,12 @@ public class OptimizerFactory {
             final Model model,
             final Function<Sentence, Double> scorer,
             final Function<Sentence, Derivatives> derivativeCalculator,
-            final Function<IntTuple, Void> functionSaver) {
+            final Function<IntTuple, Void> functionSaver,
+            final Parallelizer parallelizer) {
 
         switch (op.trainOp.optimizer) {
             case SGD:
-                return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(model, op)) {
+                return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(model, op), parallelizer) {
                     public Derivatives calcDerivative(Sentence sample) {
                         return derivativeCalculator.apply(sample);
                     }
@@ -67,7 +69,7 @@ public class OptimizerFactory {
                 };
             case ADAGRAD:
                 return new AbstractAdaGradOptimzer<Sentence, Derivatives>(
-                        op, new Derivatives(model, op), new Derivatives(model, op)) {
+                        op, new Derivatives(model, op), new Derivatives(model, op), parallelizer) {
                     public Derivatives calcDerivative(Sentence sample) {
                         return derivativeCalculator.apply(sample);
                     }

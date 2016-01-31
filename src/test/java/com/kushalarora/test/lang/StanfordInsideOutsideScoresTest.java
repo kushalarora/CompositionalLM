@@ -5,6 +5,7 @@ import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.configuration.ConfigurationException;
@@ -37,7 +38,7 @@ public class StanfordInsideOutsideScoresTest {
         Options op = new Options();
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         op.grammarOp.filename = filePath;
-        sg = (StanfordGrammar) getGrammar(op);
+        sg = (StanfordGrammar) getGrammar(op, new Parallelizer(op, 1));
         numStates = sg.getNumStates();
         PropertyConfigurator.configure("log4j.properties");
 

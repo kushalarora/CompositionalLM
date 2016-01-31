@@ -26,7 +26,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
     protected D dvAcc;
 
-    protected AbstractOptimizer(Options op, D dvAcc) {
+    protected AbstractOptimizer(Options op, D dvAcc, Parallelizer parallelizer) {
         this.op = op;
         this.dvAcc = dvAcc;
         rand = new Random();
@@ -34,7 +34,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         epoch = 0;
         bestValidationScore = Double.MAX_VALUE;
         done = false;
-        parallelizer = new Parallelizer(op, 1);
+        this.parallelizer = parallelizer;
 
     }
 

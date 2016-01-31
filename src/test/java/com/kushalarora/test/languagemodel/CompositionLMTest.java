@@ -6,6 +6,7 @@ import com.kushalarora.compositionalLM.lang.StanfordGrammar;
 import com.kushalarora.compositionalLM.languagemodel.CompositionalLM;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import edu.stanford.nlp.io.IOUtils;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
@@ -44,11 +45,11 @@ public class CompositionLMTest {
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         op.grammarOp.filename =  absoluteFilePath;
 
-        StanfordCompositionalGrammar sg = (StanfordCompositionalGrammar)getGrammar(op);
+        StanfordCompositionalGrammar sg = (StanfordCompositionalGrammar)getGrammar(op, new Parallelizer(op, 1));
         out.writeObject(trueModel);
         out.close();
 
-        compositionalLM = new CompositionalLM(sg, op, trueModel);
+        compositionalLM = new CompositionalLM(sg, op, trueModel, new Parallelizer(op, 1));
         PropertyConfigurator.configure("log4j.properties");
 
     }
@@ -102,12 +103,13 @@ public class CompositionLMTest {
     public void testMainTest() throws Exception {
         String[] args =
                 new String[] {
-                        "-test", "src/resources/test",
+                        "-test", "src/resources/test5.txt",
                         "-output", "/tmp/output.txt",
                         // "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase,",
+                        "-parallel",
                       //  "-saveVisualization",
                       //  "-validBatchSize", "10"
                 };

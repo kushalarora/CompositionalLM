@@ -2,6 +2,7 @@ package com.kushalarora.test.lang;
 
 import com.kushalarora.compositionalLM.lang.*;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -34,7 +35,7 @@ public class StanfordGrammarTest {
         Options op = new Options();
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         op.grammarOp.filename =  absoluteFilePath;
-        sg = (StanfordGrammar)getGrammar(op);
+        sg = (StanfordGrammar)getGrammar(op, new Parallelizer(op, 1));
 
         String[] sent = {"This", "is", "just", "a", "test", "."};
         for (String str : sent) {

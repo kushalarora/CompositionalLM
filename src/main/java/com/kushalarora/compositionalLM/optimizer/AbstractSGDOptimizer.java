@@ -3,6 +3,7 @@ package com.kushalarora.compositionalLM.optimizer;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -15,8 +16,8 @@ public abstract class AbstractSGDOptimizer<T extends IIndexedSized, D extends ID
     private int count;
     D dvAcc;
 
-    protected AbstractSGDOptimizer(Options op, D dvAcc) {
-        super(op, dvAcc);
+    protected AbstractSGDOptimizer(Options op, D dvAcc, Parallelizer parallelizer) {
+        super(op, dvAcc, parallelizer);
         count = 0;
     }
 
