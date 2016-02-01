@@ -1,11 +1,16 @@
 package com.kushalarora.compositionalLM.lang;
 
+import edu.stanford.nlp.parser.lexparser.BinaryRule;
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.ujmp.core.SparseMatrix;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @Slf4j
 public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsideScore {
@@ -45,6 +50,9 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
 
     @Getter
     protected int numStates;
+
+    Set<BinaryRule> binaryRuleSet;
+
 
 
 
@@ -91,6 +99,8 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
         oScore = SparseMatrix.Factory.zeros(length, length + 1, numStates);
 
         iSplitSpanStateScore = SparseMatrix.Factory.zeros(length, length + 1, length, numStates);
+
+        binaryRuleSet = Collections.synchronizedSet(new HashSet<BinaryRule>());
     }
 
     public double[][] getCompIScores() {
@@ -133,7 +143,7 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
         }
         if (Double.isInfinite(compIScore[0][length])) {
             log.error("Score is Nan or Inf for sentence : {}", sentence);
-            return 0;
+            return Double.POSITIVE_INFINITY;
         }
 
         if (compIScore[0][length] < 0) {
