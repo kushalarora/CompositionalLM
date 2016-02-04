@@ -1,6 +1,5 @@
 package com.kushalarora.compositionalLM.lang;
 
-import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.ujmp.core.SparseMatrix;
@@ -146,5 +145,4 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
 
 
     public SparseMatrix getMuSpanSplitScoreWParent() { return muSpanSplitScoreWParent; }
-
 }

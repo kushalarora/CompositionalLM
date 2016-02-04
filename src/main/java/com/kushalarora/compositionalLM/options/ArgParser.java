@@ -158,7 +158,7 @@ public class ArgParser {
                 if (maxEpochs.length != 1) {
                     throw new RuntimeException("You can only specify exactly one epoch value");
                 }
-                op.trainOp.maxEpochs = Integer.parseInt(maxEpochs[0]);
+                op.trainOp.maxOptimizerEpochs = Integer.parseInt(maxEpochs[0]);
                 argIndex++;
             } else if (args[argIndex].equalsIgnoreCase("-batchSize")) {
                 String[] batchSize = ArgUtils.getStringFromArg(args, argIndex);

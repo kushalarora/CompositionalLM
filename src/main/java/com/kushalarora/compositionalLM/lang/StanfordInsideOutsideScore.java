@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import org.ujmp.core.SparseMatrix;
 
@@ -59,6 +60,18 @@ public class StanfordInsideOutsideScore extends AbstractInsideOutsideScore {
         iScore = null;
         oScore = null;
         muScore = null;
+    }
+
+    public IIndexed get(int index) {
+        return sentence.get(index);
+    }
+
+    public int getIndex() {
+        return sentence.getIndex();
+    }
+
+    public int getSize() {
+        return sentence.getSize();
     }
 }
 

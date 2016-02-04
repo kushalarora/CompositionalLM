@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 
 @Slf4j
-public abstract class AbstractSGDOptimizer<T extends IIndexedSized, D extends IDerivatives<T>>
+public abstract class AbstractSGDOptimizer<T extends IIndexedSized, D extends IDerivatives>
         extends AbstractOptimizer<T, D> {
     private int count;
     D dvAcc;

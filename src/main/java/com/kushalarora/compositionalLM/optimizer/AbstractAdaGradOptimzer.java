@@ -8,7 +8,7 @@ import com.kushalarora.compositionalLM.utils.Parallelizer;
 /**
  * Created by karora on 7/22/15.
  */
-public abstract class AbstractAdaGradOptimzer<T extends IIndexedSized, D extends IDerivatives<T>>
+public abstract class AbstractAdaGradOptimzer<T extends IIndexedSized, D extends IDerivatives>
         extends AbstractOptimizer<T, D> {
 
     D dvGrad;

@@ -1,9 +1,11 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.base.Function;
+import com.google.common.util.concurrent.AtomicDouble;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -13,13 +15,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 @Slf4j
-public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDerivatives<T>>
+public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDerivatives>
         implements IOptimizer<T, D> {
     private final Random rand;
     protected Options op;
     protected ExecutorService executor;
     protected int iter;
     protected int epoch;
+
+    @Getter
     protected double bestValidationScore;
     protected boolean done;
     private Parallelizer parallelizer;
@@ -32,7 +36,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         rand = new Random();
         iter = 0;
         epoch = 0;
-        bestValidationScore = Double.MAX_VALUE;
+        bestValidationScore = Double.NEGATIVE_INFINITY;
         done = false;
         this.parallelizer = parallelizer;
 
@@ -60,7 +64,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         Function<Integer, Double> validFunc = new Function<Integer, Double>() {
             @Nullable
             public Double apply(@Nullable Integer integer) {
-                return getValidationScore(validList.get(integer));
+                return getScore(validList.get(integer));
             }
         };
         if (op.trainOp.parallel) {
@@ -81,10 +85,9 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         return validBatchScore;
     }
 
-    private double fitBatch(final List<T> trainList) throws ExecutionException, InterruptedException {
+    private void fitBatch(final List<T> trainList) throws ExecutionException, InterruptedException {
         Collections.shuffle(trainList, rand);
         int batchSize = trainList.size();
-        double batchScore = 0;
 
         Function<Integer, D> fitRoutine =
                 new Function<Integer, D>() {
@@ -101,28 +104,29 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             for (Future<List<D>> future : futures) {
                 for (D derivative : future.get()) {
                     derivativeAcc(derivative);
-                    batchScore += derivative.getScore();
                 }
             }
         } else {
             for (int i = 0; i < batchSize; i++) {
                 D derivative = fitRoutine.apply(i);
                 derivativeAcc(derivative);
-                batchScore += derivative.getScore();
             }
         }
-        return batchScore;
+
+        // update param for this batch
+        D dAcc = getAccumulatedDerivative();
+        dAcc.mul(1.0 / batchSize);
+        updateParams(dAcc);
     }
 
     public void fit(List<List<T>> trainFileList, List<List<T>> validSet)
             throws ExecutionException, InterruptedException {
         epoch = 0;
         iter = 0;
-        bestValidationScore = Double.NEGATIVE_INFINITY;
         done = false;
 
         // do training these many times
-        while (epoch < op.trainOp.maxEpochs && !done) {
+        while (epoch < op.trainOp.maxOptimizerEpochs && !done) {
             log.info("Starting epoch#: {}", epoch);
             long epochStartTime = System.currentTimeMillis();
 
@@ -152,11 +156,34 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                             epoch, trainFileIdx, batchIdx);
 
                     // train batch
-                    double batchScore = fitBatch(trainList);
+                    fitBatch(trainList);
+
+                    final AtomicDouble atomicBatchScore = new AtomicDouble(0);
+
+                    Function<Integer, Void> scoreFunc = new Function<Integer, Void>() {
+                        @Nullable
+                        public Void apply(@Nullable Integer index) {
+                            synchronized (atomicBatchScore) {
+                                atomicBatchScore.addAndGet(
+                                        getScore(trainList.get(index)));
+                            }
+                            return null;
+                        }
+                    };
+
+                    if (op.trainOp.parallel) {
+                        parallelizer.parallelizer(0, batchSize, scoreFunc);
+                    } else {
+                        for (int i = 0; i < batchSize; i++) {
+                            scoreFunc.apply(i);
+                        }
+                    }
+
+                    double batchScore = atomicBatchScore.get();
 
                     long estimatedTime = System.currentTimeMillis() - startTime;
                     log.info("Training score epoch#: {}, trainList: {} , batch#: {}, time: {} => {}",
-                            epoch, trainFileIdx, batchIdx, estimatedTime, batchScore);
+                            epoch, trainFileIdx, batchIdx, estimatedTime, atomicBatchScore);
 
                     // this iteration done
                     iter += 1;
@@ -223,11 +250,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                         epoch, trainFileIdx, estimatedTrainfileTime,
                                 cumlTrainScore / cumlTrainBatchSize);
             }   // end for trainList
-
-            // update param for this batch
-            D dAcc = getAccumulatedDerivative();
-            dAcc.mul(1.0 / cumlTrainBatchSize);
-            updateParams(dAcc);
 
             // clear accumulator and
             // re-initialize learing rate

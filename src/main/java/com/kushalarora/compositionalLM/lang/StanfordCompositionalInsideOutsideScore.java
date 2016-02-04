@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import edu.stanford.nlp.parser.lexparser.BinaryRule;
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.Getter;
@@ -56,11 +57,18 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
 
 
 
-    public StanfordCompositionalInsideOutsideScore(Sentence sentence, int dimensions, int numStates) {
-        super(sentence.size() + 1, numStates);
+    public StanfordCompositionalInsideOutsideScore(Sentence sentence,
+                                                   int dimensions,
+                                                   int numStates,
+                                                   boolean addEOS) {
+        super(sentence.size(), numStates);
+
+
         this.sentence = new Sentence(sentence.getIndex());
         this.sentence.addAll(sentence);
-        this.sentence.add(new Word(Lexicon.BOUNDARY, sentence.size()));
+        if (addEOS) {
+            this.sentence.add(new Word(Lexicon.BOUNDARY, sentence.size()));
+        }
         length = this.sentence.size();
         log.info("Creating Compositional matrices for length {}: {}", length, sentence.getIndex());
         int dim = dimensions;
@@ -103,7 +111,13 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
         binaryRuleSet = Collections.synchronizedSet(new HashSet<BinaryRule>());
     }
 
-    public double[][] getCompIScores() {
+    public StanfordCompositionalInsideOutsideScore(Sentence sentence,
+                                                   int dimensions,
+                                                   int numStates) {
+        this(sentence, dimensions, numStates, true);
+    }
+
+        public double[][] getCompIScores() {
         return compIScore;
     }
 
@@ -179,4 +193,15 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
         muScore = null;
     }
 
+    public IIndexed get(int index) {
+        return sentence.get(index);
+    }
+
+    public int getIndex() {
+        return sentence.getIndex();
+    }
+
+    public int getSize() {
+        return sentence.getSize();
+    }
 }

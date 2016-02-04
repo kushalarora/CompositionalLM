@@ -907,10 +907,10 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         }
     }
 
-    public AbstractInsideOutsideScore getInsideScore(Sentence sentence) {
+    public AbstractInsideOutsideScore getInsideScore(Sentence sentence, boolean addEOS) {
         StanfordCompositionalInsideOutsideScore s =
                 new StanfordCompositionalInsideOutsideScore(
-                        sentence, op.modelOp.dimensions, numStates);
+                        sentence, op.modelOp.dimensions, numStates, addEOS);
 
         int idx = s.sentence.getIndex();
         int sz = s.sentence.size();

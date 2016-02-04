@@ -21,7 +21,8 @@ public class TrainOptions implements Serializable {
     public String[] trainFiles;
     public String[] validationFiles;
     public boolean validate;
-    public int maxEpochs;
+    public int maxOptimizerEpochs;
+    public int maxEMEpochs;
     public double tolerance;
     public int batchSize;
     public int validationFreq;
@@ -41,8 +42,10 @@ public class TrainOptions implements Serializable {
                 config.getBoolean("validate", false);
         validationFiles =
                 config.getStringArray("validationFiles");
-        maxEpochs =
-                config.getInt("maxEpochs", 10);
+        maxOptimizerEpochs =
+                config.getInt("maxOptimizerEpochs", 10);
+        maxEMEpochs =
+                config.getInt("maxEMEpochs", 10);
         tolerance =
                 config.getDouble("tolerance", 1e-3);
         batchSize =

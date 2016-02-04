@@ -167,7 +167,7 @@ public class AbstractOptimizerTest {
         Options op = new Options();
         op.trainOp.parallel = false;
         op.trainOp.learningRate = 1;
-        op.trainOp.maxEpochs = 1;
+        op.trainOp.maxOptimizerEpochs = 1;
         abstractOptimizer = new AbstractSGDOptimizer<Input, Derivatives>(op, new Derivatives(derivativeFunc)) {
             public Derivatives calcDerivative(Input sample) {
                 Derivatives derivatives = new Derivatives(derivativeFunc, parameters);
@@ -179,7 +179,7 @@ public class AbstractOptimizerTest {
                 return parameters;
             }
 
-            public double getValidationScore(Input data) {
+            public double getScore(Input data) {
                 double score = 0;
                 for (int i = 0; i < parameters.xs.size(); i++) {
                     score += scorer.apply(parameters.xs.get(i));

@@ -63,29 +63,22 @@ public class CompositionalLM {
 
     @SneakyThrows
     public void train() {
-        // List of validation documents. Documents are list of sentences.
-        final Map<Integer, String> trainIndexSet = new HashMap<Integer, String>();
-
         // Optimizer with scorer, derivative calculator and saver as argument.
-        AbstractOptimizer<Sentence, Derivatives> optimizer =
+        AbstractOptimizer<StanfordCompositionalInsideOutsideScore, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
-                        new Function<Sentence, Double>() {
+                        new Function<StanfordCompositionalInsideOutsideScore, Double>() {
                             @Nullable
                             // scorer
-                            public Double apply(Sentence data) {
-                                StanfordCompositionalInsideOutsideScore score =
-                                        (StanfordCompositionalInsideOutsideScore)
-                                                grammar.getInsideScore(data);
-                                return score.getSentenceScore();
+                            public Double apply(StanfordCompositionalInsideOutsideScore score) {
+                                return ((StanfordCompositionalInsideOutsideScore)
+                                        grammar.getInsideScore(score.getSentence(), false))
+                                        .getSentenceScore();
                             }
                         },
-                        new Function<Sentence, Derivatives>() {
+                        new Function<StanfordCompositionalInsideOutsideScore, Derivatives>() {
                             @Nullable
                             // derivative calculator
-                            public Derivatives apply(@Nullable Sentence sentence) {
-                                StanfordCompositionalInsideOutsideScore score =
-                                        (StanfordCompositionalInsideOutsideScore)
-                                                grammar.getScore(sentence);
+                            public Derivatives apply(@Nullable StanfordCompositionalInsideOutsideScore score) {
                                 Derivatives derivatives = new Derivatives(op,
                                         model, score);
                                 derivatives.calcDerivative();
@@ -107,18 +100,88 @@ public class CompositionalLM {
         DocumentProcessorWrapper<Sentence> docProcessor =
                 docProcessorFactory.getDocumentProcessor();
 
-        List<List<Sentence>> trainSentFileList = Lists.newArrayList();
+        List<List<Sentence>> trainSentList = Lists.newArrayList();
         for (String filename : op.trainOp.trainFiles) {
-            trainSentFileList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
+            trainSentList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
         }
-
-        List<List<Sentence>> validSentFileList = Lists.newArrayList();
+        List<List<Sentence>> validSentList = Lists.newArrayList();
         for (String filename : op.trainOp.validationFiles) {
-            validSentFileList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
+            validSentList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
         }
 
-        // Fit training data with validation on validation file.
-        optimizer.fit(trainSentFileList, validSentFileList);
+
+        List<List<StanfordCompositionalInsideOutsideScore>> validScoreFileList = Lists.newArrayList();
+        for (final List<Sentence> validList : validSentList) {
+            final int validListSize = validList.size();
+            final List<StanfordCompositionalInsideOutsideScore> validScoreList =
+                    new ArrayList<StanfordCompositionalInsideOutsideScore>();
+
+            Function<Integer, Void> validScorerFunc =
+                    new Function<Integer, Void>() {
+                        @Nullable
+                        public Void apply(@Nullable Integer index) {
+                            synchronized (validScoreList) {
+                                validScoreList.add(
+                                        new StanfordCompositionalInsideOutsideScore(
+                                                validList.get(index),
+                                                model.getDimensions(),
+                                                grammar.getVocabSize()
+                                        ));
+                            }
+                            return null;
+                        }
+                    };
+            if (op.trainOp.parallel) {
+                parallelizer.parallelizer(0, validListSize, validScorerFunc);
+            } else {
+                for (int index = 0; index < validListSize; index++) {
+                    validScorerFunc.apply(index);
+                }
+            }
+            validScoreFileList.add(validScoreList);
+        }
+
+        int EMIter = 0;
+        // TODO: Add early stopping logic.
+        while (EMIter < op.trainOp.maxEMEpochs) {
+
+            // E Step
+            List<List<StanfordCompositionalInsideOutsideScore>> trainScoreFileList = Lists.newArrayList();
+            for (final List<Sentence> trainList : trainSentList) {
+                final int trainListSize = trainList.size();
+                final List<StanfordCompositionalInsideOutsideScore> trainScoreList =
+                        new ArrayList<StanfordCompositionalInsideOutsideScore>();
+
+                Function<Integer, Void> trainScorerFunc =
+                        new Function<Integer, Void>() {
+                            @Nullable
+                            public Void apply(@Nullable Integer index) {
+                                synchronized (trainScoreList) {
+                                    trainScoreList.add(
+                                            (StanfordCompositionalInsideOutsideScore)
+                                                    grammar.getScore(trainList.get(index)));
+                                }
+                                return null;
+                            }
+                        };
+                if (op.trainOp.parallel) {
+                    parallelizer.parallelizer(0, trainListSize, trainScorerFunc);
+                } else {
+                    for (int index = 0; index < trainListSize; index++) {
+                        trainScorerFunc.apply(index);
+                    }
+                }
+                trainScoreFileList.add(trainScoreList);
+            }
+
+            // M Step
+            // Fit training data with validation on validation file.
+            optimizer.fit(trainScoreFileList, validScoreFileList);
+
+            log.info("EMIter#: {}, bestValidationScore => {}",
+                        EMIter, optimizer.getBestValidationScore());
+            EMIter++;
+        }
 
         if (op.trainOp.saveVisualization) {
             visualize(op.trainOp.visualizationFilename);
@@ -174,7 +237,7 @@ public class CompositionalLM {
                     public Double apply(@Nullable Integer integer) {
                         StanfordCompositionalInsideOutsideScore score =
                                 (StanfordCompositionalInsideOutsideScore)
-                                        grammar.getInsideScore(testList.get(integer));
+                                        grammar.getInsideScore(testList.get(integer), true);
                         Sentence sentence = score.getSentence();
                         Double logP = score.getSentenceScore();
                         synchronized (writer) {

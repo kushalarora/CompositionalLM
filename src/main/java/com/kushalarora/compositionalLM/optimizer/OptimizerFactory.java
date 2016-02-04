@@ -2,8 +2,7 @@ package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
-import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
-import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
@@ -40,18 +39,18 @@ public class OptimizerFactory {
         }
     }
 
-    public static AbstractOptimizer<Sentence, Derivatives> getOptimizer(
+    public static <T extends IInsideOutsideScore>  AbstractOptimizer<T, Derivatives> getOptimizer(
             final Options op,
             final Model model,
-            final Function<Sentence, Double> scorer,
-            final Function<Sentence, Derivatives> derivativeCalculator,
+            final Function<T, Double> scorer,
+            final Function<T, Derivatives> derivativeCalculator,
             final Function<IntTuple, Void> functionSaver,
             final Parallelizer parallelizer) {
 
         switch (op.trainOp.optimizer) {
             case SGD:
-                return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(model, op), parallelizer) {
-                    public Derivatives calcDerivative(Sentence sample) {
+                return new AbstractSGDOptimizer<T, Derivatives>(op, new Derivatives(model, op), parallelizer) {
+                    public Derivatives calcDerivative(T sample) {
                         return derivativeCalculator.apply(sample);
                     }
 
@@ -59,7 +58,7 @@ public class OptimizerFactory {
                         return model.getParams();
                     }
 
-                    public double getValidationScore(Sentence data) {
+                    public double getScore(T data) {
                         return scorer.apply(data);
                     }
 
@@ -68,9 +67,9 @@ public class OptimizerFactory {
                     }
                 };
             case ADAGRAD:
-                return new AbstractAdaGradOptimzer<Sentence, Derivatives>(
+                return new AbstractAdaGradOptimzer<T, Derivatives>(
                         op, new Derivatives(model, op), new Derivatives(model, op), parallelizer) {
-                    public Derivatives calcDerivative(Sentence sample) {
+                    public Derivatives calcDerivative(T sample) {
                         return derivativeCalculator.apply(sample);
                     }
 
@@ -78,7 +77,7 @@ public class OptimizerFactory {
                         return model.getParams();
                     }
 
-                    public double getValidationScore(Sentence data) {
+                    public double getScore(T data) {
                         return scorer.apply(data);
                     }
 
