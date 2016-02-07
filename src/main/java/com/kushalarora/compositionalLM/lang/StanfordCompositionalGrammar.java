@@ -200,12 +200,14 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
      * of length 2 or more.
      */
     public void doInsideScores(final AbstractInsideOutsideScore score) {
-        for (int diff = 2; diff <= score.length; diff++) {
+        final StanfordCompositionalInsideOutsideScore s =
+                (StanfordCompositionalInsideOutsideScore) score;
+        for (int diff = 2; diff <= s.length; diff++) {
             // usually stop one short because boundary symbol only combines
             // with whole sentence span. So for 3 word sentence + boundary = 4,
             // length == 4, and do [0,2], [1,3]; [0,3]; [0,4]
-            for (int start = 0; start < ((diff == score.length) ? 1 : score.length - diff); start++) {
-                doInsideChartCell(score, start, start + diff);
+            for (int start = 0; start < ((diff == s.length) ? 1 : s.length - diff); start++) {
+                doInsideChartCell(s, start, start + diff);
             } // for start
         } // for diff (i.e., span)
     } // end doInsideScores()
@@ -907,8 +909,8 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         }
     }
 
-    public AbstractInsideOutsideScore getInsideScore(Sentence sentence, boolean addEOS) {
-        StanfordCompositionalInsideOutsideScore s =
+    public AbstractInsideOutsideScore getInsideScore(final Sentence sentence, final boolean addEOS) {
+        final StanfordCompositionalInsideOutsideScore s =
                 new StanfordCompositionalInsideOutsideScore(
                         sentence, op.modelOp.dimensions, numStates, addEOS);
 
@@ -934,7 +936,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
      */
     @Override
     public AbstractInsideOutsideScore getScore(Sentence sentence) {
-        StanfordCompositionalInsideOutsideScore score =
+        final StanfordCompositionalInsideOutsideScore score =
                 new StanfordCompositionalInsideOutsideScore(
                         sentence, op.modelOp.dimensions, numStates);
         computeInsideOutsideProb(score);
