@@ -71,7 +71,7 @@ public class CompositionalLM {
                             // scorer
                             public Double apply(StanfordCompositionalInsideOutsideScore score) {
                                 return ((StanfordCompositionalInsideOutsideScore)
-                                        grammar.getInsideScore(score.getSentence(), false))
+                                        grammar.getInsideScore(score.getSentence(), true))
                                         .getSentenceScore();
                             }
                         },
@@ -125,7 +125,8 @@ public class CompositionalLM {
                                         new StanfordCompositionalInsideOutsideScore(
                                                 validList.get(index),
                                                 model.getDimensions(),
-                                                grammar.getVocabSize()
+                                                grammar.getVocabSize(),
+                                                false
                                         ));
                             }
                             return null;
@@ -156,10 +157,11 @@ public class CompositionalLM {
                         new Function<Integer, Void>() {
                             @Nullable
                             public Void apply(@Nullable Integer index) {
+                                StanfordCompositionalInsideOutsideScore score =
+                                (StanfordCompositionalInsideOutsideScore)
+                                        grammar.getScore(trainList.get(index));
                                 synchronized (trainScoreList) {
-                                    trainScoreList.add(
-                                            (StanfordCompositionalInsideOutsideScore)
-                                                    grammar.getScore(trainList.get(index)));
+                                    trainScoreList.add(score);
                                 }
                                 return null;
                             }

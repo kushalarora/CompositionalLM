@@ -163,9 +163,9 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     Function<Integer, Void> scoreFunc = new Function<Integer, Void>() {
                         @Nullable
                         public Void apply(@Nullable Integer index) {
+                            Double score = getScore(trainList.get(index));
                             synchronized (atomicBatchScore) {
-                                atomicBatchScore.addAndGet(
-                                        getScore(trainList.get(index)));
+                                atomicBatchScore.addAndGet(score);
                             }
                             return null;
                         }
