@@ -34,6 +34,7 @@ public class TrainOptions implements Serializable {
     public boolean saveVisualization;
     public String visualizationFilename;
     public int blockNum;
+    public double l2term;
 
     public TrainOptions(Configuration config) throws IOException {
         trainFiles =
@@ -63,6 +64,8 @@ public class TrainOptions implements Serializable {
         optimizer =
                 OptimizerFactory.OptimizerType.fromString(
                         config.getString("optimizerType", "sgd"));
+
+        l2term = config.getDouble("l2term", 0);
 
         List<String> trainList = Lists.newArrayList(trainFiles);
         trainList.addAll(getFilesFromDir(

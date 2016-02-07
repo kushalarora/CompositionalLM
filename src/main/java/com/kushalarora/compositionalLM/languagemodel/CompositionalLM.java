@@ -63,40 +63,6 @@ public class CompositionalLM {
 
     @SneakyThrows
     public void train() {
-        // Optimizer with scorer, derivative calculator and saver as argument.
-        AbstractOptimizer<StanfordCompositionalInsideOutsideScore, Derivatives> optimizer =
-                OptimizerFactory.getOptimizer(op, model,
-                        new Function<StanfordCompositionalInsideOutsideScore, Double>() {
-                            @Nullable
-                            // scorer
-                            public Double apply(StanfordCompositionalInsideOutsideScore score) {
-                                return ((StanfordCompositionalInsideOutsideScore)
-                                        grammar.getInsideScore(score.getSentence(), true))
-                                        .getSentenceScore();
-                            }
-                        },
-                        new Function<StanfordCompositionalInsideOutsideScore, Derivatives>() {
-                            @Nullable
-                            // derivative calculator
-                            public Derivatives apply(@Nullable StanfordCompositionalInsideOutsideScore score) {
-                                Derivatives derivatives = new Derivatives(op,
-                                        model, score);
-                                derivatives.calcDerivative();
-                                return derivatives;
-                            }
-                        },
-                        new Function<IntTuple, Void>() {
-                            @Nullable
-                            // saver
-                            public Void apply(@Nullable IntTuple tuple) {
-                                String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
-                                str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
-                                String outFilename = String.join(".", str);
-                                saveModelSerialized(outFilename);
-                                return null;
-                            }
-                        }, parallelizer);
-
         DocumentProcessorWrapper<Sentence> docProcessor =
                 docProcessorFactory.getDocumentProcessor();
 
@@ -142,7 +108,42 @@ public class CompositionalLM {
             validScoreFileList.add(validScoreList);
         }
 
+            // Optimizer with scorer, derivative calculator and saver as argument.
+         AbstractOptimizer<StanfordCompositionalInsideOutsideScore, Derivatives> optimizer =
+                OptimizerFactory.getOptimizer(op, model,
+                         new Function<StanfordCompositionalInsideOutsideScore, Double>() {
+                                @Nullable
+                                // scorer
+                                public Double apply(StanfordCompositionalInsideOutsideScore score) {
+                                    return ((StanfordCompositionalInsideOutsideScore)
+                                            grammar.getInsideScore(score.getSentence(), true))
+                                            .getSentenceScore();
+                                }
+                         },
+                         new Function<StanfordCompositionalInsideOutsideScore, Derivatives>() {
+                                @Nullable
+                                // derivative calculator
+                                public Derivatives apply(@Nullable StanfordCompositionalInsideOutsideScore score) {
+                                Derivatives derivatives = new Derivatives(op,
+                                        model, score);
+                                derivatives.calcDerivative();
+                                return derivatives;
+                             }
+                         },
+                         new Function<IntTuple, Void>() {
+                             @Nullable
+                             // saver
+                             public Void apply(@Nullable IntTuple tuple) {
+                                 String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
+                                 str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
+                                 String outFilename = String.join(".", str);
+                                 saveModelSerialized(outFilename);
+                                 return null;
+                             }
+                         }, parallelizer);
+
         int EMIter = 0;
+
         // TODO: Add early stopping logic.
         while (EMIter < op.trainOp.maxEMEpochs) {
 

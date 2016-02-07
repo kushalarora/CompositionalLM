@@ -25,9 +25,6 @@ public abstract class AbstractAdaGradOptimzer<T extends IIndexedSized, D extends
     }
 
     public void clearLearningRate() {
-        // do nothing
-    }
-
-    public void calcLearningRate(D derivatives) {
+        dvGrad.clear();
     }
 }

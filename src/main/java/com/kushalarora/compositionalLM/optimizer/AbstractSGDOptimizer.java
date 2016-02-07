@@ -26,10 +26,6 @@ public abstract class AbstractSGDOptimizer<T extends IIndexedSized, D extends ID
         getParams().update(derivatives);
     }
 
-    public void calcLearningRate(final D derivatives) {
-
-    }
-
     public void clearLearningRate() {
 
     }

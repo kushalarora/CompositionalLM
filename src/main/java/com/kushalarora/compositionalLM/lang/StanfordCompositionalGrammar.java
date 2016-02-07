@@ -80,7 +80,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                                         LexicalizedParser lexicalizedParser,
                                         Parallelizer parallelizer) {
         this(op, lexicalizedParser,
-                new Model(op.modelOp.dimensions,
+                new Model(op, op.modelOp.dimensions,
                         lexicalizedParser.wordIndex.size(),
                         op.grammarOp.grammarType), parallelizer);
     }
@@ -102,7 +102,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             final int start = st;
             final int end = start + 1;
             final int split = start;
-
 
             // Set phrase for word sentence[start]
             s.phraseMatrix[start][end] =
@@ -135,12 +134,20 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     if (lexScore > Double.NEGATIVE_INFINITY) {
 
                         // \zeta_{A->w_i}
-                        double zeta_w_i = exp(-energy + lexScore);
+                        final double zeta_w_i = exp(-energy + lexScore);
 
                         // \pi(A, w_i) = \zeta_{A->w_i}
                         s.addToScore(s.iSplitSpanStateScore, zeta_w_i, start, end, split, state);
                         // \pi (w_i^j) += = \zeta_{A->w_i}
                         s.addToScore(s.iScore, zeta_w_i, start, end, state);
+
+                        synchronized (s.compISplitScore) {
+                            s.compISplitScore[start][end][split] += zeta_w_i;
+                        }
+
+                        synchronized (s.compIScore) {
+                            s.compIScore[start][end] += zeta_w_i;
+                        }
                     }
                 }
 
@@ -162,12 +169,22 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                             double zeta_A_w_i_j = exp(iS + pS);
 
                             // \pi(A, w_i^j) = \zeta_{A->w_i}
-                            synchronized (s.iSplitSpanStateScore) {
-                                s.addToScore(s.iSplitSpanStateScore, zeta_A_w_i_j, start, end, split, parentState);
-                            }
+                            s.addToScore(s.iSplitSpanStateScore,
+                                         zeta_A_w_i_j, start,
+                                         end, split, parentState);
+
                             // \pi (w_i^j) += \zeta_{A->w_i}
-                            synchronized (s.iScore) {
-                                s.addToScore(s.iScore, zeta_A_w_i_j, start, end, parentState);
+                            s.addToScore(s.iScore,
+                                         zeta_A_w_i_j,
+                                         start, end, parentState);
+
+
+                            synchronized (s.compISplitScore) {
+                                s.compISplitScore[start][end][split] += zeta_A_w_i_j;
+                            }
+
+                            synchronized (s.compIScore) {
+                                s.compIScore[start][end] += zeta_A_w_i_j;
                             }
                         }
                         return null;
@@ -179,17 +196,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                 } else {
                     for (int state = 0; state < numStates; state++) {
                         unaryFunc.apply(state);
-                    }
-                }
-
-                for (int state = 0; state < numStates; state++) {
-                    synchronized (s.compIScore) {
-                        s.compIScore[start][end] +=
-                                s.getScore(s.iScore, start, end, state);
-                    }
-                    synchronized (s.compISplitScore) {
-                        s.compISplitScore[start][end][split] +=
-                                s.getScore(s.iSplitSpanStateScore, start, end, split, state);
                     }
                 }
             }
@@ -225,7 +231,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         final StanfordCompositionalInsideOutsideScore s =
                 (StanfordCompositionalInsideOutsideScore) score;
 
-        synchronized (lock) {
+        synchronized (s.binaryRuleSet) {
             s.binaryRuleSet.clear();
         }
 
@@ -246,7 +252,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
             // Compose parent (start, end) from children
             // (start, split), (split, end)
-            synchronized (lock) {
+            synchronized (s.compositionMatrix) {
                 s.compositionMatrix[start][end][split] =
                         s.compositionMatrix[start][end][split].add(
                                 model.compose(child1, child2));
@@ -284,7 +290,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                         }
                         rS = log(rS);
 
-                        synchronized (lock) {
+                        synchronized (s.binaryRuleSet) {
                             s.binaryRuleSet.add(rule);
                         }
 
@@ -295,11 +301,21 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
                         // in left child
                         // \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
-                        synchronized (lock) {
-                            s.addToScore(s.iSplitSpanStateScore, compScore, start, end, split, parentState);
-                            // \pi(A,w_i^j) += \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
-                            s.addToScore(s.iScore, compScore, start, end, parentState);
+                        s.addToScore(s.iSplitSpanStateScore, compScore, start, end, split, parentState);
+
+                        // \pi(A,w_i^j) += \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
+                        s.addToScore(s.iScore, compScore, start, end, parentState);
+
+                        // \pi(w_i^j <- w_i^k w_{k+1}^j) +=  \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
+                        synchronized (s.compISplitScore) {
+                            s.compISplitScore[start][end][split] += compScore;
                         }
+
+                        // pi(w_i^j) += \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
+                        synchronized (s.compIScore) {
+                            s.compIScore[start][end] += compScore;
+                        }
+
 
                     } // end for leftRules
                     return null;
@@ -352,7 +368,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                         }
                         rS = log(rS);
 
-                        synchronized (lock) {
+                        synchronized (s.binaryRuleSet) {
                             s.binaryRuleSet.add(rule);
                         }
 
@@ -363,11 +379,22 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
                         // right child
                         // \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
-                        synchronized (lock) {
-                            s.addToScore(s.iSplitSpanStateScore, compScore, start, end, split, parentState);
-                            // \pi(A,w_i^j) += \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
-                            s.addToScore(s.iScore, compScore, start, end, parentState);
+                        s.addToScore(s.iSplitSpanStateScore, compScore, start, end, split, parentState);
+
+                        // \pi(A,w_i^j) += \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
+                        s.addToScore(s.iScore, compScore, start, end, parentState);
+
+                        // \pi(w_i^j <- w_i^k w_{k+1}^j) +=  \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
+                        synchronized (s.compISplitScore) {
+                            s.compISplitScore[start][end][split] += compScore;
                         }
+
+                        // pi(w_i^j) += \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
+                        synchronized (s.compIScore) {
+                            s.compIScore[start][end] += compScore;
+                        }
+
+
                     } // end for rightRules
                     return null;
                 }
@@ -398,11 +425,15 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     for (UnaryRule ur : unaries) {
                         int parentState = ur.parent;
                         double pS = ur.score;
-                        synchronized (lock) {
-                            s.addToScore(s.iSplitSpanStateScore,
-                                    exp(iSS + pS), start, end,
-                                    split, parentState);
+                        double tot = exp(iSS + pS);
+                        s.addToScore(s.iSplitSpanStateScore,
+                                     tot, start, end,
+                                     split, parentState);
+
+                        synchronized (s.compISplitScore) {
+                            s.compISplitScore[start][end][split] += tot;
                         }
+
                     }
 
                     return null;
@@ -433,27 +464,13 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                 for (UnaryRule ur : unaries) {
                     int parentState = ur.parent;
                     double pS = ur.score;
-                    synchronized (lock) {
-                        s.addToScore(s.iScore, exp(iS + pS),
-                                start, end, parentState);
+                    double tot = exp(iS + pS);
+                    s.addToScore(s.iScore, tot,
+                                 start, end, parentState);
+
+                    synchronized (s.compIScore) {
+                        s.compIScore[start][end] += tot;
                     }
-
-/*
-                    for (int split = start + 1; split < end; split++) {
-                        double iSS = s.getScore(s.iSplitSpanStateScore,
-                                        start, end, split, state);
-
-                        if (iSS == 0d) {
-                            continue;
-                        }
-                        iSS = log(iSS);
-                        synchronized (lock) {
-                            s.addToScore(s.iSplitSpanStateScore,
-                                    exp(iSS + pS),
-                                    start, end, split,
-                                    parentState);
-                        }
-                    }*/
                 } // for UnaryRule r
                 return null;
             }
@@ -468,7 +485,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             } // for unary rules
         }
 
-
+/*
         for (int state = 0; state < numStates; state++) {
             for (int split = start + 1; split < end; split++) {
                 // \pi(w_i^j <- w_i^k w_{k+1}^j) +=  \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
@@ -478,7 +495,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             s.compIScore[start][end] += s.getScore(s.iScore,  start, end, state);
         }
 
-
+*/
         for (int split = start + 1; split < end; split++) {
             // X(i,j) * \pi(i,j) = X(i,k,j) * \pi(i,j,k)
             s.phraseMatrix[start][end] =
@@ -666,7 +683,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     }   // end for parentState
                 }
 
-                for (int sp = start; sp < end; sp++) {
+                for (int sp = start + 1; sp < end; sp++) {
                     final int split = sp;
                     INDArray child1 = s.phraseMatrix[start][split];
                     INDArray child2 = s.phraseMatrix[split][end];
@@ -864,8 +881,8 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
      * Compute inside and outside score for the sentence.
      * Also computes span and span split score we need.
      */
-    public void computeInsideOutsideProb(AbstractInsideOutsideScore score) {
-        StanfordCompositionalInsideOutsideScore s =
+    public void computeInsideOutsideProb(final AbstractInsideOutsideScore score) {
+        final StanfordCompositionalInsideOutsideScore s =
                 (StanfordCompositionalInsideOutsideScore) score;
 
         int idx = s.sentence.getIndex();

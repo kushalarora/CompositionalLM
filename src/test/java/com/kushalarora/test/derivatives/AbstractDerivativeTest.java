@@ -7,6 +7,7 @@ import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.model.Parameters;
 
+import com.kushalarora.compositionalLM.options.Options;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.BeforeClass;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,7 +37,8 @@ public class AbstractDerivativeTest {
     public static void setUpClass() throws ConfigurationException
     {
         model = mock(Model.class);
-        params = new Parameters(dim, V);
+        Options op = new Options();
+        params = new Parameters(op, dim, V);
         cScorer = mock(StanfordCompositionalInsideOutsideScore.class);
         defaultSentence = new Sentence(0);
         int index = 0;

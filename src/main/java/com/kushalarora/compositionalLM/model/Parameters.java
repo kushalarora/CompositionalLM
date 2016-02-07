@@ -5,6 +5,7 @@ import java.util.Map;
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.options.Options;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,13 +23,14 @@ import org.nd4j.linalg.factory.Nd4j;
 @Setter
 @Slf4j
 public class Parameters implements IParameter<Sentence> {
+    private final Options op;
     private INDArray W;
     private INDArray u;
     private INDArray X;
     private final int dimensions;
     private final int vocabSize;
 
-    public Parameters(int dimensions, int vocabSize) {
+    public Parameters(Options op, int dimensions, int vocabSize) {
         RandomGenerator rng = new JDKRandomGenerator();
         rng.setSeed(2204);
         this.dimensions = dimensions;
@@ -36,10 +38,7 @@ public class Parameters implements IParameter<Sentence> {
         W = Nd4j.rand(dimensions, 2 * dimensions, -1, 1, rng);      // d X 2d matrix
         u = Nd4j.rand(1, dimensions, -1, 1, rng);                   // row vector with d entries
         X = Nd4j.rand(dimensions, vocabSize, -1, 1, rng);           // d X V matrix
-
-        INDArray normVec =  X.norm2(0);
-        X = X.divRowVector(normVec);
-
+        this.op = op;
     }
 
 
@@ -109,10 +108,19 @@ public class Parameters implements IParameter<Sentence> {
             X.putColumn(key, value.add(X.getColumn(key)));
         }
 
+        double l2term = op.trainOp.l2term;
+        if (l2term != 0) {
+            u = u.sub(u.mul(l2term));
+            W = W.sub(W.mul(l2term));
+            X = X.sub(X.mul(l2term));
+        }
+
+/*
         X = X.subRowVector(X.mean(0));
         INDArray normVec =  X.norm2(0);
         X = X.divRowVector(normVec);
         log.info("new X = \n {}", X);
+*/
 
 
         log.info("$#Norm2 u : {}", Nd4j.norm2(u));

@@ -22,8 +22,6 @@ public interface IOptimizer<T extends IIndexedSized, D extends IDerivatives> {
 
     public void flushDerivaiveAcc();
 
-    public void calcLearningRate(final D derivatives);
-
     public double getScore(T data);
 
     public void saveModel(int iter, int epoch);

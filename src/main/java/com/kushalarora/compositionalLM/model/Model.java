@@ -3,6 +3,7 @@ package com.kushalarora.compositionalLM.model;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
+import com.kushalarora.compositionalLM.options.Options;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,8 @@ public class Model implements Serializable {
     private ActivationFunction g;
     private GrammarFactory.GrammarType grammarType;
 
-    public Model(@NonNull int dimensions,
+    public Model(@NonNull Options op,
+                 @NonNull int dimensions,
                  @NonNull int vocabSize,
                  @NonNull GrammarFactory.GrammarType grammarType,
                  @NonNull ActivationFunction composition,
@@ -37,17 +39,18 @@ public class Model implements Serializable {
         this.grammarType = grammarType;
         this.dimensions = dimensions;
         this.vocabSize = vocabSize;
-        this.params = new Parameters(dimensions, vocabSize);
+        this.params = new Parameters(op, dimensions, vocabSize);
 
         f = composition;                                // default composition activation
         g = output;                                     // default output activation
 
     }
 
-    public Model(@NonNull int dimensions,
+    public Model(@NonNull Options op,
+                 @NonNull int dimensions,
                  @NonNull int vocabSize,
                  @NonNull GrammarFactory.GrammarType grammarType) {
-        this(dimensions, vocabSize, grammarType,  Activations.tanh(), Activations.linear());
+        this(op, dimensions, vocabSize, grammarType,  Activations.tanh(), Activations.linear());
     }
 
     public Model(@NonNull Parameters params, @NonNull GrammarFactory.GrammarType grammarType) {

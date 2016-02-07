@@ -31,7 +31,7 @@ public class ModelTest {
         Options op = new Options();
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         IGrammar grammar = GrammarFactory.getGrammar(op, new Parallelizer(op, 1));
-        model = new Model(
+        model = new Model(op,
                 10, grammar.getVocabSize(),
                 op.grammarOp.grammarType,
                 Activations.sigmoid(),

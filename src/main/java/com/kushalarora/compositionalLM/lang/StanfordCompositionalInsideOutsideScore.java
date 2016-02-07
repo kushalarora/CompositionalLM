@@ -153,18 +153,18 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
         double score = compIScore[0][length];
         if (score == 0) {
             log.error("Score is 0 for sentence : {}", sentence);
-            return Double.NEGATIVE_INFINITY;
+            return - Double.MAX_VALUE;
         }
-        if (Double.isInfinite(compIScore[0][length])) {
-            log.error("Score is Nan or Inf for sentence : {}", sentence);
-            return Double.POSITIVE_INFINITY;
+        if (Double.isInfinite(score)) {
+            log.error("Score is Nan or Inf for sentence {}: {}", sentence, score);
+            return Double.MAX_VALUE;
         }
 
-        if (compIScore[0][length] < 0) {
+        if (score < 0) {
             log.error("Score is negative for sentence: {}", sentence);
-            return Double.NEGATIVE_INFINITY;
+            return - Double.MAX_VALUE;
         }
-        return Math.log(compIScore[0][length]);
+        return Math.log(score);
     }
 
     public double getScore(SparseMatrix matrix, long... indexes) {
