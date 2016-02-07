@@ -937,6 +937,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         doLexScores(s);
         doInsideScores(s);
         log.info("Computed inside score computation:{}::{}", idx, sz);
+        s.postProcess();
         return s;
     }
 
