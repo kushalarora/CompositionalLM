@@ -4,7 +4,7 @@ import random
 
 def disform_sentences(input_filename, p1=80, p2=10, p3=10):
     infile = open(input_filename, 'r')
-    output_filename = input_filename + ".deformed-" + str(p1) + "-" + str(p2) + "-" + str(p3)
+    output_filename = input_filename + ".deformed-%.1f-%.1f-%.1f" % (p1, p2, p3)
     outfile = open(output_filename, 'w')
     wordToIdx = {}
     idx = 0;
@@ -55,8 +55,8 @@ def disform_sentences(input_filename, p1=80, p2=10, p3=10):
 if __name__ == "__main__":
     argc = len(sys.argv)
     if argc == 5:
-        disform_sentences(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+        disform_sentences(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]))
     elif argc == 4:
-        disform_sentences(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[3])
+        disform_sentences(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[3]))
     else:
         disform_sentences(sys.argv[1])
