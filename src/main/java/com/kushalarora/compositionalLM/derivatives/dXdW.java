@@ -136,7 +136,7 @@ public class dXdW<T extends IIndexedSized> {
                 };
 
             if (op.trainOp.parallel) {
-                parallelizer.parallelizer(0, 2 * dim, func);
+                parallelizer.parallelizer(0, 2 * dim, func, 5);
             } else
             {
                 for (int j = 0; j < 2 * dim; j++)

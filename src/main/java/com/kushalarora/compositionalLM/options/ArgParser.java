@@ -46,6 +46,8 @@ public class ArgParser {
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
             } else if (args[argIndex].equalsIgnoreCase("-visualize")) {
                 op.visualize = true;
+            } else if (args[argIndex].equalsIgnoreCase("-calcCE")) {
+                op.calcCE = true;
             } else if (args[argIndex].equalsIgnoreCase("-validate")) {
                 // Ignored if only testing.
                 // If training must be followed by validation File

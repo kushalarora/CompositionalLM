@@ -119,7 +119,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         updateParams(dAcc);
     }
 
-    public void fit(List<List<T>> trainFileList, List<List<T>> validSet)
+    public void fit(final List<List<T>> trainFileList, final List<List<T>> validSet)
             throws ExecutionException, InterruptedException {
         epoch = 0;
         iter = 0;
@@ -130,9 +130,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             log.info("Starting epoch#: {}", epoch);
             long epochStartTime = System.currentTimeMillis();
 
-            double cumlTrainScore = 0.0;
-            int cumlTrainBatchSize = 0;
-
             // process all these lists
             for (int trainFileIdx = 0; trainFileIdx < trainFileList.size(); trainFileIdx++) {
                 log.info("Starting epoch#: {}, trainList: {}", epoch, trainFileIdx);
@@ -142,6 +139,10 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
                 int batchIdx = 0;
                 while (trainIter.hasNext()) {
+                    long startTime = System.currentTimeMillis();
+                    log.info("Starting epoch#: {}, trainList: {} , batch#: {}",
+                            epoch, trainFileIdx, batchIdx);
+
                     final List<T> trainList = new ArrayList<T>();
                     for (int idx = 0; idx < op.trainOp.batchSize && trainIter.hasNext(); idx++) {
                         T data = trainIter.next();
@@ -151,50 +152,61 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     }
                     int batchSize = trainList.size();
 
-                    long startTime = System.currentTimeMillis();
-                    log.info("Starting epoch#: {}, trainList: {} , batch#: {}",
-                            epoch, trainFileIdx, batchIdx);
-
                     // train batch
                     fitBatch(trainList);
 
-                    final AtomicDouble atomicBatchScore = new AtomicDouble(0);
-
-                    Function<Integer, Void> scoreFunc = new Function<Integer, Void>() {
-                        @Nullable
-                        public Void apply(@Nullable Integer index) {
-                            Double score = getScore(trainList.get(index));
-                            synchronized (atomicBatchScore) {
-                                atomicBatchScore.addAndGet(score);
-                            }
-                            return null;
-                        }
-                    };
-
-                    if (op.trainOp.parallel) {
-                        parallelizer.parallelizer(0, batchSize, scoreFunc);
-                    } else {
-                        for (int i = 0; i < batchSize; i++) {
-                            scoreFunc.apply(i);
-                        }
-                    }
-
-                    double batchScore = atomicBatchScore.get();
-
                     long estimatedTime = System.currentTimeMillis() - startTime;
-                    log.info("Training score epoch#: {}, trainList: {} , batch#: {}, time: {} => {}",
-                            epoch, trainFileIdx, batchIdx, estimatedTime, atomicBatchScore);
+                    log.info("Ending epoch#: {}, trainList: {} , batch#: {} => {}",
+                             epoch, trainFileIdx, batchIdx, estimatedTime);
 
                     // this iteration done
                     iter += 1;
                     batchIdx += 1;
-                    cumlTrainBatchSize += batchSize;
-                    cumlTrainScore += batchScore;
 
                     // shall validate?
                     if (op.trainOp.validate &&
                             (iter + 1) % op.trainOp.validationFreq == 0) {
                         long validStartTime = System.currentTimeMillis();
+                        double cumlTrainScore = 0.0;
+                        int cumlTrainBatchSize = 0;
+                        for (int fileIdx = 0; fileIdx < trainFileList.size(); fileIdx++) {
+                            final int idx = fileIdx;
+                            final AtomicDouble atomicBatchScore = new AtomicDouble(0);
+
+                            Function<Integer, Void> scoreFunc = new Function<Integer, Void>() {
+                                @Nullable
+                                public Void apply(@Nullable Integer index) {
+                                    Double score = getScore(trainFileList
+                                                                    .get(idx)
+                                                                    .get(index));
+                                    synchronized (atomicBatchScore) {
+                                        atomicBatchScore.addAndGet(score);
+                                    }
+                                    return null;
+                                }
+                            };
+
+                            if (op.trainOp.parallel) {
+                                parallelizer.parallelizer(0, batchSize, scoreFunc);
+                            }
+                            else {
+                                for (int i = 0; i < batchSize; i++) {
+                                    scoreFunc.apply(i);
+                                }
+                            }
+
+                            double batchScore = atomicBatchScore.get();
+
+                            log.info("Training score epoch#: {}, trainList: {} => {}",
+                                     epoch, trainFileIdx, batchScore);
+
+                            cumlTrainBatchSize += batchSize;
+                            cumlTrainScore += batchScore;
+                        }
+
+                        log.info("$Training$: Training file done epoch#: {}, trainList: {} => {}",
+                                    epoch, trainFileIdx, cumlTrainScore / cumlTrainBatchSize);
+
                         log.info("Starting validation epoch#: {}, iter#: {}",
                                 epoch, iter);
 
@@ -246,9 +258,8 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 } // end for batch
 
                 double estimatedTrainfileTime = System.currentTimeMillis() - epochTrainfileTime;
-                        log.info("$Training$: Training file done epoch#: {}, trainList: {}, time: {} => {}",
-                        epoch, trainFileIdx, estimatedTrainfileTime,
-                                cumlTrainScore / cumlTrainBatchSize);
+                log.info("Ending epoch#: {}, trainList: {} => {}",
+                         epoch, trainFileIdx, estimatedTrainfileTime);
             }   // end for trainList
 
             // clear accumulator and
@@ -256,11 +267,9 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             clearLearningRate();
             flushDerivaiveAcc();
 
-
-            epoch += 1;
             long estimatedEpochTime = System.currentTimeMillis() - epochStartTime;
-            log.info("Training score epoch#: {},  time: {} , score => {}",
-                    epoch, estimatedEpochTime, cumlTrainScore);
+            log.info("Training score epoch#: {},  time: {}", epoch, estimatedEpochTime);
+            epoch += 1;
         }   // end while epoch
     }
 }

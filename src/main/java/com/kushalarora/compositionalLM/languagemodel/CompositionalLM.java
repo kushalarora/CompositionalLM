@@ -67,12 +67,20 @@ public class CompositionalLM {
                 docProcessorFactory.getDocumentProcessor();
 
         List<List<Sentence>> trainSentList = Lists.newArrayList();
+        List<List<Sentence>> trainDistSentList = Lists.newArrayList();
         for (String filename : op.trainOp.trainFiles) {
             trainSentList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
+            trainDistSentList.add(Lists.newArrayList(
+                    docProcessor.getIterator(getDistortedFilename(filename))));
         }
+
         List<List<Sentence>> validSentList = Lists.newArrayList();
+        List<List<Sentence>> validDistSentList = Lists.newArrayList();
         for (String filename : op.trainOp.validationFiles) {
             validSentList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
+            validDistSentList.add(Lists.newArrayList(
+                    docProcessor.getIterator(getDistortedFilename(filename))));
+
         }
 
 
@@ -143,7 +151,6 @@ public class CompositionalLM {
                          }, parallelizer);
 
         int EMIter = 0;
-
         // TODO: Add early stopping logic.
         while (EMIter < op.trainOp.maxEMEpochs) {
 
@@ -183,6 +190,48 @@ public class CompositionalLM {
 
             log.info("EMIter#: {}, bestValidationScore => {}",
                         EMIter, optimizer.getBestValidationScore());
+
+            double combinedContEntropyScore = 0;
+            int combinedTrainSize = 0;
+            for (int i = 0; i < trainSentList.size(); i++) {
+                final List<Sentence> trainList = trainSentList.get(i);
+                final List<Sentence> trainDistList = trainDistSentList.get(i);
+                int contEntropyScore = 0;
+                Function<Integer, Double> testFunc = new Function<Integer, Double>() {
+                    @Nullable
+                    public Double apply(@Nullable Integer i) {
+                        return crossEntropySent(trainList.get(i),
+                                                trainDistList.get(i));
+                    }
+                };
+                final int trainListSize = trainList.size();
+
+                if (op.trainOp.parallel) {
+                    List<Future<List<Double>>> contEntropyFunc =
+                            parallelizer.parallelizer(0, trainListSize, testFunc);
+
+                    for (Future<List<Double>> future : contEntropyFunc) {
+                        List<Double> scoreList = future.get();
+                        for (double score : scoreList) {
+                            contEntropyScore += score;
+                        }
+                    }
+                } else {
+                    for (int j = 0; j < trainListSize; j++) {
+                        double score = testFunc.apply(j);
+                        contEntropyScore += score;
+                    }
+                }
+                combinedTrainSize += trainListSize;
+                combinedContEntropyScore += contEntropyScore;
+                log.info("$ContEnt$ Avg Contrastive Train Entropy for batch#{} : {}",
+                            i, contEntropyScore/trainListSize);
+            }
+
+            log.info("$ContEnt$ Avg Contrastive Train Entropy : {}",
+                        combinedContEntropyScore/combinedTrainSize);
+
+
             EMIter++;
         }
 
@@ -219,11 +268,11 @@ public class CompositionalLM {
         double logScore = 0f;
         final PrintWriter writer = new PrintWriter(new File(op.testOp.outputFile), "UTF-8");
         int testFileIdx = 0;
+        DocumentProcessorWrapper<Sentence> documentProcessor =
+                docProcessorFactory.getDocumentProcessor();
         for (String testFile : op.testOp.testFiles) {
             float logScoreFile = 0f;
             long epochTestfileTime = System.currentTimeMillis();
-            DocumentProcessorWrapper<Sentence> documentProcessor =
-                    docProcessorFactory.getDocumentProcessor();
             Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
 
             while (testIter.hasNext()) {
@@ -243,10 +292,10 @@ public class CompositionalLM {
                                         grammar.getInsideScore(testList.get(integer), true);
                         Sentence sentence = score.getSentence();
                         Double logP = score.getSentenceScore();
+                        log.info(String.format("Length: %d, logProp: %.4f", sentence.size(), logP));
                         synchronized (writer) {
                             writer.println(sentence);
                             writer.println(String.format("Length: %d, logProp: %.4f", sentence.size(), logP));
-                            log.info(String.format("Length: %d, logProp: %.4f", sentence.size(), logP));
                         }
                         return logP;
                     }
@@ -281,7 +330,102 @@ public class CompositionalLM {
         writer.close();
     }
 
-    @SneakyThrows
+    public void crossEntropy() throws IOException, ExecutionException, InterruptedException {
+        final PrintWriter writer = new PrintWriter(new File(op.testOp.outputFile), "UTF-8");
+        int testFileIdx = 0;
+        DocumentProcessorWrapper<Sentence> documentProcessor =
+                docProcessorFactory.getDocumentProcessor();
+        for (String testFile : op.testOp.testFiles) {
+            String testDistractedFile = getDistortedFilename(testFile);
+            float logScoreFile = 0f;
+            long epochTestfileTime = System.currentTimeMillis();
+            Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
+            Iterator<Sentence> testDistIter = documentProcessor.getIterator(testDistractedFile);
+
+
+            while (testIter.hasNext()) {
+                final List<Sentence> testList = new ArrayList<Sentence>();
+                final List<Sentence> testDistList = new ArrayList<Sentence>();
+
+                for (int idx = 0; idx < op.testOp.testBatchSize && testIter.hasNext(); idx++) {
+                    testList.add(testIter.next());
+                    testDistList.add(testDistIter.next());
+                }
+
+                double contEntropyScore = 0;
+                int testBatchSize = testList.size();
+                Function<Integer, Double> testFunc = new Function<Integer, Double>() {
+                    @Nullable
+                    public Double apply(@Nullable Integer i) {
+                        return crossEntropySent(writer,
+                                                testList.get(i),
+                                                testDistList.get(i));
+                    }
+                };
+
+                if (op.trainOp.parallel) {
+                    List<Future<List<Double>>> testScoreFutures =
+                            parallelizer.parallelizer(0, testBatchSize, testFunc);
+
+                    for (Future<List<Double>> future : testScoreFutures) {
+                        List<Double> scoreList = future.get();
+                        for (double score : scoreList) {
+                            contEntropyScore += score;
+                        }
+                    }
+                } else {
+                    for (int j = 0; j < testBatchSize; j++) {
+                        double score = testFunc.apply(j);
+                        contEntropyScore += score;
+                    }
+                }
+
+            }
+            double estimatedTestfileTime = System.currentTimeMillis() - epochTestfileTime;
+            log.info("$Testing$:: Constrastive Entropy calculated for file Idx:{}, time: {} => {}",
+                     testFileIdx, estimatedTestfileTime, logScoreFile);
+            testFileIdx++;
+        }
+    }
+
+    private String getDistortedFilename(String filename) {
+        double errPct = op.inputOp.errPct;
+        double originalPct = 100 - errPct;
+        double eachErrPct = errPct / 2;
+        return String.format("%s.deformed-%.1f-%.1f-%.1f",
+                             filename, originalPct,
+                             eachErrPct, eachErrPct);
+    }
+
+    private double crossEntropySent(final PrintWriter writer, final Sentence sentence, final Sentence distSentence) {
+        double scoreSent =
+                ((StanfordCompositionalInsideOutsideScore)
+                        grammar.getInsideScore(sentence, true))
+                            .getSentenceScore();
+        double scoreDistortedSent =
+                ((StanfordCompositionalInsideOutsideScore)
+                        grammar.getInsideScore(distSentence, true))
+                            .getSentenceScore();
+        double contEntropy =  scoreSent - scoreDistortedSent;
+        log.info(String.format("Sentence#%d[%d] contrastiveEntropy => %.4f",
+                                    sentence.getIndex(),  sentence.size(), contEntropy));
+
+        if (writer != null) {
+            synchronized (writer) {
+                writer.println(sentence);
+                writer.println(String.format("Length: %d, logProp: %.4f", sentence.size(), contEntropy));
+            }
+        }
+        return contEntropy;
+    }
+
+    private double crossEntropySent(final Sentence sentence, final Sentence distSentence) {
+        return crossEntropySent(null, sentence, distSentence);
+    }
+
+
+
+        @SneakyThrows
     public void visualize(String filename) {
         // List of training documents.
         List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
