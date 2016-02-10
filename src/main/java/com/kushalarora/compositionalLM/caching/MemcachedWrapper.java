@@ -36,4 +36,9 @@ public abstract class MemcachedWrapper<K, V> extends CacheWrapper<K, V> {
     public void close() {
         memcachedClient.shutdown();
     }
+
+
+    public void clear() {
+        memcachedClient.flush();
+    }
 }

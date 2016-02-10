@@ -30,4 +30,6 @@ public abstract class CacheWrapper<K, V> {
     public abstract void close();
 
     public abstract String getKeyString(K input);
+
+    public abstract void  clear() throws Exception;
 }

@@ -67,4 +67,8 @@ import java.io.*;
     public void close() {
         client.close();
     }
+
+    public void clear() {
+        coll.drop();
+    }
 }

@@ -48,6 +48,10 @@ public abstract class EhCacheWrapper<K, V> extends CacheWrapper<K, V> {
         return cache;
     }
 
+    public void clear() {
+        getCache().removeAll();
+    }
+
     @Override
     public void close() {
         cacheMgr.shutdown();

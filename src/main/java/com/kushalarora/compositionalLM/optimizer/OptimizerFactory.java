@@ -39,10 +39,11 @@ public class OptimizerFactory {
         }
     }
 
-    public static <T extends IInsideOutsideScore>  AbstractOptimizer<T, Derivatives> getOptimizer(
+    public static <T extends IIndexedSized>  AbstractOptimizer<T, Derivatives> getOptimizer(
             final Options op,
             final Model model,
-            final Function<T, Double> scorer,
+            final Function<T, Double> trainScorer,
+            final Function<T, Double> validScorer,
             final Function<T, Derivatives> derivativeCalculator,
             final Function<IntTuple, Void> functionSaver,
             final Parallelizer parallelizer) {
@@ -58,8 +59,12 @@ public class OptimizerFactory {
                         return model.getParams();
                     }
 
-                    public double getScore(T data) {
-                        return scorer.apply(data);
+                    public double getValidationScore(T data) {
+                        return validScorer.apply(data);
+                    }
+
+                    public double getTrainScore(T data) {
+                        return trainScorer.apply(data);
                     }
 
                     public void saveModel(int iter, int epoch) {
@@ -77,10 +82,13 @@ public class OptimizerFactory {
                         return model.getParams();
                     }
 
-                    public double getScore(T data) {
-                        return scorer.apply(data);
+                    public double getValidationScore(T data) {
+                        return validScorer.apply(data);
                     }
 
+                    public double getTrainScore(T data) {
+                        return trainScorer.apply(data);
+                    }
                     public void saveModel(int iter, int epoch) {
                         functionSaver.apply(new IntTuple(new int[] {iter, epoch}));
                     }

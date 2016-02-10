@@ -10,9 +10,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
 
 import static com.kushalarora.compositionalLM.utils.ObjectSizeFetcher.getSize;
 import static java.lang.Math.exp;
@@ -939,6 +941,47 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         log.info("Computed inside score computation:{}::{}", idx, sz);
         s.postProcess();
         return s;
+    }
+
+    public double getQScore(StanfordCompositionalInsideOutsideScore score) {
+        int length = score.length;
+        double p_W = score.compIScore[0][length];
+        double qScore = 0;
+        INDArray[][] phraseMatrix = new INDArray[length][length + 1];
+
+        Sentence sentence = score.getSentence();
+        for (int start = 0; start < length; start++) {
+            int end = start + 1;
+            phraseMatrix[start][end] = Nd4j.zeros(model.getDimensions(), 1);
+            phraseMatrix[start][end] =
+                    phraseMatrix[start][end].add(model.word2vec(sentence.get(start)));
+            qScore += model.energy(phraseMatrix[start][end]) * score.compositionalMu[start][end][start];
+        }
+
+        for (int diff = 2; diff < length + 1; diff++) {
+            for (int start = 0; start < length + 1 - diff; start++) {
+                int end = start + diff;
+                phraseMatrix[start][end] = Nd4j.zeros(model.getDimensions(), 1);
+                for (int split = start + 1; split < end; split++) {
+                    INDArray child1 = phraseMatrix[start][split];
+                    INDArray child2 = phraseMatrix[split][end];
+                    INDArray compVector =
+                            model.compose(child1, child2);
+                    phraseMatrix[start][end] =
+                            phraseMatrix[start][end]
+                                    .add(compVector.mul(
+                                            score.compISplitScore[start][end][split]));
+                    qScore += model.energy(compVector, child1, child2)
+                            * score.compositionalMu[start][end][split];
+                }
+
+                if (score.compIScore[start][end] != 0) {
+                    phraseMatrix[start][end] =
+                            phraseMatrix[start][end].div(score.compIScore[start][end]);
+                }
+            }
+        }
+        return qScore / p_W;
     }
 
 

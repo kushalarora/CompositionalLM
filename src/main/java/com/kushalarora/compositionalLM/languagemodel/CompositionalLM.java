@@ -3,6 +3,8 @@ package com.kushalarora.compositionalLM.languagemodel;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.kushalarora.compositionalLM.caching.CacheFactory;
+import com.kushalarora.compositionalLM.caching.CacheWrapper;
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorFactory;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
@@ -26,12 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.Nullable;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -66,172 +63,113 @@ public class CompositionalLM {
         DocumentProcessorWrapper<Sentence> docProcessor =
                 docProcessorFactory.getDocumentProcessor();
 
-        List<List<Sentence>> trainSentList = Lists.newArrayList();
-        List<List<Sentence>> trainDistSentList = Lists.newArrayList();
+        final List<Sentence> trainSentList = Lists.newArrayList();
+        final List<Sentence> trainDistSentList = Lists.newArrayList();
         for (String filename : op.trainOp.trainFiles) {
-            trainSentList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
-            trainDistSentList.add(Lists.newArrayList(
+            trainSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
+            trainDistSentList.addAll(Lists.newArrayList(
                     docProcessor.getIterator(getDistortedFilename(filename))));
         }
 
-        List<List<Sentence>> validSentList = Lists.newArrayList();
-        List<List<Sentence>> validDistSentList = Lists.newArrayList();
+        List<Sentence> validSentList = Lists.newArrayList();
+        List<Sentence> validDistSentList = Lists.newArrayList();
         for (String filename : op.trainOp.validationFiles) {
-            validSentList.add(Lists.newArrayList(docProcessor.getIterator(filename)));
-            validDistSentList.add(Lists.newArrayList(
+            validSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
+            validDistSentList.addAll(Lists.newArrayList(
                     docProcessor.getIterator(getDistortedFilename(filename))));
 
         }
 
+        final CacheWrapper<Sentence, StanfordCompositionalInsideOutsideScore> trainCache =
+                CacheFactory.getCache(op, new Function<Sentence, IInsideOutsideScore>() {
+                    @Nullable
+                    public IInsideOutsideScore apply(@Nullable Sentence sentence) {
+                        return grammar.getScore(sentence);
+                    }
+                });
 
-        List<List<StanfordCompositionalInsideOutsideScore>> validScoreFileList = Lists.newArrayList();
-        for (final List<Sentence> validList : validSentList) {
-            final int validListSize = validList.size();
-            final List<StanfordCompositionalInsideOutsideScore> validScoreList =
-                    new ArrayList<StanfordCompositionalInsideOutsideScore>();
 
-            Function<Integer, Void> validScorerFunc =
-                    new Function<Integer, Void>() {
-                        @Nullable
-                        public Void apply(@Nullable Integer index) {
-                            synchronized (validScoreList) {
-                                validScoreList.add(
-                                        new StanfordCompositionalInsideOutsideScore(
-                                                validList.get(index),
-                                                model.getDimensions(),
-                                                grammar.getVocabSize(),
-                                                false
-                                        ));
-                            }
-                            return null;
-                        }
-                    };
-            if (op.trainOp.parallel) {
-                parallelizer.parallelizer(0, validListSize, validScorerFunc);
-            } else {
-                for (int index = 0; index < validListSize; index++) {
-                    validScorerFunc.apply(index);
-                }
-            }
-            validScoreFileList.add(validScoreList);
-        }
-
-            // Optimizer with scorer, derivative calculator and saver as argument.
-         AbstractOptimizer<StanfordCompositionalInsideOutsideScore, Derivatives> optimizer =
+        // Optimizer with scorer, derivative calculator and saver as argument.
+        AbstractOptimizer<Sentence, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
-                         new Function<StanfordCompositionalInsideOutsideScore, Double>() {
-                                @Nullable
-                                // scorer
-                                public Double apply(StanfordCompositionalInsideOutsideScore score) {
-                                    return ((StanfordCompositionalInsideOutsideScore)
-                                            grammar.getInsideScore(score.getSentence(), true))
-                                            .getSentenceScore();
-                                }
-                         },
-                         new Function<StanfordCompositionalInsideOutsideScore, Derivatives>() {
-                                @Nullable
-                                // derivative calculator
-                                public Derivatives apply(@Nullable StanfordCompositionalInsideOutsideScore score) {
+                        new Function<Sentence, Double>() {
+                            @Nullable
+                            // train scorer
+                            // TODO:: QScore;
+                            public Double apply(Sentence sentence) {
+                                return grammar.getQScore(trainCache.get(sentence));
+                            }
+                        },
+                        new Function<Sentence, Double>() {
+                            @Nullable
+                            // valid scorer
+                            public Double apply(Sentence sentence) {
+                                return ((StanfordCompositionalInsideOutsideScore)
+                                        grammar.getInsideScore(sentence, true))
+                                        .getSentenceScore();
+                            }
+                        },
+                        new Function<Sentence, Derivatives>() {
+                            @Nullable
+                            // derivative calculator
+                            public Derivatives apply(@Nullable Sentence sentence) {
                                 Derivatives derivatives = new Derivatives(op,
-                                        model, score);
+                                        model, trainCache.get(sentence));
                                 derivatives.calcDerivative();
                                 return derivatives;
-                             }
-                         },
-                         new Function<IntTuple, Void>() {
-                             @Nullable
-                             // saver
-                             public Void apply(@Nullable IntTuple tuple) {
-                                 String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
-                                 str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
-                                 String outFilename = String.join(".", str);
-                                 saveModelSerialized(outFilename);
-                                 return null;
-                             }
-                         }, parallelizer);
+                            }
+                        },
+                        new Function<IntTuple, Void>() {
+                            @Nullable
+                            // saver
+                            public Void apply(@Nullable IntTuple tuple) {
+                                String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
+                                str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
+                                String outFilename = String.join(".", str);
+                                saveModelSerialized(outFilename);
+                                return null;
+                            }
+                        }, parallelizer);
 
         int EMIter = 0;
         // TODO: Add early stopping logic.
         while (EMIter < op.trainOp.maxEMEpochs) {
-
-            // E Step
-            List<List<StanfordCompositionalInsideOutsideScore>> trainScoreFileList = Lists.newArrayList();
-            for (final List<Sentence> trainList : trainSentList) {
-                final int trainListSize = trainList.size();
-                final List<StanfordCompositionalInsideOutsideScore> trainScoreList =
-                        new ArrayList<StanfordCompositionalInsideOutsideScore>();
-
-                Function<Integer, Void> trainScorerFunc =
-                        new Function<Integer, Void>() {
-                            @Nullable
-                            public Void apply(@Nullable Integer index) {
-                                StanfordCompositionalInsideOutsideScore score =
-                                (StanfordCompositionalInsideOutsideScore)
-                                        grammar.getScore(trainList.get(index));
-                                synchronized (trainScoreList) {
-                                    trainScoreList.add(score);
-                                }
-                                return null;
-                            }
-                        };
-                if (op.trainOp.parallel) {
-                    parallelizer.parallelizer(0, trainListSize, trainScorerFunc);
-                } else {
-                    for (int index = 0; index < trainListSize; index++) {
-                        trainScorerFunc.apply(index);
-                    }
-                }
-                trainScoreFileList.add(trainScoreList);
-            }
-
-            // M Step
+            trainCache.clear();
             // Fit training data with validation on validation file.
-            optimizer.fit(trainScoreFileList, validScoreFileList);
+            optimizer.fit(trainSentList, trainSentList);
 
             log.info("EMIter#: {}, bestValidationScore => {}",
-                        EMIter, optimizer.getBestValidationScore());
+                    EMIter, optimizer.getBestValidationScore());
+            final int trainListSize = trainSentList.size();
 
-            double combinedContEntropyScore = 0;
-            int combinedTrainSize = 0;
-            for (int i = 0; i < trainSentList.size(); i++) {
-                final List<Sentence> trainList = trainSentList.get(i);
-                final List<Sentence> trainDistList = trainDistSentList.get(i);
-                int contEntropyScore = 0;
-                Function<Integer, Double> testFunc = new Function<Integer, Double>() {
-                    @Nullable
-                    public Double apply(@Nullable Integer i) {
-                        return crossEntropySent(trainList.get(i),
-                                                trainDistList.get(i));
-                    }
-                };
-                final int trainListSize = trainList.size();
+            double contEntropyScore = 0;
+            Function<Integer, Double> testFunc = new Function<Integer, Double>() {
+                @Nullable
+                public Double apply(@Nullable Integer i) {
+                    return crossEntropySent(trainSentList.get(i),
+                            trainDistSentList.get(i));
+                }
+            };
 
-                if (op.trainOp.parallel) {
-                    List<Future<List<Double>>> contEntropyFunc =
-                            parallelizer.parallelizer(0, trainListSize, testFunc);
+            if (op.trainOp.parallel) {
+                List<Future<List<Double>>> contEntropyFunc =
+                        parallelizer.parallelizer(0, trainListSize, testFunc);
 
-                    for (Future<List<Double>> future : contEntropyFunc) {
-                        List<Double> scoreList = future.get();
-                        for (double score : scoreList) {
-                            contEntropyScore += score;
-                        }
-                    }
-                } else {
-                    for (int j = 0; j < trainListSize; j++) {
-                        double score = testFunc.apply(j);
+                for (Future<List<Double>> future : contEntropyFunc) {
+                    List<Double> scoreList = future.get();
+                    for (double score : scoreList) {
                         contEntropyScore += score;
                     }
                 }
-                combinedTrainSize += trainListSize;
-                combinedContEntropyScore += contEntropyScore;
-                log.info("$ContEnt$ Avg Contrastive Train Entropy for batch#{} : {}",
-                            i, contEntropyScore/trainListSize);
+            } else {
+                for (int j = 0; j < trainListSize; j++) {
+                    double score = testFunc.apply(j);
+                    contEntropyScore += score;
+                }
             }
 
             log.info("$ContEnt$ Avg Contrastive Train Entropy : {}",
-                        combinedContEntropyScore/combinedTrainSize);
-
-
+                    contEntropyScore/trainListSize);
             EMIter++;
         }
 
