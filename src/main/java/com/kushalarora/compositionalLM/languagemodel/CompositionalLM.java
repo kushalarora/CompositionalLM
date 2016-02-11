@@ -136,7 +136,7 @@ public class CompositionalLM {
         while (EMIter < op.trainOp.maxEMEpochs) {
             trainCache.clear();
             // Fit training data with validation on validation file.
-            optimizer.fit(trainSentList, trainSentList);
+            optimizer.fit(trainSentList, validSentList);
 
             log.info("EMIter#: {}, bestValidationScore => {}",
                     EMIter, optimizer.getBestValidationScore());
