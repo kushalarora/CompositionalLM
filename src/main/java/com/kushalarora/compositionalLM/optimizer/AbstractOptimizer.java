@@ -89,11 +89,11 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             throws ExecutionException, InterruptedException {
         Collections.shuffle(trainList, rand);
         int batchSize = trainList.size();
-        Collections.sort(trainList, new Comparator<T>() {
+        Collections.sort(trainList, Collections.reverseOrder(new Comparator<T>() {
             public int compare(T o1, T o2) {
-                return o1.getSize() > o2.getSize() ? -1 : 1;
+                return o1.getSize() - o2.getSize();
             }
-        });
+        }));
         Function<Integer, D> fitRoutine =
                 new Function<Integer, D>() {
                     @Nullable
