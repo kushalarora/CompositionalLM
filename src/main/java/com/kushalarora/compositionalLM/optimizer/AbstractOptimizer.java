@@ -89,6 +89,11 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             throws ExecutionException, InterruptedException {
         Collections.shuffle(trainList, rand);
         int batchSize = trainList.size();
+        Collections.sort(trainList, new Comparator<T>() {
+            public int compare(T o1, T o2) {
+                return o1.getSize() > o2.getSize() ? -1 : 1;
+            }
+        });
         Function<Integer, D> fitRoutine =
                 new Function<Integer, D>() {
                     @Nullable
@@ -238,7 +243,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             } // end for batch
 
             long estimatedEpochTime = System.currentTimeMillis() - epochStartTime;
-            log.info("Training score epoch#: {},  time: {} => {}", epoch, estimatedEpochTime, cumlTrainingScore/cumlTrainingBatchSize);
+            log.info("$Training$ Training score epoch#: {},  time: {} => {}", epoch, estimatedEpochTime, cumlTrainingScore/cumlTrainingBatchSize);
             epoch += 1;
 
             // clear accumulator and

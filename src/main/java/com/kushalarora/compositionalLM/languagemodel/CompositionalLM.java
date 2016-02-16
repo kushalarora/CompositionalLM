@@ -71,13 +71,21 @@ public class CompositionalLM {
                     docProcessor.getIterator(getDistortedFilename(filename))));
         }
 
+        final Map<Integer, Integer> validIndexToDistListIdxMapping =
+                new HashMap<Integer, Integer>();
         List<Sentence> validSentList = Lists.newArrayList();
-        List<Sentence> validDistSentList = Lists.newArrayList();
+        final List<Sentence> validDistSentList = Lists.newArrayList();
         for (String filename : op.trainOp.validationFiles) {
-            validSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
-            validDistSentList.addAll(Lists.newArrayList(
-                    docProcessor.getIterator(getDistortedFilename(filename))));
+            List<Sentence> validList = Lists.newArrayList(docProcessor.getIterator(filename));
+            List<Sentence> validDistList = Lists.newArrayList(docProcessor.getIterator(getDistortedFilename(filename)));
+            assert(validList.size() == validDistList.size());
+            for (int i = 0; i < validList.size(); i++) {
+                validIndexToDistListIdxMapping.put(
+                        validList.get(i).getIndex(), validDistSentList.size());
+                validSentList.add(validList.get(i));
+                validDistSentList.add(validDistList.get(i));
 
+            }
         }
 
         final CacheWrapper<Sentence, StanfordCompositionalInsideOutsideScore> trainCache =
@@ -104,9 +112,11 @@ public class CompositionalLM {
                             @Nullable
                             // valid scorer
                             public Double apply(Sentence sentence) {
-                                return ((StanfordCompositionalInsideOutsideScore)
-                                        grammar.getInsideScore(sentence, true))
-                                        .getSentenceScore();
+                                int distListIdx =
+                                        validIndexToDistListIdxMapping
+                                                .get(sentence.getIndex());
+                                Sentence distSentence = validDistSentList.get(distListIdx);
+                                return crossEntropySent(sentence, distSentence);
                             }
                         },
                         new Function<Sentence, Derivatives>() {
