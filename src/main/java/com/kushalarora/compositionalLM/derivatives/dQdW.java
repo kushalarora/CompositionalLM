@@ -107,7 +107,7 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
             };
 
             if (op.trainOp.parallel) {
-                parallelizer.parallelizer(0, 2 * dim, func, 5);
+                parallelizer.parallelizer(0, 2 * dim, func);
             } else {
                 for (int j = 0; j < 2 * dim; j++) {
                     func.apply(j);
