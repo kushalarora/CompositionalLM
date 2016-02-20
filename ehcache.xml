@@ -30,5 +30,5 @@
            transactionalMode="off">
     </cache>
 
-    <sizeOfPolicy maxDepth="100" maxDepthExceededBehavior="abort"/>
+    <sizeOfPolicy maxDepth="10000" maxDepthExceededBehavior="abort"/>
 </ehcache>

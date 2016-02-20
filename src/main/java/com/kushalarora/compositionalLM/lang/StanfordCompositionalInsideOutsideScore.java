@@ -16,32 +16,32 @@ import java.util.Set;
 @Slf4j
 public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsideScore {
     // Averaged representation of phrases in sentence
-    protected transient INDArray[][] phraseMatrix;
+    protected  INDArray[][] phraseMatrix;
 
     // composition matrix for all possible phrases
     // contains multiple representation for each
     // phrase originating from different split
-    protected transient INDArray[][][] compositionMatrix;
+    protected  INDArray[][][] compositionMatrix;
 
     // extended mu to included compositional score
-    protected transient double[][][] compositionalMu;
+    protected  double[][][] compositionalMu;
 
     // extended inside score with compositional score
-    protected transient double[][] compIScore;
+    protected  double[][] compIScore;
 
-    protected transient double[][][] compISplitScore;
+    protected  double[][][] compISplitScore;
 
     // inside scores
     // start idx, end idx, state -> logProb (ragged; null for end <= start)
-    protected transient SparseMatrix iScore;
+    protected  SparseMatrix iScore;
 
     // outside scores
     // start idx, end idx, state -> logProb
-    protected transient SparseMatrix oScore;
+    protected  SparseMatrix oScore;
 
-    protected transient SparseMatrix iSplitSpanStateScore;
+    protected  SparseMatrix iSplitSpanStateScore;
 
-    protected transient SparseMatrix muScore;
+    protected  SparseMatrix muScore;
 
     @Getter
     protected Sentence sentence;

@@ -21,7 +21,7 @@ import java.io.*;
         super();
         client = new MongoClient(op.cacheOp.cacheServer, op.cacheOp.cachePort);
         DB db = client.getDB(op.cacheOp.mongodbDatabase);
-        coll = db.getCollection(op.cacheOp.mongodbDatabase);
+        coll = db.getCollection(op.cacheOp.mongodbCollection);
         coll.createIndex(new BasicDBObject("key", 1));
     }
 

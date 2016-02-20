@@ -89,10 +89,10 @@ public class CompositionalLM {
         }
 
         final CacheWrapper<Sentence, StanfordCompositionalInsideOutsideScore> trainCache =
-                CacheFactory.getCache(op, new Function<Sentence, IInsideOutsideScore>() {
+                CacheFactory.getCache(op, new Function<Sentence, StanfordCompositionalInsideOutsideScore>() {
                     @Nullable
-                    public IInsideOutsideScore apply(@Nullable Sentence sentence) {
-                        return grammar.getScore(sentence);
+                    public StanfordCompositionalInsideOutsideScore apply(@Nullable Sentence sentence) {
+                        return (StanfordCompositionalInsideOutsideScore)grammar.getScore(sentence);
                     }
                 });
 

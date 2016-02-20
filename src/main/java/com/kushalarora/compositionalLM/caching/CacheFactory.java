@@ -60,7 +60,7 @@ public class CacheFactory {
 
                     @Override
                     public String getKeyString(K input) {
-                        return input.toString();
+                        return input.toString().replace(" ", ":");
                     }
                 };
             case NONE:
