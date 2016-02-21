@@ -10,7 +10,7 @@ public class Executor {
 
     public static ExecutorService getInstance() {
         if (executorService == null) {
-            executorService = Executors.newFixedThreadPool(100);
+            executorService = Executors.newWorkStealingPool();
         }
         return executorService;
     }
