@@ -150,9 +150,9 @@ public class CompositionalLM {
 
             log.info("EMIter#: {}, bestValidationScore => {}",
                     EMIter, optimizer.getBestValidationScore());
-            final int trainListSize = trainSentList.size();
+/*            final int trainListSize = trainSentList.size();
 
-            double contEntropyScore = 0;
+           double contEntropyScore = 0;
             Function<Integer, Double> testFunc = new Function<Integer, Double>() {
                 @Nullable
                 public Double apply(@Nullable Integer i) {
@@ -179,7 +179,7 @@ public class CompositionalLM {
             }
 
             log.info("$ContEnt$ Avg Contrastive Train Entropy : {}",
-                    contEntropyScore/trainListSize);
+                    contEntropyScore/trainListSize);*/
             EMIter++;
         }
 

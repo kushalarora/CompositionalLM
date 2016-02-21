@@ -233,6 +233,10 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                         log.info("$Updated Validation$  Updated best validation score epoch# {}, iter# {}:: {}",
                                 epoch, iter, mean);
                         saveModel(iter, epoch);
+                    }
+                    else {
+                        // if mean isn't going down, no point looping
+                        return;
                     } // end if mean < bestValidationScore
                 }   // end if validate
             } // end for batch
