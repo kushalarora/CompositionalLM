@@ -94,11 +94,11 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdw.calcDerivative(model, score);
         dqdxw.calcDerivative(model, score);
 
-        log.info("dQdu Norm2:{}(len={}) = {}", idx, sz, dqdu.norm());
-        log.info("dQdW Norm2:{}(len={}) = {}", idx, sz, dqdw.norm());
-        log.info("dQdXw Norm2:{}(len={}) = {}", idx, sz, dqdxw.norm());
-
         if (op.debug) {
+            log.info("dQdu Norm2:{}(len={}) = {}", idx, sz, dqdu.norm());
+            log.info("dQdW Norm2:{}(len={}) = {}", idx, sz, dqdw.norm());
+            log.info("dQdXw Norm2:{}(len={}) = {}", idx, sz, dqdxw.norm());
+
             log.info("Memory Size Derivatives: {}:: {}\n" +
                             "\t {} => {}  MB\n" +
                             "\t {} => {} MB\n" +
