@@ -55,7 +55,7 @@ public class CacheFactory {
                 return new MemcachedWrapper<K, V>(op) {
 
                     @Override
-                    public V load(K input) {
+                    public V loadValue(K input) {
                         return loadFunc.apply(input);
                     }
 
@@ -68,7 +68,7 @@ public class CacheFactory {
                 return new CacheWrapper<K, V>() {
 
                     @Override
-                    public V load(K input) {
+                    public V loadValue(K input) {
                         return loadFunc.apply(input);
                     }
 
@@ -99,7 +99,7 @@ public class CacheFactory {
                 return new EhCacheWrapper<K, V>() {
 
                     @Override
-                    public V load(K input) {
+                    public V loadValue(K input) {
                         return loadFunc.apply(input);
                     }
 
@@ -112,7 +112,7 @@ public class CacheFactory {
             case REDIS:
                 return new RedisCacheWrapper<K, V>(op) {
                     @Override
-                    public V load(K input) {
+                    public V loadValue(K input) {
                         return loadFunc.apply(input);
                     }
 
@@ -126,7 +126,7 @@ public class CacheFactory {
                 return new MongoCacheWrapper<K, V>(op) {
 
                     @Override
-                    public V load(K input) {
+                    public V loadValue(K input) {
                         return loadFunc.apply(input);
                     }
 
@@ -138,7 +138,7 @@ public class CacheFactory {
             case GUAVA:
                 return new GuavaCacheWrapper<K,V>(op) {
                     @Override
-                    public V load(K input) {
+                    public V loadValue(K input) {
                         return loadFunc.apply(input);
                     }
 

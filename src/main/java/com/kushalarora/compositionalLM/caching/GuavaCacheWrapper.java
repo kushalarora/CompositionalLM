@@ -21,22 +21,22 @@ public abstract class GuavaCacheWrapper<K, V> extends CacheWrapper<K, V> {
                 .maximumSize(200000)
                 .build(new CacheLoader<K, V>() {
                             public V load(K key) {
-                                return load(key);
+                                return loadValue(key);
                             }
                         });
     }
 
     @Override
     public void put(K input, V value) {
-
+        cache.put(input, value);
     }
 
     @Override
     @SneakyThrows
     public V getRoutine(final K input) {
         return cache.get(input, new Callable<V>() {
-            public V call() throws Exception {
-                return load(input);
+            public  V call() throws Exception {
+                return loadValue(input);
             }
         });
     }
