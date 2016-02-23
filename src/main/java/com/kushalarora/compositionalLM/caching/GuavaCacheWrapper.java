@@ -33,7 +33,7 @@ public abstract class GuavaCacheWrapper<K, V> extends CacheWrapper<K, V> {
 
     @Override
     @SneakyThrows
-    public V getRoutine(final K input) {
+    public V get(final K input) {
         return cache.get(input, new Callable<V>() {
             public  V call() throws Exception {
                 return loadValue(input);
