@@ -7,7 +7,7 @@
 
     <diskStore path="user.home/data/"/>
 
-    <defaultCache
+    <cache name="inmem"
             maxEntriesLocalHeap="100000"
             eternal="true"
             overflowToDisk="true"
@@ -17,7 +17,7 @@
             diskExpiryThreadIntervalSeconds="120"
             memoryStoreEvictionPolicy="LRU"
             statistics="false">
-    </defaultCache>
+    </cache>
 
     <cache name="cache"
            maxBytesLocalHeap="300000"

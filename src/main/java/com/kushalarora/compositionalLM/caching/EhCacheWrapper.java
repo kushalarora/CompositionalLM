@@ -42,7 +42,7 @@ public abstract class EhCacheWrapper<K, V> extends CacheWrapper<K, V> {
         Ehcache cache = null;
         if (cacheMgr != null) {
             //cache = cacheMgr.addCacheIfAbsent(name);
-            cache = cacheMgr.getEhcache(CACHE_NAME);
+            cache = cacheMgr.getEhcache("inmem");
         }
 
         return cache;
