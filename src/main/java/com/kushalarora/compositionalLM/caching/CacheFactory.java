@@ -143,11 +143,6 @@ public class CacheFactory {
                     }
 
                     @Override
-                    public V getRoutine(K input) {
-                        return null;
-                    }
-
-                    @Override
                     public String getKeyString(K input) {
                         return input.toString();
                     }
