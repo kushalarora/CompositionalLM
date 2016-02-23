@@ -19,7 +19,8 @@ public class CacheFactory {
         NONE("none"),
         EHCACHE("ehcache"),
         REDIS("redis"),
-        MONGO("mongo");
+        MONGO("mongo"),
+        GUAVA("guava");
 
         private String text;
 
@@ -124,6 +125,18 @@ public class CacheFactory {
             case MONGO:
                 return new MongoCacheWrapper<K, V>(op) {
 
+                    @Override
+                    public V load(K input) {
+                        return loadFunc.apply(input);
+                    }
+
+                    @Override
+                    public String getKeyString(K input) {
+                        return input.toString();
+                    }
+                };
+            case GUAVA:
+                return new GuavaCacheWrapper<K,V>(op) {
                     @Override
                     public V load(K input) {
                         return loadFunc.apply(input);
