@@ -17,8 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Parallelizer {
     public Parallelizer(Options op, int blockSize) {
+        this(op, blockSize, Executor.getInstance());
+    }
+
+    public Parallelizer(Options op, int blockSize, ExecutorService executor) {
         this.blockSize = blockSize;
-        executor = Executor.getInstance();
+        this.executor = executor;
     }
 
 

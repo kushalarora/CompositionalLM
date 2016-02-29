@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
@@ -285,7 +286,8 @@ public class CompositionalLM {
                 docProcessorFactory.getDocumentProcessor();
         for (String testFile : op.testOp.testFiles) {
             String testDistractedFile = getDistortedFilename(testFile);
-            float logScoreFile = 0f;
+            double logScoreFile = 0d;
+            int logSentCount = 0;
             long epochTestfileTime = System.currentTimeMillis();
             Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
             Iterator<Sentence> testDistIter = documentProcessor.getIterator(testDistractedFile);
@@ -327,11 +329,13 @@ public class CompositionalLM {
                         contEntropyScore += score;
                     }
                 }
-
+                logScoreFile += contEntropyScore;
+                logSentCount += testBatchSize;
             }
+
             double estimatedTestfileTime = System.currentTimeMillis() - epochTestfileTime;
             log.info("$Testing$:: Constrastive Entropy calculated for file Idx:{}, time: {} => {}",
-                     testFileIdx, estimatedTestfileTime, logScoreFile);
+                     testFileIdx, estimatedTestfileTime, logScoreFile/logSentCount);
             testFileIdx++;
         }
     }
@@ -511,17 +515,16 @@ public class CompositionalLM {
             }
         }
 
-        Parallelizer parallelizer = new Parallelizer(op, 1);
-
         StanfordCompositionalGrammar grammar;
         if (model != null) {
-            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, model, parallelizer);
+            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, model, new Parallelizer(op, 1));
         } else {
-            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, parallelizer);
+            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, new Parallelizer(op, 1));
             model = grammar.getModel();
         }
 
-        final CompositionalLM cLM = new CompositionalLM(grammar, op, model, parallelizer);
+        final CompositionalLM cLM = new CompositionalLM(grammar, op, model,
+                                        new Parallelizer(op, 1, Executors.newFixedThreadPool(100)));
 
         if (op.train) {
             log.info("starting training");
