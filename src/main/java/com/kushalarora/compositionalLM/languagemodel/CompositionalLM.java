@@ -143,14 +143,24 @@ public class CompositionalLM {
                         }, parallelizer);
 
         int EMIter = 0;
+        double bestEMIterValidScore = 0;
         // TODO: Add early stopping logic.
         while (EMIter < op.trainOp.maxEMEpochs) {
             trainCache.clear();
             // Fit training data with validation on validation file.
             optimizer.fit(trainSentList, validSentList);
-
+            double bestEMIterTillNow = optimizer.getBestValidationScore();
             log.info("EMIter#: {}, bestValidationScore => {}",
-                    EMIter, optimizer.getBestValidationScore());
+                    EMIter, bestEMIterTillNow);
+
+            if (bestEMIterValidScore < bestEMIterTillNow)
+            {
+                bestEMIterValidScore = bestEMIterTillNow;
+                String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
+                str[0] = String.format("%s-%d", str[0], EMIter);
+                String outFilename = String.join(".", str);
+                saveModelSerialized(outFilename);
+            }
 /*            final int trainListSize = trainSentList.size();
 
            double contEntropyScore = 0;
@@ -182,6 +192,7 @@ public class CompositionalLM {
             log.info("$ContEnt$ Avg Contrastive Train Entropy : {}",
                     contEntropyScore/trainListSize);*/
             EMIter++;
+            saveModelSerialized(op.modelOp.outFilename);
         }
 
         if (op.trainOp.saveVisualization) {
