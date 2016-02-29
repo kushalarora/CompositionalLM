@@ -533,7 +533,7 @@ public class CompositionalLM {
         } else if (op.parse) {
             cLM.parse();
         } else if (op.test) {
-            cLM.entropy();
+            cLM.crossEntropy();
         } // end processing if statement
 
 
