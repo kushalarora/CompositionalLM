@@ -39,6 +39,6 @@ public abstract class GuavaCacheWrapper<K, V> extends CacheWrapper<K, V> {
 
     @Override
     public void clear() throws Exception {
-
+        cache.invalidateAll();
     }
 }
