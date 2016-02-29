@@ -1,0 +1,1 @@
+java -javaagent:lib/jamm.jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Xmx50g -jar out/CompositionalLM-1.0-SNAPSHOT-jar-with-dependencies.jar -test src/resources/test -grammarType stanford -grammarFile src/resources/englishPCFG.ser.gz -saveOutputModelSerialized src/resources/model25-9-2.ser.gz -parallel -outputFile ./output.ppl
