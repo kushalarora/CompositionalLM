@@ -1,230 +1,45 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.base.Function;
+import com.google.common.util.concurrent.AtomicDouble;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
-import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
-/**
- * Created by karora on 7/14/15.
- */
 @Slf4j
-public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDerivatives<T>>
+public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDerivatives>
         implements IOptimizer<T, D> {
     private final Random rand;
     protected Options op;
     protected ExecutorService executor;
     protected int iter;
     protected int epoch;
+
+    @Getter
     protected double bestValidationScore;
     protected boolean done;
-    private DocumentProcessorWrapper<T> documentProcessor;
+    private Parallelizer parallelizer;
 
-    D dvAcc;
+    protected D dvAcc;
 
-    protected AbstractOptimizer(Options op, D dvAcc, DocumentProcessorWrapper<T> documentProcessor) {
+    protected AbstractOptimizer(Options op, D dvAcc, Parallelizer parallelizer) {
         this.op = op;
         this.dvAcc = dvAcc;
-        this.documentProcessor = documentProcessor;
         rand = new Random();
         iter = 0;
         epoch = 0;
-        bestValidationScore = Double.MAX_VALUE;
+        bestValidationScore = Double.NEGATIVE_INFINITY;
         done = false;
+        this.parallelizer = parallelizer;
 
-    }
-
-
-    private Function<List<T>, Double> fitRoutineParallel =
-            new Function<List<T>, Double>() {
-                @Nullable
-                public Double apply(@Nullable List<T> trainBatch) {
-
-                    List<AbstractMap.SimpleEntry<T, Future<D>>> futureList =
-                            new ArrayList<AbstractMap.SimpleEntry<T, Future<D>>>();
-                    double cumlTrainingScore = 0.0;
-                    int cumlTrainingSize = 0;
-
-                    for (final T sample : trainBatch) {
-                        log.info("****Started Training#{}: {}****",
-                                sample.getIndex(), sample);
-
-                        Future<D> future = executor.submit(
-                                new Callable<D>() {
-                                    public D call() throws Exception {
-                                        return (D) fitOne(sample);
-                                    }
-                                });
-                        futureList.add(new AbstractMap.SimpleEntry<T, Future<D>>(sample, future));
-                    }
-
-                    Collections.sort(futureList, new Comparator<AbstractMap.SimpleEntry<T, Future<D>>>()
-                    {
-                        public int compare(AbstractMap.SimpleEntry<T, Future<D>> o1, AbstractMap.SimpleEntry<T, Future<D>> o2)
-                        {
-                            return (int)(o1.getKey().getSize() - o2.getKey().getSize());
-                        }
-                    });
-
-
-                    Iterator < AbstractMap.SimpleEntry<T, Future<D>>> it = futureList.iterator();
-                    while (it.hasNext()) {
-                        try {
-                            Future<D> future = it.next().getValue();
-                            D derivatives = future.get();
-                            cumlTrainingScore += derivatives.getScore();
-                            cumlTrainingSize += 1;
-                            calcLearningRate(derivatives);
-                            derivativeAcc(derivatives);
-                            log.info("****Finished Training#{}****",
-                                    derivatives.getData().getIndex());
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } catch (ExecutionException e) {
-                            e.printStackTrace();
-                        }
-                        it.remove();
-                    }
-                    return cumlTrainingScore/cumlTrainingSize;
-                }
-            };
-
-    Function<List<T>, Double> fitRoutineSeq =
-            new Function<List<T>, Double>() {
-                @Nullable
-                public Double apply(@Nullable List<T> trainBatch) {
-                    double cumlTrainingScore = 0.0;
-                    int cumlTrainingSize = 0;
-                    for (T sample : trainBatch) {
-                        log.info("****Started Training#{}: {}****",
-                                sample.getIndex(), sample);
-
-                        D derivatives = fitOne(sample);
-                        cumlTrainingScore += derivatives.getScore();
-                        cumlTrainingSize += 1;
-                        calcLearningRate(derivatives);
-                        derivativeAcc(derivatives);
-                        log.info("****Finished Training#{}****",
-                                sample.getIndex());
-                    }
-                    return cumlTrainingScore/cumlTrainingSize;
-                }
-            };
-
-    Function<List<T>, Double> validRoutineParallel =
-            new Function<List<T>, Double>() {
-                @Nullable
-                public Double apply(final @Nullable List<T> validList) {
-
-                    Collections.sort(validList, new Comparator<T>()
-                    {
-
-                        public int compare(T o1, T o2)
-                        {
-                            return (int)(o1.getSize() - o2.getSize());
-                        }
-                    });
-
-                    double validationScore = 0;
-                    List<Future<Double>> futureList =
-                            new ArrayList<Future<Double>>();
-
-                    for (final T data : validList) {
-                        log.info("Starting Validation#{}: {}", data.getIndex(), data);
-                        Future<Double> future = executor.submit(new Callable<Double>() {
-                            public Double call() throws Exception {
-                                return getValidationScore(data);
-                            }
-                        });
-                        futureList.add(future);
-                    }
-
-                    int idx = 0;
-                    Iterator<Future<Double>> it = futureList.iterator();
-                    while (it.hasNext()) {
-                        try {
-                            Future<Double> future = it.next();
-                            Double score = future.get();
-                            if (score.isInfinite() || score.isNaN()) {
-                                log.info("****Validation#{} is {}****",
-                                        idx++, score);
-                                continue;
-                            }
-
-                            log.info("****Finished Validation#{}: {}****",
-                                    idx++, score);
-
-                            validationScore += score;
-                            it.remove();
-
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        } catch (ExecutionException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    return validationScore;
-                }
-            };
-
-    Function<List<T>, Double> validRoutineSeq =
-            new Function<List<T>, Double>() {
-                @Nullable
-                public Double apply(@Nullable List<T> validList) {
-                    double validationScore = 0;
-                    int count = 0;
-                    int idx = 0;
-                    for (final T data : validList) {
-                        log.info("Validation#{}: {}", idx++, data);
-                        Double score = getValidationScore(data);
-                        if (score.isInfinite() || score.isNaN()) {
-                            log.info("******** Validation#{} is {}************", data.getIndex(), score);
-                            continue;
-                        }
-                        log.info("*********Finished Validation#{}: {} ************", data.getIndex(), score);
-                        validationScore += score;
-                    }
-
-                    return validationScore;
-                }
-            };
-
-    private double getValidationScore(Function<List<T>, Double> validFunction, List<String> validFileList) {
-        // calc mean for validation set
-        double cumlScore = 0;
-        double cumlSize = 0;
-        for (int validListIdx = 0; validListIdx < validFileList.size(); validListIdx++) {
-            String validFilename = validFileList.get(validListIdx);
-
-            Iterator<T> validIter = documentProcessor.getIterator(validFilename);
-            List<T> validList = new ArrayList<T>();
-
-            int validBatchIdx = 0;
-            while (validIter.hasNext()) {
-                validList.clear();
-                log.info("Starting validList#: {},  validBatch#: {}", validListIdx, validBatchIdx);
-
-                for (int idx = 0; idx < op.trainOp.validBatchSize && validIter.hasNext(); idx++) {
-                    validList.add(validIter.next());
-                }
-
-                int validBatchSize = validList.size();
-
-                cumlScore += validFunction.apply(validList);
-
-                cumlSize += validBatchSize;
-
-                validBatchIdx++;
-            }
-
-        }
-
-        return cumlScore / cumlSize;
     }
 
     public D fitOne(T data) {
@@ -243,124 +58,197 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         dvAcc.clear();
     }
 
-    public void fit(List<String> trainFileList, List<String> validSet) {
-
-        Function<List<T>, Double> trainFunction;
-        Function<List<T>, Double> validFunction;
+    private double getValidationScore(final List<T> validList) throws ExecutionException, InterruptedException {
+        int validBatchSize = validList.size();
+        double validBatchScore = 0;
+        Function<Integer, Double> validFunc = new Function<Integer, Double>() {
+            @Nullable
+            public Double apply(@Nullable Integer integer) {
+                return getValidationScore(validList.get(integer));
+            }
+        };
         if (op.trainOp.parallel) {
-            log.info("Running in parallel mode");
-            log.info("NumThreads#: {}", op.trainOp.nThreads);
-            executor =
-                    Executors.newFixedThreadPool(2 * op.trainOp.nThreads);
-            trainFunction = fitRoutineParallel;
-            validFunction = validRoutineParallel;
+            List<Future<List<Double>>> validScoreFutures =
+                    parallelizer.parallelizer(0, validBatchSize, validFunc);
+
+            for (Future<List<Double>> future : validScoreFutures) {
+                List<Double> scoreList = future.get();
+                for (double score : scoreList) {
+                    validBatchScore += score;
+                }
+            }
         } else {
-            trainFunction = fitRoutineSeq;
-            validFunction = validRoutineSeq;
+            for (int i = 0; i < validBatchSize; i++) {
+                validBatchScore += validFunc.apply(i);
+            }
+        }
+        return validBatchScore;
+    }
+
+    private void fitBatch(final List<T> trainList)
+            throws ExecutionException, InterruptedException {
+        Collections.shuffle(trainList, rand);
+        int batchSize = trainList.size();
+        Function<Integer, D> fitRoutine =
+                new Function<Integer, D>() {
+                    @Nullable
+                    public D apply(@Nullable Integer integer) {
+                        final T data = trainList.get(integer);
+                        log.info("Training sentence#{}:: {}", data.getIndex(), data);
+                        return fitOne(data);
+                    }
+                };
+
+        if (op.trainOp.parallel) {
+            List<Future<List<D>>> futures =
+                    parallelizer.parallelizer(0, batchSize, fitRoutine);
+
+            for (Future<List<D>> future : futures) {
+                for (D derivative : future.get()) {
+                    derivativeAcc(derivative);
+                }
+            }
+        } else {
+            for (int i = 0; i < batchSize; i++) {
+                D derivative = fitRoutine.apply(i);
+                derivativeAcc(derivative);
+            }
         }
 
-//        log.info("Intial validation score#: {}",
-//                getValidationScore(validFunction, validSet));
+        // update param for this batch
+        D dAcc = getAccumulatedDerivative();
+        dAcc.mul(1.0 / batchSize);
+        updateParams(dAcc);
+    }
 
-        epoch = 0;
-        iter = 0;
-        bestValidationScore = Double.MAX_VALUE;
+
+    public double getTrainBatchScore(final List<T> trainList)
+            throws ExecutionException, InterruptedException {
+        int batchSize = trainList.size();
+        AtomicDouble atomicDouble = new AtomicDouble(0);
+        Function<Integer, Double> scoreRountine =
+                new Function<Integer, Double>() {
+                    @Nullable
+                    public Double apply(@Nullable Integer integer) {
+                        return getTrainScore(trainList.get(integer));
+                    }
+                };
+
+        if (op.trainOp.parallel) {
+            List<Future<List<Double>>> futures =
+                    parallelizer.parallelizer(0, batchSize, scoreRountine);
+
+            for (Future<List<Double>> future : futures) {
+                for (Double score : future.get()) {
+                    atomicDouble.addAndGet(score);
+                }
+            }
+        } else {
+            for (int i = 0; i < batchSize; i++) {
+                Double score = scoreRountine.apply(i);
+                atomicDouble.addAndGet(score);
+            }
+        }
+
+        return atomicDouble.get();
+    }
+
+    public void fit(final List<T> trainFileList, final List<T> validSet)
+            throws ExecutionException, InterruptedException {
+        epoch = iter = 0;
         done = false;
 
         // do training these many times
-        while (epoch < op.trainOp.maxEpochs && !done) {
-            double cumlTrainScore = 0.0;
-            int cumlTrainBatch = 0;
+        while (epoch < op.trainOp.maxOptimizerEpochs && !done) {
+            log.info("Starting epoch#: {}", epoch);
+            long epochStartTime = System.currentTimeMillis();
+            Iterator<T> trainIter = trainFileList.iterator();
+            int trainBatchIdx = 0;
+            double cumlTrainingScore = 0;
+            double cumlTrainingBatchSize = 0;
+            while (trainIter.hasNext()) {
+                long batchStartTime = System.currentTimeMillis();
+                log.info("Starting epoch#: {}, batch#: {}", epoch, trainBatchIdx);
 
-            log.info("Starting epoch: {}", epoch);
-            List<T> trainList = new ArrayList<T>();
+                final List<T> trainList = new ArrayList<T>();
+                for (int idx = 0; idx < op.trainOp.batchSize && trainIter.hasNext(); idx++) {
+                    T data = trainIter.next();
+                    trainList.add(data);
+                }
+                int trainBatchSize = trainList.size();
 
+                // train batch
+                fitBatch(trainList);
+                double trainBatchScore = getTrainBatchScore(trainList);
+                cumlTrainingScore += trainBatchScore;
+                cumlTrainingBatchSize += trainBatchSize;
+                long estimatedTime = System.currentTimeMillis() - batchStartTime;
+                log.info("$Training$ Ending epoch#: {}, batch#: {}, time: {} => {}",
+                        epoch, trainBatchIdx, estimatedTime, trainBatchScore / trainBatchSize);
 
-            // process all these lists
-            for (int trainFileIdx = 0; trainFileIdx < trainFileList.size(); trainFileIdx++) {
+                // this iteration done
+                iter += 1;
+                trainBatchIdx += 1;
 
-                Iterator<T> trainIter = null;
-                String trainFilename = trainFileList.get(trainFileIdx);
-                trainIter = documentProcessor.getIterator(trainFilename);
+                // shall validate?
+                if (op.trainOp.validate &&
+                        (iter + 1) % op.trainOp.validationFreq == 0) {
+                    long validStartTime = System.currentTimeMillis();
+                    // calc mean for validation set
+                    double cumlValidScore = 0;
+                    double cumlValidSize = 0;
+                    Iterator<T> validIter = validSet.iterator();
+                    int validBatchIdx = 0;
+                    while (validIter.hasNext()) {
+                        final List<T> validList = new ArrayList<T>();
+                        log.info("Starting  validBatch#: {}", validBatchIdx);
 
-                int batchIdx = 0;
+                        for (int idx = 0; idx < op.trainOp.validBatchSize && validIter.hasNext(); idx++) {
+                            validList.add(validIter.next());
+                        }
 
-                while (trainIter.hasNext()) {
-                    trainList.clear();
-
-
-                    for (int idx = 0; idx < op.trainOp.batchSize && trainIter.hasNext(); idx++) {
-                        trainList.add(trainIter.next());
+                        int validBatchSize = validList.size();
+                        cumlValidScore += getValidationScore(validList);
+                        cumlValidSize += validBatchSize;
+                        validBatchIdx++;
                     }
 
-                    int batchSize = trainList.size();
-                    Collections.shuffle(trainList, rand);
+                    double mean = cumlValidScore / cumlValidSize;
 
-                    log.info("Starting epoch#: {}, trainList: {} , batch#: {}", epoch, trainFileIdx, batchIdx);
+                    long estimatedValidTime = System.currentTimeMillis() - validStartTime;
+                    log.info("$Validation$ Mean validation score epoch#{}, iter#{}, time#{}: {}",
+                            epoch, iter, estimatedValidTime, mean);
 
-                    // train batch
-                    double score = trainFunction.apply(trainList);
+                    // is better than the bestt
+                    if (mean > bestValidationScore) {
 
-                    cumlTrainScore += score * batchSize;
-                    cumlTrainBatch += batchSize;
+                        // good enough for us?
+                        if (mean < bestValidationScore * (1 + op.trainOp.tolerance)) {
+                            done = true;
+                            log.info("Done training mean : {} bestScore: {}", mean, bestValidationScore);
+                        } // end if mean > bestValidationScore
 
-                    log.info("Training score epoch#: {}, trainList: {} , batch#: {} => {}",
-                            epoch, trainFileIdx, batchIdx, score);
-
-                    // normalize accumulated derivative
-                    D accDv = getAccumulatedDerivative();
-                    accDv.mul(1.0 / batchSize);
-
-                    // update param for this batch
-                    updateParams(accDv);
-
-                    // clear accumulator and
-                    // re-initialize learing rate
-                    clearLearningRate();
-                    flushDerivaiveAcc();
-
-                    // shall validate?
-                    if (op.trainOp.validate &&
-                            (iter + 1) % op.trainOp.validationFreq == 0) {
-
-                        double mean = getValidationScore(validFunction, validSet);
-                        log.info("Mean validation score epoch#{}, iter#{}: {}",
+                        // save model
+                        bestValidationScore = mean;
+                        log.info("$Updated Validation$  Updated best validation score epoch# {}, iter# {}:: {}",
                                 epoch, iter, mean);
+                        saveModel(iter, epoch);
+                    }
+                    else {
+                        // if mean isn't going down, no point looping
+                        return;
+                    } // end if mean < bestValidationScore
+                }   // end if validate
+            } // end for batch
 
-                        // is better than the bestt
-                        if (mean < bestValidationScore) {
+            long estimatedEpochTime = System.currentTimeMillis() - epochStartTime;
+            log.info("$Training$ Training score epoch#: {},  time: {} => {}", epoch, estimatedEpochTime, cumlTrainingScore/cumlTrainingBatchSize);
+            epoch += 1;
 
-                            // save model
-                            bestValidationScore = mean;
-                            log.info("Updated best validation score epoch# {}, iter# {}:: {}",
-                                    epoch, iter, mean);
-                            saveModel(iter, epoch);
-
-                            // good enough for us?
-                            if (mean > bestValidationScore * (1 - op.trainOp.tolerance)) {
-                                done = true;
-                                log.info("Done training");
-                            } // end if mean > bestValidationScore
-
-                        } // end if mean < bestValidationScore
-                    }   // end if validate
-
-                    // this iteration done
-                    iter += 1;
-                    batchIdx += 1;
-                } // end for batch
-
-                log.info("Training score epoch#: {}, trainList: {}  => {}",
-                        epoch, trainFileIdx, cumlTrainScore / cumlTrainBatch);
-
-                epoch += 1;
-            }   // end for trainList
-        }   // end while epoch
-
-
-        // shutdown if parallel
-        if (op.trainOp.parallel) {
-            executor.shutdown();
-        }
+            // clear accumulator and
+            // re-initialize learing rate
+            clearLearningRate();
+            flushDerivaiveAcc();
+        }   // end for trainList
     }
 }

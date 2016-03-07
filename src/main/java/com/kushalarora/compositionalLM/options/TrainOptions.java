@@ -1,7 +1,6 @@
 package com.kushalarora.compositionalLM.options;
 
 import com.google.common.collect.Lists;
-import com.kushalarora.compositionalLM.caching.CacheFactory;
 import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import lombok.ToString;
 import org.apache.commons.configuration.Configuration;
@@ -22,7 +21,8 @@ public class TrainOptions implements Serializable {
     public String[] trainFiles;
     public String[] validationFiles;
     public boolean validate;
-    public int maxEpochs;
+    public int maxOptimizerEpochs;
+    public int maxEMEpochs;
     public double tolerance;
     public int batchSize;
     public int validationFreq;
@@ -33,6 +33,8 @@ public class TrainOptions implements Serializable {
     public int validBatchSize;
     public boolean saveVisualization;
     public String visualizationFilename;
+    public int blockNum;
+    public double l2term;
 
     public TrainOptions(Configuration config) throws IOException {
         trainFiles =
@@ -41,8 +43,10 @@ public class TrainOptions implements Serializable {
                 config.getBoolean("validate", false);
         validationFiles =
                 config.getStringArray("validationFiles");
-        maxEpochs =
-                config.getInt("maxEpochs", 10);
+        maxOptimizerEpochs =
+                config.getInt("maxOptimizerEpochs", 10);
+        maxEMEpochs =
+                config.getInt("maxEMEpochs", 10);
         tolerance =
                 config.getDouble("tolerance", 1e-3);
         batchSize =
@@ -55,11 +59,13 @@ public class TrainOptions implements Serializable {
                 config.getInt("nThreads", 0);
 
         learningRate =
-                config.getDouble("learningRate", 0.0);
+                config.getDouble("learningRate", 0.4);
 
         optimizer =
                 OptimizerFactory.OptimizerType.fromString(
                         config.getString("optimizerType", "sgd"));
+
+        l2term = config.getDouble("l2term", 0);
 
         List<String> trainList = Lists.newArrayList(trainFiles);
         trainList.addAll(getFilesFromDir(
@@ -84,6 +90,9 @@ public class TrainOptions implements Serializable {
 
         saveVisualization =
                 config.getBoolean("saveVisualization", false);
+
+        blockNum =
+                config.getInt("blockNum", 6);
     }
 
 

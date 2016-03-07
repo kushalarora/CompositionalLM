@@ -1,6 +1,7 @@
 package com.kushalarora.compositionalLM.derivatives;
 
 import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.AbstractDerivatives;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
@@ -22,20 +23,24 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     private dQdW dqdw;
     private dQdu dqdu;
     private dQdXw dqdxw;
-
-    public Derivatives(Options op, int dimensions, int vocabSize, Sentence sentence) {
-        super(sentence);
+    private StanfordCompositionalInsideOutsideScore score;
+    private Model model;
+    public Derivatives(Options op, Model model, StanfordCompositionalInsideOutsideScore score) {
+        super(score.getSentence());
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
         // initialized
-        dqdu = new dQdu(dimensions, sentence);
-        dqdw = new dQdW(dimensions, sentence);
-        dqdxw = new dQdXw(dimensions, vocabSize, sentence);
+        this.model = model;
+        this.score = score;
+        dqdu = new dQdu(model.getDimensions(), data, op);
+        dqdw = new dQdW(model.getDimensions(), data, op);
+        dqdxw = new dQdXw(model.getDimensions(), model.getVocabSize(), data, op);
         this.op = op;
     }
 
-    public Derivatives(Options op, Sentence sentence, dQdW dqdw, dQdu dqdu, dQdXw dqdxw) {
-        super(sentence);
+    public Derivatives(Options op, Model model, dQdW dqdw, dQdu dqdu, dQdXw dqdxw) {
+        super(new Sentence(-1));
+        this.model = model;
         this.dqdw = dqdw;
         this.dqdu = dqdu;
         this.dqdxw = dqdxw;
@@ -45,14 +50,15 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     /**
      * This is just used for accumulation
      * */
-    public Derivatives(int dimension, int vocabSize) {
+    public Derivatives(Model model, Options op) {
         super(new Sentence(-1));
         // IMPORTANT::The order must be preserved here
         // all derivatives should be the last one to be
         // initialized
-        dqdu = new dQdu(dimension, new Sentence(-1));
-        dqdw = new dQdW(dimension, new Sentence(-1));
-        dqdxw = new dQdXw(dimension, vocabSize, new Sentence(-1));
+        this.model = model;
+        dqdu = new dQdu(model.getDimensions(), new Sentence(-1), op);
+        dqdw = new dQdW(model.getDimensions(), new Sentence(-1), op);
+        dqdxw = new dQdXw(model.getDimensions(), model.getVocabSize(), new Sentence(-1), op);
     }
 
     public void add(IDerivatives derivatives) {
@@ -81,28 +87,27 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     }
 
     public void
-    calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
+    calcDerivative() {
         int idx = data.getIndex();
         int sz = data.size();
-
-        dqdu.calcDerivative(model, scorer);
-        log.info("dQdu Norm2:{}(len={}) = {}", idx, sz, Nd4j.norm2(dqdu.getDQdu()));
-        dqdw.calcDerivative(model, scorer);
-        log.info("dQdW Norm2:{}(len={}) = {}", idx, sz, Nd4j.norm2(dqdw.getDQdW()));
-        dqdxw.calcDerivative(model, scorer);
-        log.info("dQdXw Norm2:{}(len={}) = {}", idx, sz, Nd4j.norm2(dqdxw.getDQdXw()));
-        score = scorer.getSentenceScore();
+        dqdu.calcDerivative(model, score);
+        dqdw.calcDerivative(model, score);
+        dqdxw.calcDerivative(model, score);
 
         if (op.debug) {
+            log.info("dQdu Norm2:{}(len={}) = {}", idx, sz, dqdu.norm());
+            log.info("dQdW Norm2:{}(len={}) = {}", idx, sz, dqdw.norm());
+            log.info("dQdXw Norm2:{}(len={}) = {}", idx, sz, dqdxw.norm());
+
             log.info("Memory Size Derivatives: {}:: {}\n" +
-                            "\t {} => {} , {} MB\n" +
-                            "\t {} => {}, {} MB\n" +
-                            "\t {} => {}, {} MB\n" +
+                            "\t {} => {}  MB\n" +
+                            "\t {} => {} MB\n" +
+                            "\t {} => {} MB\n" +
                             "total => {} MB",
                     idx, sz,
-                    "dQdu", getSize(dqdu.getDQdu()), getSize(dqdu),
-                    "dQdW", getSize(dqdw.getDQdW()), getSize(dqdw),
-                    "dqdxw", getSize(dqdxw.getDQdXw()), getSize(dqdxw),
+                    "dQdu", getSize(dqdu),
+                    "dQdW", getSize(dqdw),
+                    "dqdxw", getSize(dqdxw),
                     getSize(this));
         }
     }
@@ -118,7 +123,7 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
     }
 
     public Derivatives adaGrad(IDerivatives<Sentence> derivatives) {
-        return new Derivatives(op, data,
+        return new Derivatives(op, model,
                 (dQdW) dqdw.adaGrad(
                         ((Derivatives) derivatives).dqdw),
                 (dQdu) dqdu.adaGrad(
@@ -126,5 +131,9 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
                 (dQdXw) dqdxw.adaGrad(
                         ((Derivatives) derivatives).dqdxw)
         );
+    }
+
+    public double getScore() {
+        return score.getSentenceScore();
     }
 }

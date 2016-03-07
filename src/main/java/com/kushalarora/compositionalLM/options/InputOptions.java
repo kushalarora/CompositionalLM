@@ -16,6 +16,7 @@ public class InputOptions implements Serializable {
 
     public DocumentProcessorFactory.DocumentProcessorType processorType;
     public int maxLength;
+    public double errPct;
 
     public InputOptions(Configuration config) {
         processorType = DocumentProcessorFactory
@@ -23,5 +24,7 @@ public class InputOptions implements Serializable {
                         config.getString("processorType", "stanford"));
 
         maxLength = config.getInt("maxLength", DEFAULT_MAX_LENGTH);
+
+        errPct = config.getDouble("errPct", 25d);
     }
 }

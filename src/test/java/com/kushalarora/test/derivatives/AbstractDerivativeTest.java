@@ -1,9 +1,14 @@
 package com.kushalarora.test.derivatives;
 
+import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.model.Parameters;
+
+import com.kushalarora.compositionalLM.options.Options;
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.BeforeClass;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -23,17 +28,19 @@ public class AbstractDerivativeTest {
     protected static Model model;
     protected static int dim = 10;
     protected static int V = 100;
-    protected static CompositionalInsideOutsideScore cScorer;
+    protected static StanfordCompositionalInsideOutsideScore cScorer;
     protected static int length;
     protected static Parameters params;
-    protected static List<Word> defaultSentence;
+    protected static Sentence defaultSentence;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException
+    {
         model = mock(Model.class);
-        params = new Parameters(dim, V);
-        cScorer = mock(CompositionalInsideOutsideScore.class);
-        defaultSentence = new ArrayList<Word>();
+        Options op = new Options();
+        params = new Parameters(op, dim, V);
+        cScorer = mock(StanfordCompositionalInsideOutsideScore.class);
+        defaultSentence = new Sentence(0);
         int index = 0;
         for (String str : new String[]{"This", "is", "just", "a", "test", "."}) {
             defaultSentence.add(new Word(str, index++));
@@ -85,25 +92,25 @@ public class AbstractDerivativeTest {
                 .thenReturn(phraseMatrix);
 
         // mu score is mocked to be 1 for all spans and splits
-        when(cScorer.getMuScore())
+        when(cScorer.getCompMuScores())
                 .thenReturn(compMu);
 
         // iSplit score is mocked to all 1
-        when(cScorer.getCompositionISplitScore())
+        when(cScorer.getCompISplitScore())
                 .thenReturn(compISplitScore);
 
         // inside score is mocked to keep the sanity
         // with iSplitScore
-        when(cScorer.getInsideSpanProb())
+        when(cScorer.getCompIScores())
                 .thenReturn(compIScore);
 
         // When asked for energy derivative, mock it to 1.0f
         when(model.energyDerivative((INDArray) any()))
-                .thenReturn(1.0f);
+                .thenReturn(1.0d);
 
         when(model.energyDerivative(
                 (INDArray) any(), (INDArray) any(), (INDArray) any()))
-                .thenReturn(1.0f);
+                .thenReturn(1.0d);
 
         when(model.getDimensions())
                 .thenReturn(dim);

@@ -46,6 +46,8 @@ public class ArgParser {
                 argIndex += ArgUtils.numSubArgs(args, argIndex);
             } else if (args[argIndex].equalsIgnoreCase("-visualize")) {
                 op.visualize = true;
+            } else if (args[argIndex].equalsIgnoreCase("-calcCE")) {
+                op.calcCE = true;
             } else if (args[argIndex].equalsIgnoreCase("-validate")) {
                 // Ignored if only testing.
                 // If training must be followed by validation File
@@ -158,7 +160,7 @@ public class ArgParser {
                 if (maxEpochs.length != 1) {
                     throw new RuntimeException("You can only specify exactly one epoch value");
                 }
-                op.trainOp.maxEpochs = Integer.parseInt(maxEpochs[0]);
+                op.trainOp.maxOptimizerEpochs = Integer.parseInt(maxEpochs[0]);
                 argIndex++;
             } else if (args[argIndex].equalsIgnoreCase("-batchSize")) {
                 String[] batchSize = ArgUtils.getStringFromArg(args, argIndex);

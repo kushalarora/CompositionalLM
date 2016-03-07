@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class CacheWrapper<K, V> {
 
-    public abstract V load(K input);
+    public abstract V loadValue(K input);
 
     public abstract void put(K input, V value);
 
@@ -19,7 +19,7 @@ public abstract class CacheWrapper<K, V> {
         V value = getRoutine(input);
         if (value == null) {
             log.warn("value not found for input: {}", getKeyString(input));
-            value = load(input);
+            value = loadValue(input);
             synchronized (this) {
                 put(input, value);
             }
@@ -30,4 +30,6 @@ public abstract class CacheWrapper<K, V> {
     public abstract void close();
 
     public abstract String getKeyString(K input);
+
+    public abstract void  clear() throws Exception;
 }

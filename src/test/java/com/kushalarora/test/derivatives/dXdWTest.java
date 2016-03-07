@@ -1,6 +1,9 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dXdW;
+import com.kushalarora.compositionalLM.options.Options;
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,7 +23,8 @@ public class dXdWTest extends AbstractDerivativeTest {
     protected dXdW dxdw;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException
+    {
         AbstractDerivativeTest.setUpClass();
         INDArray W = mock(INDArray.class);
         when(W.mmul((INDArray)any()))
@@ -30,8 +34,11 @@ public class dXdWTest extends AbstractDerivativeTest {
     }
 
     @Before
-    public void setUp() {
-        dxdw = new dXdW(dim, defaultSentence);
+    public void setUp() throws ConfigurationException
+    {
+        Options op = new Options();
+        op.trainOp.parallel = true;
+        dxdw = new dXdW(dim, defaultSentence, op);
     }
 
     @Test

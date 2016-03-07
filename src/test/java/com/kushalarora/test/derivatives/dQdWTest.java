@@ -2,6 +2,9 @@ package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dQdW;
 import com.kushalarora.compositionalLM.derivatives.dXdW;
+import com.kushalarora.compositionalLM.options.Options;
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,9 +21,11 @@ import static org.mockito.Mockito.when;
  */
 public class dQdWTest extends AbstractDerivativeTest {
     private dQdW dqdw;
+    private static Options op;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException
+    {
         AbstractDerivativeTest.setUpClass();
         INDArray W = mock(INDArray.class);
         when(W.mmul((INDArray)any()))
@@ -33,18 +38,22 @@ public class dQdWTest extends AbstractDerivativeTest {
                 .thenReturn(Nd4j.ones(1));
 
         params.setU(u);
+
+        op = new Options();
+        op.trainOp.parallel = true;
     }
 
     @Before
     public void setUp() {
-        dqdw = new dQdW(dim, defaultSentence);
+        dqdw = new dQdW(dim, defaultSentence,op);
     }
 
     @Test
     public void testClear() {
         INDArray zeros = Nd4j.zeros(dim, 2 * dim);
         INDArray dW;
-        dW = dqdw.calcDerivative(model, cScorer);
+        dqdw.calcDerivative(model, cScorer);
+        dW = dqdw.getDQdW();
 
         assertEquals(dim*dim*2,
                 zeros.neq(dW)
@@ -61,7 +70,7 @@ public class dQdWTest extends AbstractDerivativeTest {
 
     @Test
     public void testCalcDerivative() {
-        INDArray dW = dqdw.calcDerivative(model, cScorer);
+        dqdw.calcDerivative(model, cScorer);
 
         INDArray truedW = Nd4j.zeros(dim, 2 * dim);
 
@@ -73,11 +82,11 @@ public class dQdWTest extends AbstractDerivativeTest {
                 }
             }
         }
-        double[][] compIScore = cScorer.getInsideSpanProb();
+        double[][] compIScore = cScorer.getCompIScores();
         truedW = truedW.div(compIScore[0][length]);
 
         assertEquals(dim*dim*2,
-                truedW.eq(dW)
+                truedW.eq(dqdw.getDQdW())
                         .sum(Integer.MAX_VALUE)
                         .getFloat(0,0), 1e-1);
     }

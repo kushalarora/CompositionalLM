@@ -1,6 +1,8 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import edu.berkeley.nlp.PCFGLA.Grammar;
 import edu.berkeley.nlp.PCFGLA.Lexicon;
 import edu.berkeley.nlp.PCFGLA.ParserData;
@@ -19,7 +21,6 @@ import lombok.NonNull;
 
 public class GrammarFactory {
     public enum GrammarType {
-        BERKELEY_GRAMMAR("berkeley"),
         STANFORD_GRAMMAR("stanford");
 
         private String text;
@@ -44,18 +45,23 @@ public class GrammarFactory {
         }
     }
 
-    public static IGrammar getGrammar(Options op) {
+    public static IGrammar getGrammar(Options op, Model model, Parallelizer parallelizer) {
         switch (op.grammarOp.grammarType) {
-            case BERKELEY_GRAMMAR:
-                @NonNull ParserData parserData = ParserData.Load(op.grammarOp.filename);
-                @NonNull Grammar gr = parserData.getGrammar();
-                @NonNull Lexicon lexicon = parserData.getLexicon();
-                // return berkeley parser
-                return null;
             case STANFORD_GRAMMAR:
                 // TODO: Do similar thing for stanford grammar
-                LexicalizedParser model = LexicalizedParser.loadModel(op.grammarOp.filename);
-                return new StanfordGrammar(op, model);
+                LexicalizedParser lexicalizedParser = LexicalizedParser.loadModel(op.grammarOp.filename);
+                    return new StanfordCompositionalGrammar(op, lexicalizedParser, model, parallelizer);
+            default:
+                throw new RuntimeException("Invalid Grammar Type: " + op.grammarOp.grammarType);
+        }
+    }
+
+    public static IGrammar getGrammar(Options op, Parallelizer parallelizer) {
+        switch (op.grammarOp.grammarType) {
+            case STANFORD_GRAMMAR:
+                // TODO: Do similar thing for stanford grammar
+                LexicalizedParser lexicalizedParser = LexicalizedParser.loadModel(op.grammarOp.filename);
+                return new StanfordCompositionalGrammar(op, lexicalizedParser, parallelizer);
             default:
                 throw new RuntimeException("Invalid Grammar Type: " + op.grammarOp.grammarType);
         }

@@ -1,6 +1,9 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dQdu;
+import com.kushalarora.compositionalLM.options.Options;
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -16,8 +19,11 @@ public class dQduTest extends AbstractDerivativeTest {
     protected dQdu dQdu;
 
     @Before
-    public void setUp() {
-        dQdu = new dQdu(dim, defaultSentence);
+    public void setUp() throws ConfigurationException
+    {
+        Options op = new Options();
+        op.trainOp.parallel = true;
+        dQdu = new dQdu(dim, defaultSentence, op);
     }
 
     /**
@@ -30,7 +36,7 @@ public class dQduTest extends AbstractDerivativeTest {
      */
     @Test
     public void testCalcDerivative() {
-        INDArray arr = dQdu.calcDerivative(model, cScorer);
+        dQdu.calcDerivative(model, cScorer);
 
         INDArray trueArray = Nd4j.zeros(dim, 1);
 
@@ -51,18 +57,19 @@ public class dQduTest extends AbstractDerivativeTest {
             }
         }
 
-        double[][] compIScore = cScorer.getInsideSpanProb();
+        double[][] compIScore = cScorer.getCompIScores();
         trueArray = trueArray.div(compIScore[0][length]);
 
         assertEquals(dim,
-                trueArray.eq(arr).sum(Integer.MAX_VALUE).getFloat(0),
+                trueArray.eq(dQdu.getDQdu()).sum(Integer.MAX_VALUE).getFloat(0),
                 1e-1);
     }
 
-
     @Test
     public void testClean() {
-        INDArray arr = dQdu.calcDerivative(model, cScorer);
+        dQdu.calcDerivative(model, cScorer);
+        INDArray arr = dQdu.getDQdu();
+
         INDArray trueArray = Nd4j.zeros(dim, 1);
 
         // As we called calcDerivative, the arr shouldn't be all zeros

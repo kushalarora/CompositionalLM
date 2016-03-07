@@ -17,6 +17,7 @@ public class TestOptions implements Serializable {
     public String[] testFiles;
     public String visualizationFile;
     public String outputFile;
+    public int testBatchSize;
 
     public TestOptions(Configuration config) {
         nbestRescore =
@@ -39,5 +40,8 @@ public class TestOptions implements Serializable {
 
         outputFile =
                 config.getString("outputFile", "./output.txt");
+
+        testBatchSize =
+                config.getInt("testBatchSize", 100);
     }
 }

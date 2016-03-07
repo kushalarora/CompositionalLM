@@ -46,6 +46,7 @@ public class Options implements Serializable {
     public boolean parse;
     public boolean test;
     public boolean nbestRescore;
+    public boolean calcCE;
     public boolean debug;
     public GrammarOptions grammarOp;
     public TrainOptions trainOp;
@@ -61,6 +62,7 @@ public class Options implements Serializable {
         nbestRescore = false;
         visualize = false;
         debug = false;
+        calcCE = false;
 
         PropertiesConfiguration config =
                 new PropertiesConfiguration();

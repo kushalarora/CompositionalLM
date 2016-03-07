@@ -9,19 +9,17 @@ import com.kushalarora.compositionalLM.derivatives.Derivatives;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorFactory;
 import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.lang.*;
-import com.kushalarora.compositionalLM.model.CompositionalGrammar;
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.AbstractOptimizer;
 import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import com.kushalarora.compositionalLM.utils.Visualization;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
 import edu.stanford.nlp.util.IntTuple;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -30,15 +28,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.Nullable;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
@@ -50,82 +43,163 @@ import java.util.regex.Pattern;
 public class CompositionalLM {
 
     private final Options op;
-    private final CompositionalGrammar compGrammar;
+    private final StanfordCompositionalGrammar grammar;
     private final DocumentProcessorFactory docProcessorFactory;
     private final Model model;
-    CacheWrapper<Sentence, IInsideOutsideScore> cache;
+    private Parallelizer parallelizer;
 
-
-    public CompositionalLM(Model model, Options op) throws IOException {
+    public CompositionalLM(StanfordCompositionalGrammar grammar, Options op, Model model,
+                           Parallelizer parallelizer)
+            throws IOException {
+        this.grammar = grammar;
         this.model = model;
-        this.compGrammar = new CompositionalGrammar(model, op);
         this.op = op;
-        cache = new CacheFactory(model).getCache(op);
-
-        docProcessorFactory =
-                new DocumentProcessorFactory(
-                        op,
-                        new TokenizerFactory(
-                                op, model.getGrammar()));
+        docProcessorFactory = new DocumentProcessorFactory(
+                                op, new TokenizerFactory( op, grammar));
+        this.parallelizer = parallelizer;
     }
 
     @SneakyThrows
     public void train() {
-        // List of validation documents. Documents are list of sentences.
+        DocumentProcessorWrapper<Sentence> docProcessor =
+                docProcessorFactory.getDocumentProcessor();
 
-        final Map<Integer, String> trainIndexSet = new HashMap<Integer, String>();
+        final List<Sentence> trainSentList = Lists.newArrayList();
+        final List<Sentence> trainDistSentList = Lists.newArrayList();
+        for (String filename : op.trainOp.trainFiles) {
+            trainSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
+            trainDistSentList.addAll(Lists.newArrayList(
+                    docProcessor.getIterator(getDistortedFilename(filename))));
+        }
+
+        final Map<Integer, Integer> validIndexToDistListIdxMapping =
+                new HashMap<Integer, Integer>();
+        List<Sentence> validSentList = Lists.newArrayList();
+        final List<Sentence> validDistSentList = Lists.newArrayList();
+        for (String filename : op.trainOp.validationFiles) {
+            List<Sentence> validList = Lists.newArrayList(docProcessor.getIterator(filename));
+            List<Sentence> validDistList = Lists.newArrayList(docProcessor.getIterator(getDistortedFilename(filename)));
+            assert(validList.size() == validDistList.size());
+            for (int i = 0; i < validList.size(); i++) {
+                validIndexToDistListIdxMapping.put(
+                        validList.get(i).getIndex(), validDistSentList.size());
+                validSentList.add(validList.get(i));
+                validDistSentList.add(validDistList.get(i));
+
+            }
+        }
+
+        final CacheWrapper<Sentence, StanfordCompositionalInsideOutsideScore> trainCache =
+                CacheFactory.getCache(op, new Function<Sentence, StanfordCompositionalInsideOutsideScore>() {
+                    @Nullable
+                    public StanfordCompositionalInsideOutsideScore apply(@Nullable Sentence sentence) {
+                        return (StanfordCompositionalInsideOutsideScore)grammar.getScore(sentence);
+                    }
+                });
+
 
         // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
-                        docProcessorFactory.getDocumentProcessor(),
                         new Function<Sentence, Double>() {
                             @Nullable
-                            public Double apply(Sentence data) {                // scorer
-                                IInsideOutsideScore preScore = cache.get(data);
-                                CompositionalInsideOutsideScore score =
-                                        compGrammar.getScore(data,
-                                                preScore);
-                                return score.getSentenceScore();
+                            // train scorer
+                            // TODO:: QScore;
+                            public Double apply(Sentence sentence) {
+                                return grammar.getQScore(trainCache.get(sentence));
+                            }
+                        },
+                        new Function<Sentence, Double>() {
+                            @Nullable
+                            // valid scorer
+                            public Double apply(Sentence sentence) {
+                                int distListIdx =
+                                        validIndexToDistListIdxMapping
+                                                .get(sentence.getIndex());
+                                Sentence distSentence = validDistSentList.get(distListIdx);
+                                return crossEntropySent(sentence, distSentence);
                             }
                         },
                         new Function<Sentence, Derivatives>() {
                             @Nullable
-                            public Derivatives apply(@Nullable Sentence sentence) {              // derivative calculator
+                            // derivative calculator
+                            public Derivatives apply(@Nullable Sentence sentence) {
                                 Derivatives derivatives = new Derivatives(op,
-                                        model.getDimensions(), model.getVocabSize(), sentence);
-                                IInsideOutsideScore preScore = cache.get(sentence);
-                                CompositionalInsideOutsideScore score =
-                                        compGrammar.getScore(sentence,
-                                                preScore);
-                                derivatives.calcDerivative(model, score);
+                                        model, trainCache.get(sentence));
+                                derivatives.calcDerivative();
                                 return derivatives;
                             }
                         },
                         new Function<IntTuple, Void>() {
                             @Nullable
-                            public Void apply(@Nullable IntTuple tuple) {           // saver
+                            // saver
+                            public Void apply(@Nullable IntTuple tuple) {
                                 String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
                                 str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
                                 String outFilename = String.join(".", str);
                                 saveModelSerialized(outFilename);
                                 return null;
                             }
-                        });
+                        }, parallelizer);
 
-        // Fit training data with validation on validation file.
-        optimizer.fit(Lists.newArrayList(op.trainOp.trainFiles),
-                Lists.newArrayList(op.trainOp.validationFiles));
+        int EMIter = 0;
+        double bestEMIterValidScore = 0;
+        // TODO: Add early stopping logic.
+        while (EMIter < op.trainOp.maxEMEpochs) {
+            trainCache.clear();
+            // Fit training data with validation on validation file.
+            optimizer.fit(trainSentList, validSentList);
+            double bestEMIterTillNow = optimizer.getBestValidationScore();
+            log.info("EMIter#: {}, bestValidationScore => {}",
+                    EMIter, bestEMIterTillNow);
+
+            if (bestEMIterValidScore < bestEMIterTillNow)
+            {
+                bestEMIterValidScore = bestEMIterTillNow;
+                String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
+                str[0] = String.format("%s-%d", str[0], EMIter);
+                String outFilename = String.join(".", str);
+                saveModelSerialized(outFilename);
+            }
+/*            final int trainListSize = trainSentList.size();
+
+           double contEntropyScore = 0;
+            Function<Integer, Double> testFunc = new Function<Integer, Double>() {
+                @Nullable
+                public Double apply(@Nullable Integer i) {
+                    return crossEntropySent(trainSentList.get(i),
+                            trainDistSentList.get(i));
+                }
+            };
+
+            if (op.trainOp.parallel) {
+                List<Future<List<Double>>> contEntropyFunc =
+                        parallelizer.parallelizer(0, trainListSize, testFunc);
+
+                for (Future<List<Double>> future : contEntropyFunc) {
+                    List<Double> scoreList = future.get();
+                    for (double score : scoreList) {
+                        contEntropyScore += score;
+                    }
+                }
+            } else {
+                for (int j = 0; j < trainListSize; j++) {
+                    double score = testFunc.apply(j);
+                    contEntropyScore += score;
+                }
+            }
+
+            log.info("$ContEnt$ Avg Contrastive Train Entropy : {}",
+                    contEntropyScore/trainListSize);*/
+            EMIter++;
+            saveModelSerialized(op.modelOp.outFilename);
+        }
 
         if (op.trainOp.saveVisualization) {
             visualize(op.trainOp.visualizationFilename);
         }
 
         saveModelSerialized(op.modelOp.outFilename);
-        // Closing cache. Ecache doesn't do eternal caching
-        // until and unless closed
-        cache.close();
-
     }
 
     public void parse() {
@@ -150,36 +224,171 @@ public class CompositionalLM {
 
     }
 
-    public void contrastiveEntropy() throws IOException {
+    public void entropy() throws IOException, ExecutionException, InterruptedException {
         double logScore = 0f;
-        PrintWriter writer = new PrintWriter(new File(op.testOp.outputFile), "UTF-8");
+        final PrintWriter writer = new PrintWriter(new File(op.testOp.outputFile), "UTF-8");
+        int testFileIdx = 0;
+        DocumentProcessorWrapper<Sentence> documentProcessor =
+                docProcessorFactory.getDocumentProcessor();
         for (String testFile : op.testOp.testFiles) {
-            DocumentProcessorWrapper<Sentence> documentProcessor =
-                    docProcessorFactory.getDocumentProcessor();
+            float logScoreFile = 0f;
+            long epochTestfileTime = System.currentTimeMillis();
             Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
 
             while (testIter.hasNext()) {
-                Sentence data = testIter.next();
-                IInsideOutsideScore preScore = cache.get(data);
-                CompositionalInsideOutsideScore score =
-                        compGrammar.getScore(data,
-                                preScore);
-                Double logP = score.getLogScore();
-                writer.println(score.getSentence());
-                writer.println(String.format("Length: %d, logProp: %.4f",
-                                             score.getSentence().size(), score.getLogScore()));
-                log.info(String.format("Length: %d, logProp: %.4f",
-                                       score.getSentence().size(), score.getLogScore()));
-                logScore += logP;
+                final List<Sentence> testList = new ArrayList<Sentence>();
+
+                for (int idx = 0; idx < op.testOp.testBatchSize && testIter.hasNext(); idx++) {
+                    testList.add(testIter.next());
+                }
+
+                int testBatchSize = testList.size();
+
+                Function<Integer, Double> testFunc = new Function<Integer, Double>() {
+                    @Nullable
+                    public Double apply(@Nullable Integer integer) {
+                        StanfordCompositionalInsideOutsideScore score =
+                                (StanfordCompositionalInsideOutsideScore)
+                                        grammar.getInsideScore(testList.get(integer), true);
+                        Sentence sentence = score.getSentence();
+                        Double logP = score.getSentenceScore();
+                        log.info(String.format("Length: %d, logProp: %.4f", sentence.size(), logP));
+                        synchronized (writer) {
+                            writer.println(sentence);
+                            writer.println(String.format("Length: %d, logProp: %.4f", sentence.size(), logP));
+                        }
+                        return logP;
+                    }
+                };
+
+                if (op.trainOp.parallel) {
+                    List<Future<List<Double>>> testScoreFutures =
+                            parallelizer.parallelizer(0, testBatchSize, testFunc);
+
+                    for (Future<List<Double>> future : testScoreFutures) {
+                        List<Double> scoreList = future.get();
+                        for (double score : scoreList) {
+                            logScoreFile += score;
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < testBatchSize; i++) {
+                        double score = testFunc.apply(i);
+                        logScoreFile += score;
+                    }
+                }
             }
+            double estimatedTestfileTime = System.currentTimeMillis() - epochTestfileTime;
+            log.info("$Testing$:: Constrastive Entropy calculated for file Idx:{}, time: {} => {}",
+                        testFileIdx, estimatedTestfileTime, logScoreFile);
+            logScore += logScoreFile;
+            testFileIdx++;
         }
+
         writer.println(String.format("Total logProb:%.4f", logScore));
         log.info("Total logProb:{}", logScore);
         writer.close();
-
     }
 
-    @SneakyThrows
+    public void crossEntropy() throws IOException, ExecutionException, InterruptedException {
+        final PrintWriter writer = new PrintWriter(new File(op.testOp.outputFile), "UTF-8");
+        int testFileIdx = 0;
+        DocumentProcessorWrapper<Sentence> documentProcessor =
+                docProcessorFactory.getDocumentProcessor();
+        for (String testFile : op.testOp.testFiles) {
+            String testDistractedFile = getDistortedFilename(testFile);
+            double logScoreFile = 0d;
+            int logSentCount = 0;
+            long epochTestfileTime = System.currentTimeMillis();
+            Iterator<Sentence> testIter = documentProcessor.getIterator(testFile);
+            Iterator<Sentence> testDistIter = documentProcessor.getIterator(testDistractedFile);
+
+
+            while (testIter.hasNext()) {
+                final List<Sentence> testList = new ArrayList<Sentence>();
+                final List<Sentence> testDistList = new ArrayList<Sentence>();
+
+                for (int idx = 0; idx < op.testOp.testBatchSize && testIter.hasNext(); idx++) {
+                    testList.add(testIter.next());
+                    testDistList.add(testDistIter.next());
+                }
+
+                double contEntropyScore = 0;
+                int testBatchSize = testList.size();
+                Function<Integer, Double> testFunc = new Function<Integer, Double>() {
+                    @Nullable
+                    public Double apply(@Nullable Integer i) {
+                        return crossEntropySent(writer,
+                                                testList.get(i),
+                                                testDistList.get(i));
+                    }
+                };
+
+                if (op.trainOp.parallel) {
+                    List<Future<List<Double>>> testScoreFutures =
+                            parallelizer.parallelizer(0, testBatchSize, testFunc);
+
+                    for (Future<List<Double>> future : testScoreFutures) {
+                        List<Double> scoreList = future.get();
+                        for (double score : scoreList) {
+                            contEntropyScore += score;
+                        }
+                    }
+                } else {
+                    for (int j = 0; j < testBatchSize; j++) {
+                        double score = testFunc.apply(j);
+                        contEntropyScore += score;
+                    }
+                }
+                logScoreFile += contEntropyScore;
+                logSentCount += testBatchSize;
+            }
+
+            double estimatedTestfileTime = System.currentTimeMillis() - epochTestfileTime;
+            log.info("$Testing$:: Constrastive Entropy calculated for file Idx:{}, time: {} => {}",
+                     testFileIdx, estimatedTestfileTime, logScoreFile/logSentCount);
+            testFileIdx++;
+        }
+    }
+
+    private String getDistortedFilename(String filename) {
+        double errPct = op.inputOp.errPct;
+        double originalPct = 100 - errPct;
+        double eachErrPct = errPct / 2;
+        return String.format("%s.deformed-%.1f-%.1f-%.1f",
+                             filename, originalPct,
+                             eachErrPct, eachErrPct);
+    }
+
+    private double crossEntropySent(final PrintWriter writer, final Sentence sentence, final Sentence distSentence) {
+        double scoreSent =
+                ((StanfordCompositionalInsideOutsideScore)
+                        grammar.getInsideScore(sentence, true))
+                            .getSentenceScore();
+        double scoreDistortedSent =
+                ((StanfordCompositionalInsideOutsideScore)
+                        grammar.getInsideScore(distSentence, true))
+                            .getSentenceScore();
+        double contEntropy =  scoreSent - scoreDistortedSent;
+        log.info(String.format("Sentence#%d[%d] contrastiveEntropy => %.4f",
+                                    sentence.getIndex(),  sentence.size(), contEntropy));
+
+        if (writer != null) {
+            synchronized (writer) {
+                writer.println(sentence);
+                writer.println(String.format("Length: %d, logProp: %.4f", sentence.size(), contEntropy));
+            }
+        }
+        return contEntropy;
+    }
+
+    private double crossEntropySent(final Sentence sentence, final Sentence distSentence) {
+        return crossEntropySent(null, sentence, distSentence);
+    }
+
+
+
+        @SneakyThrows
     public void visualize(String filename) {
         // List of training documents.
         List<List<Sentence>> trainIterators = new ArrayList<List<Sentence>>();
@@ -309,29 +518,24 @@ public class CompositionalLM {
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);
 
-
-        Model model;
+        Model model = null;
         if (!op.train) {
-            model =loadModel(op);
+            model = loadModel(op);
             if (model == null) {
                 throw new RuntimeException("You must specify model file using -model argument");
             }
-        } else {
-
-            @NonNull IGrammar grammar = GrammarFactory.getGrammar(op);
-            model = new Model(op.modelOp.dimensions, grammar);
         }
 
-        final CompositionalLM cLM = new CompositionalLM(model, op);
+        StanfordCompositionalGrammar grammar;
+        if (model != null) {
+            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, model, new Parallelizer(op, 1));
+        } else {
+            grammar = (StanfordCompositionalGrammar)GrammarFactory.getGrammar(op, new Parallelizer(op, 1));
+            model = grammar.getModel();
+        }
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                log.error("Exiting Closing Cache");
-                // Ecache needs to be closed in all cases
-                cLM.cache.close();
-            }
-        });
+        final CompositionalLM cLM = new CompositionalLM(grammar, op, model,
+                                        new Parallelizer(op, 1, Executors.newFixedThreadPool(100)));
 
         if (op.train) {
             log.info("starting training");
@@ -343,7 +547,7 @@ public class CompositionalLM {
         } else if (op.parse) {
             cLM.parse();
         } else if (op.test) {
-            cLM.contrastiveEntropy();
+            cLM.crossEntropy();
         } // end processing if statement
 
 

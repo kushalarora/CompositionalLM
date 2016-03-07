@@ -5,6 +5,7 @@ import com.kushalarora.compositionalLM.model.CompositionalGrammar;
 import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.val;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
@@ -49,7 +50,7 @@ public class CompositionalInsideOutsideScorerTest {
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         op.grammarOp.filename =  filePath;
 
-        sg = (StanfordGrammar)getGrammar(op);
+        sg = (StanfordGrammar)getGrammar(op, new Parallelizer(op, 1));
 
 
         defaultSentence = new Sentence(0);
@@ -64,7 +65,7 @@ public class CompositionalInsideOutsideScorerTest {
 
         length = defaultSentence.size();
 
-        model = new Model(10, sg);
+        model = new Model(op, 10, sg.getVocabSize(), op.grammarOp.grammarType);
         dim = model.getDimensions();
 
         cg = new CompositionalGrammar(model, op);

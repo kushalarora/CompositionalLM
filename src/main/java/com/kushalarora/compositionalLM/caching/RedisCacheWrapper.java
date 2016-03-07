@@ -86,4 +86,8 @@ public abstract class RedisCacheWrapper<K, V> extends CacheWrapper<K, V> {
     public void close() {
         redisConnection.close();
     }
+
+    public void clear() throws Exception {
+        redisConnection.flushall();
+    }
 }

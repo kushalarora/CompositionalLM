@@ -1,15 +1,17 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
+import com.google.common.base.Function;
+import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.optimizer.IIndexed;
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
+import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
-import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -21,36 +23,41 @@ import java.util.List;
  * dQdu = \sum{start}{end}{split} dEdu(start, end, split) * \mu(start, end, split)
  */
 @Slf4j
-public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDerivativeClass implements IDerivative<T> {
+public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T> implements IDerivative<T> {
     @Getter
     private INDArray dQdu;
     private int dimensions;
-    private T data;
     private int length;
+    private Options options;
+    private Parallelizer parallelizer;
 
 
-    public dQdu(int dim, T data) {
-        super(new int[]{dim, 1});
+    public dQdu(int dim, T data, Options op) {
+        super(new int[]{dim, 1}, data);
         dQdu = Nd4j.zeros(dim, 1);
         dimensions = dim;
         this.data = data;
-        length = data.size();
+        length = data.getSize();
+        options = op;
+        parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
     }
 
-    public dQdu(dQdu dqdu, T data) {
-        super(dqdu.dQdu.shape());
+    public dQdu(dQdu dqdu, T data, Options op) {
+        super(dqdu.dQdu.shape(), data);
         dQdu = dqdu.dQdu.dup();
         dimensions = dqdu.dQdu.shape()[0];
-        this.data = data;
-        length = data.size();
+        length = data.getSize();
+        options = op;
+        parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
     }
 
-    private dQdu(INDArray dqdu, T data) {
-        super(dqdu.shape());
+    private dQdu(INDArray dqdu, T data, Options op) {
+        super(dqdu.shape(), data);
         this.dQdu = dqdu;
         dimensions = dqdu.shape()[0];
-        this.data = data;
-        length = data.size();
+        length = data.getSize();
+        options = op;
+        parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
     }
 
     public void clear() {
@@ -73,69 +80,106 @@ public class dQdu<T extends List<? extends IIndexed>> extends AbstractBaseDeriva
     }
 
     public IDerivative adaGrad(IDerivative gradient) {
-        return new dQdu(adaGrad.getGradient(((dQdu) gradient).dQdu), data);
+        return new dQdu(adaGrad.getGradient(((dQdu) gradient).dQdu), data, options);
     }
 
-    public INDArray calcDerivative(Model model, CompositionalInsideOutsideScore scorer) {
-        INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
-        INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
-        double[][][] compositionMu = scorer.getMuScore();
-        double[][] compositionalIScore = scorer.getInsideSpanProb();
+    public double norm()
+    {
+        return Nd4j.norm2(dQdu).sum(Integer.MAX_VALUE).getDouble(0);
+    }
 
-        // do leaf nodes
-        for (int start = 0; start < length; start++) {
-            int end = start + 1;
-            int split = start;
+    public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
+        final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
+        final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
+        final double[][][] compositionMu = scorer.getCompMuScores();
+        final double[][] compositionalIScore = scorer.getCompIScores();
 
-            // For leaf nodes we consider the phrase
-            INDArray phraseVector = phraseMatrix[start][end];
 
-            // dE = g'(u.t().dot(p))
-            double dE = model.energyDerivative(phraseVector);
+        Function<Integer, Void> unaryFunc = new Function<Integer, Void>()
+        {
+            public Void apply(Integer start) {
+                int end = start + 1;
+                int split = start;
 
-            // dEdu = dE * p = g'(u.t().dot(p)) * p
-            INDArray dEdu = phraseVector.muli(dE);
+                // For leaf nodes we consider the phrase
+                INDArray phraseVector = phraseMatrix[start][end];
 
-            // dQdu += dEdu * \mu[start][end][split]
-            dQdu = dQdu.add(
-                    dEdu.muli(
-                            compositionMu[start][end][split]));
-        }
+                // dE = g'(u.t().dot(p))
+                double dE = model.energyDerivative(phraseVector);
 
-        for (int diff = 2; diff <= length; diff++) {
-            for (int start = 0; start + diff < length; start++) {
-                int end = start + diff;
-                for (int split = start + 1; split < end; split++) {
-
-                    // Composition vector is parent's(start, end) embedding generated by
-                    // child1 (start, split) and child2 (split, end)
-                    INDArray compositionVector = compositionMatrix[start][end][split];
-
-                    // dE = g'(u.t().dot(p))
-                    double dE = model.energyDerivative(compositionVector);
-
-                    // dEdu = dE * p = g'(u.t().dot(p)) * p
-                    INDArray dEdu = compositionVector.muli(dE);
-
-                    // dQdu += dEdu * \mu[start][end][split]
+                // dEdu = dE * p = g'(u.t().dot(p)) * p
+                INDArray dEdu = phraseVector.mul(dE);
+                synchronized (dQdu) {
+                    // dQdu * p(w) += dEdu * \mu[start][end][split]
                     dQdu = dQdu.add(
-                            dEdu.muli(
+                            dEdu.mul(
                                     compositionMu[start][end][split]));
                 }
+                return null;
+            }
+        };
+
+        if (options.trainOp.parallel) {
+            parallelizer.parallelizer(0, length, unaryFunc);
+        } else {
+            // do leaf nodes
+            for (int start = 0; start < length; start++) {
+                unaryFunc.apply(start);
             }
         }
 
+
+        for (int diff = 2; diff <= length; diff++) {
+            final int diffFinal = diff;
+            for (int st = 0; st + diff <= length; st++) {
+                final int start = st;
+                final int end = start + diffFinal;
+
+                Function<Integer, Void> binaryFunc = new Function<Integer, Void>() {
+                    @Nullable
+                    public Void apply(final Integer split) {
+
+                        // Composition vector is parent's(start, end) embedding generated by
+                        // child1 (start, split) and child2 (split, end)
+                        INDArray compositionVector = compositionMatrix[start][end][split];
+
+                        // dE = g'(u.t().dot(p))
+                        double dE = model.energyDerivative(compositionVector);
+
+                        // dEdu = dE * p = g'(u.t().dot(p)) * p
+                        INDArray dEdu = compositionVector.mul(dE);
+                        synchronized (dQdu) {
+                            // dQdu * p(w) += dEdu * \mu[start][end][split]
+                            dQdu = dQdu.add(
+                                    dEdu.mul(
+                                            compositionMu[start][end][split]));
+                        }
+                        return null;
+                    }
+                };
+
+                if (options.trainOp.parallel) {
+                    parallelizer.parallelizer(start + 1, end, binaryFunc);
+                } else {
+                    for (int split = start + 1; split < end; split++) {
+                        binaryFunc.apply(split);
+                    }
+                }
+            }
+        }
         if (compositionalIScore[0][length] == 0) {
             throw new RuntimeException("Z is zero for sentence " + data);
         }
 
+        // dQdu = dQdu * p(w)/p(w)
         dQdu = dQdu.div(compositionalIScore[0][length]);
 
         if (containsNanOrInf()) {
-            log.error("dQdu contains Nan Or Inf. for data {}", data);
-            dQdu = Nd4j.rand(dimensions, 1, -1, 1, new JDKRandomGenerator());
+            log.error("dQdu contains Nan Or Inf. data {}::{}. Norm::{}",
+                    data.getIndex(), data.getSize(), norm());
+            dQdu = Nd4j.zeros(dimensions, 1);
         }
 
-        return dQdu;
+        dQdu = clampDerivativeIfNeeded(dQdu);
     }
 }

@@ -2,11 +2,11 @@ package com.kushalarora.compositionalLM.optimizer;
 
 import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
-import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
-import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.IParameter;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import edu.stanford.nlp.util.IntTuple;
 
 /**
@@ -39,20 +39,19 @@ public class OptimizerFactory {
         }
     }
 
-    public static AbstractOptimizer<Sentence, Derivatives> getOptimizer(
+    public static <T extends IIndexedSized>  AbstractOptimizer<T, Derivatives> getOptimizer(
             final Options op,
             final Model model,
-            final DocumentProcessorWrapper<Sentence> documentProcessorWrapper,
-            final Function<Sentence, Double> scorer,
-            final Function<Sentence, Derivatives> derivativeCalculator,
-            final Function<IntTuple, Void> functionSaver) {
+            final Function<T, Double> trainScorer,
+            final Function<T, Double> validScorer,
+            final Function<T, Derivatives> derivativeCalculator,
+            final Function<IntTuple, Void> functionSaver,
+            final Parallelizer parallelizer) {
 
-        int dimension = model.getDimensions();
-        int vocabSize = model.getVocabSize();
         switch (op.trainOp.optimizer) {
             case SGD:
-                return new AbstractSGDOptimizer<Sentence, Derivatives>(op, new Derivatives(dimension, vocabSize), documentProcessorWrapper) {
-                    public Derivatives calcDerivative(Sentence sample) {
+                return new AbstractSGDOptimizer<T, Derivatives>(op, new Derivatives(model, op), parallelizer) {
+                    public Derivatives calcDerivative(T sample) {
                         return derivativeCalculator.apply(sample);
                     }
 
@@ -60,8 +59,12 @@ public class OptimizerFactory {
                         return model.getParams();
                     }
 
-                    public double getValidationScore(Sentence data) {
-                        return scorer.apply(data);
+                    public double getValidationScore(T data) {
+                        return validScorer.apply(data);
+                    }
+
+                    public double getTrainScore(T data) {
+                        return trainScorer.apply(data);
                     }
 
                     public void saveModel(int iter, int epoch) {
@@ -69,10 +72,9 @@ public class OptimizerFactory {
                     }
                 };
             case ADAGRAD:
-                return new AbstractAdaGradOptimzer<Sentence, Derivatives>(
-                        op, new Derivatives(dimension, vocabSize), new Derivatives(dimension, vocabSize), documentProcessorWrapper) {
-
-                    public Derivatives calcDerivative(Sentence sample) {
+                return new AbstractAdaGradOptimzer<T, Derivatives>(
+                        op, new Derivatives(model, op), new Derivatives(model, op), parallelizer) {
+                    public Derivatives calcDerivative(T sample) {
                         return derivativeCalculator.apply(sample);
                     }
 
@@ -80,10 +82,13 @@ public class OptimizerFactory {
                         return model.getParams();
                     }
 
-                    public double getValidationScore(Sentence data) {
-                        return scorer.apply(data);
+                    public double getValidationScore(T data) {
+                        return validScorer.apply(data);
                     }
 
+                    public double getTrainScore(T data) {
+                        return trainScorer.apply(data);
+                    }
                     public void saveModel(int iter, int epoch) {
                         functionSaver.apply(new IntTuple(new int[] {iter, epoch}));
                     }

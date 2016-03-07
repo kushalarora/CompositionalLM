@@ -1,6 +1,9 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dXdXw;
+import com.kushalarora.compositionalLM.options.Options;
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,20 +20,25 @@ import static org.mockito.Mockito.when;
  */
 public class dXdXwTest extends AbstractDerivativeTest {
     private dXdXw dxdxw;
+    private static Options op;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException
+    {
         AbstractDerivativeTest.setUpClass();
         INDArray W = mock(INDArray.class);
         when(W.mmul((INDArray) any()))
                 .thenReturn(Nd4j.eye(dim));
 
         params.setW(W);
+
+        op = new Options();
+        op.trainOp.parallel = true;
     }
 
     @Before
     public void setUp() {
-        dxdxw = new dXdXw(dim, V, defaultSentence);
+        dxdxw = new dXdXw(dim, V, defaultSentence, op);
     }
 
 
@@ -47,7 +55,7 @@ public class dXdXwTest extends AbstractDerivativeTest {
                 for (int end = start + 1; end <= length; end++) {
                     INDArray truedxdwi = Nd4j.eye(dim);
                     assertEquals(dim * dim,
-                            truedxdwi.eq(dxdxw.getDXdXwi()[start][end])
+                            truedxdwi.eq(dxdxw.getDXdXw()[idx][start][end][start])
                                     .sum(Integer.MAX_VALUE).getFloat(0, 0), 1e-1);
                 }
             }

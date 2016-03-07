@@ -1,5 +1,6 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import org.ujmp.core.SparseMatrix;
 
 import java.io.Serializable;
@@ -8,7 +9,7 @@ import java.util.List;
 /**
  * Created by karora on 6/24/15.
  */
-public interface IInsideOutsideScore extends Serializable {
+public interface IInsideOutsideScore extends Serializable, IIndexedSized {
     /**
      *
      * Returns \pi(i,j,k), an array of shape (n, n, n)

@@ -3,6 +3,9 @@ package com.kushalarora.test.derivatives;
 import com.kushalarora.compositionalLM.derivatives.dQdXw;
 import com.kushalarora.compositionalLM.derivatives.dXdXw;
 import com.kushalarora.compositionalLM.lang.Word;
+import com.kushalarora.compositionalLM.options.Options;
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -10,7 +13,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
+import java.util.Map;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -24,12 +29,16 @@ public class dQdXwTest extends AbstractDerivativeTest {
     private dQdXw dqdxw;
 
     @Before
-    public void setUp() {
-        dqdxw = new dQdXw(dim, V, defaultSentence);
+    public void setUp() throws ConfigurationException
+    {
+        Options op = new Options();
+        op.trainOp.parallel = true;
+        dqdxw = new dQdXw(dim, V, defaultSentence, op);
     }
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws ConfigurationException
+    {
         AbstractDerivativeTest.setUpClass();
         INDArray W = mock(INDArray.class);
         when(W.mmul((INDArray) any()))
@@ -49,27 +58,25 @@ public class dQdXwTest extends AbstractDerivativeTest {
 
         dqdxw.calcDerivative(model, cScorer);
 
-        INDArray dqdxwArr = dqdxw.getDQdXw();
+        Map<Integer, INDArray> dqdxwArr = dqdxw.getIndexToxMap();
 
-        INDArray zeros = Nd4j.zeros(V, dim);
-
-        assertEquals(dim * length, zeros.neq(dqdxwArr).sum(Integer.MAX_VALUE).getFloat(0, 0), 1e-1);
+        assertTrue(dqdxwArr.keySet().size() > 0);
 
         dqdxw.clear();
 
-        dqdxwArr = dqdxw.getDQdXw();
+        dqdxwArr = dqdxw.getIndexToxMap();
 
-        assertEquals(dim * V, zeros.eq(dqdxwArr).sum(Integer.MAX_VALUE).getFloat(0, 0), 1e-1);
+        assertEquals(0, dqdxwArr.keySet().size());
     }
 
     @Test
     public void testCalcDerivative() {
 
-        INDArray dqdxwArr  = dqdxw.calcDerivative(model, cScorer);
+        dqdxw.calcDerivative(model, cScorer);
 
         INDArray ones = Nd4j.ones(dim, 1);
 
-        double[][] compIScore = cScorer.getInsideSpanProb();
+        double[][] compIScore = cScorer.getCompIScores();
 
         for (int idx = 0; idx < length; idx++) {
             INDArray truedQdxwi = Nd4j.ones(dim, 1);
@@ -83,17 +90,13 @@ public class dQdXwTest extends AbstractDerivativeTest {
             }
 
             truedQdxwi = truedQdxwi.div(compIScore[0][length]);
-
+            Map<Integer, INDArray> indexToxMap = dqdxw.getIndexToxMap();
             List<Word> sentence = defaultSentence;
             assertEquals(dim ,
-                    truedQdxwi.eq(
-                            dqdxwArr
-                                    .getColumn(
-                                            sentence.get(idx).getIndex()))
+                    truedQdxwi.eq(indexToxMap.get(idx))
                             .sum(Integer.MAX_VALUE).getFloat(0),
                     1e-1);
         }
-
     }
 }
 

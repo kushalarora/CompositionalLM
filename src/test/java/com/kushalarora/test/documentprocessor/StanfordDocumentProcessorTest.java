@@ -6,6 +6,7 @@ import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.StanfordGrammar;
 import com.kushalarora.compositionalLM.lang.TokenizerFactory;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
@@ -36,7 +37,7 @@ public class StanfordDocumentProcessorTest {
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
         op.grammarOp.filename =  absoluteFilePath;
         op.grammarOp.maxLength = 10;
-        sg = (StanfordGrammar)getGrammar(op);
+        sg = (StanfordGrammar)getGrammar(op, new Parallelizer(op, 1));
         sDP = new StanfordDocumentProcessor(op, new TokenizerFactory(op, sg));
     }
 

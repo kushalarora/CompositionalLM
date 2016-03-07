@@ -1,6 +1,5 @@
 package com.kushalarora.compositionalLM.lang;
 
-import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.ujmp.core.SparseMatrix;
@@ -32,11 +31,8 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
     protected int length;
     protected int numStates;
 
-    public AbstractInsideOutsideScore(Sentence sentence, int numStates) {
-        this.sentence = new Sentence(sentence.getIndex());
-        this.sentence.addAll(sentence);
-        this.sentence.add(new Word(Lexicon.BOUNDARY, length));
-        length = this.sentence.size();
+    public AbstractInsideOutsideScore(int length, int numStates) {
+        this.length = length;
         this.numStates = numStates;
 
         // zero out some stuff first in case we recently
@@ -110,11 +106,11 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
         return matrix.getAsDouble(indexes);
     }
 
-    protected void setScore(SparseMatrix matrix, double value, long... indexes) {
+    protected synchronized void setScore(SparseMatrix matrix, double value, long... indexes) {
         matrix.setAsDouble(value, indexes);
     }
 
-    protected void addToScore(SparseMatrix matrix, double value, long... indexes) {
+    protected synchronized void addToScore(SparseMatrix matrix, double value, long... indexes) {
         setScore(matrix, value + getScore(matrix, indexes), indexes);
     }
 
@@ -149,5 +145,4 @@ public abstract class AbstractInsideOutsideScore implements IInsideOutsideScore 
 
 
     public SparseMatrix getMuSpanSplitScoreWParent() { return muSpanSplitScoreWParent; }
-
 }

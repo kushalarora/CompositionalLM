@@ -1,5 +1,7 @@
 package com.kushalarora.compositionalLM.caching;
 
+import com.google.common.base.Function;
+import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.IInsideOutsideScore;
 import com.kushalarora.compositionalLM.lang.Sentence;
 import com.kushalarora.compositionalLM.lang.Word;
@@ -17,7 +19,8 @@ public class CacheFactory {
         NONE("none"),
         EHCACHE("ehcache"),
         REDIS("redis"),
-        MONGO("mongo");
+        MONGO("mongo"),
+        GUAVA("guava");
 
         private String text;
 
@@ -41,47 +44,42 @@ public class CacheFactory {
         }
     }
 
-    private final Model model;
 
-    public CacheFactory(Model model) {
-        this.model = model;
+    public CacheFactory() {
+
     }
 
-    public CacheWrapper getCache(Options op) throws IOException {
+    public static  <K,V> CacheWrapper getCache(Options op, final Function<K, V> loadFunc) throws IOException {
         switch (op.cacheOp.cacheType) {
             case MEMCACHED:
-                return new MemcachedWrapper<Sentence, IInsideOutsideScore>(op) {
+                return new MemcachedWrapper<K, V>(op) {
 
                     @Override
-                    public IInsideOutsideScore load(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                    public V loadValue(K input) {
+                        return loadFunc.apply(input);
                     }
 
                     @Override
-                    public String getKeyString(Sentence input) {
-                        StringBuilder sb = new StringBuilder();
-                        for (Word word : input) {
-                            sb.append(word.word()).append(":");
-                        }
-                        return sb.toString();
+                    public String getKeyString(K input) {
+                        return input.toString().replace(" ", ":");
                     }
                 };
             case NONE:
-                return new CacheWrapper<Sentence, IInsideOutsideScore>() {
+                return new CacheWrapper<K, V>() {
 
                     @Override
-                    public IInsideOutsideScore load(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                    public V loadValue(K input) {
+                        return loadFunc.apply(input);
                     }
 
                     @Override
-                    public void put(Sentence input, IInsideOutsideScore value) {
+                    public void put(K input, V value) {
                         // do nothing
                     }
 
                     @Override
-                    public IInsideOutsideScore getRoutine(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                    public V getRoutine(K input) {
+                        return loadFunc.apply(input);
                     }
 
                     @Override
@@ -90,63 +88,63 @@ public class CacheFactory {
                     }
 
                     @Override
-                    public String getKeyString(Sentence input) {
+                    public void clear() {}
+
+                    @Override
+                    public String getKeyString(K input) {
                         return null;
                     }
                 };
             case EHCACHE:
-                return new EhCacheWrapper<Sentence, IInsideOutsideScore>() {
+                return new EhCacheWrapper<K, V>() {
 
                     @Override
-                    public IInsideOutsideScore load(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                    public V loadValue(K input) {
+                        return loadFunc.apply(input);
                     }
 
                     @Override
-                    public String getKeyString(Sentence input) {
-                        StringBuilder sb = new StringBuilder();
-                        for (Word word : input) {
-                            sb.append(word.word()).append(":");
-                        }
-                        return sb.toString();
+                    public String getKeyString(K input) {
+                        return input.toString();
                     }
                 };
 
             case REDIS:
-                return new RedisCacheWrapper<Sentence, IInsideOutsideScore>(op) {
-
+                return new RedisCacheWrapper<K, V>(op) {
                     @Override
-                    public IInsideOutsideScore load(Sentence input) {
-                        return model.getGrammar().computeScore(input);
+                    public V loadValue(K input) {
+                        return loadFunc.apply(input);
                     }
 
                     @Override
-                    public String getKeyString(Sentence input) {
-                        StringBuilder sb = new StringBuilder();
-                        for (Word word : input) {
-                            sb.append(word.word()).append(":");
-                        }
-                        return sb.toString();
+                    public String getKeyString(K input) {
+                        return input.toString();
                     }
                 };
 
             case MONGO:
-                return new MongoCacheWrapper<Sentence, IInsideOutsideScore>(op) {
-
-
+                return new MongoCacheWrapper<K, V>(op) {
 
                     @Override
-                    public IInsideOutsideScore load(Sentence input) {
-                        return (IInsideOutsideScore)model.getGrammar().computeScore(input);
+                    public V loadValue(K input) {
+                        return loadFunc.apply(input);
                     }
 
                     @Override
-                    public String getKeyString(Sentence input) {
-                        StringBuilder sb = new StringBuilder();
-                        for (Word word : input) {
-                            sb.append(word.word()).append(":");
-                        }
-                        return sb.toString();
+                    public String getKeyString(K input) {
+                        return input.toString();
+                    }
+                };
+            case GUAVA:
+                return new GuavaCacheWrapper<K,V>(op) {
+                    @Override
+                    public V loadValue(K input) {
+                        return loadFunc.apply(input);
+                    }
+
+                    @Override
+                    public String getKeyString(K input) {
+                        return input.toString();
                     }
                 };
             default:

@@ -1,5 +1,7 @@
 package com.kushalarora.compositionalLM.lang;
 
+import com.kushalarora.compositionalLM.optimizer.IIndexed;
+import edu.stanford.nlp.parser.lexparser.Lexicon;
 import org.ujmp.core.SparseMatrix;
 
 /**
@@ -9,10 +11,12 @@ public class StanfordInsideOutsideScore extends AbstractInsideOutsideScore {
 
     protected transient SparseMatrix iSplitSpanStateScore;
     protected transient SparseMatrix oSpanStateScoreWParent;
-    protected int[] words;  // words of sentence being parsed as word Numberer ints
 
     public StanfordInsideOutsideScore(Sentence sentence, int numStates) {
-        super(sentence, numStates);
+        super(sentence.size() + 1, numStates);
+        this.sentence = new Sentence(sentence.getIndex());
+        this.sentence.addAll(sentence);
+        this.sentence.add(new Word(Lexicon.BOUNDARY, sentence.size()));
             /*
             oSpanStateScoreWParent = new double[length][length + 1][][];
             for (int start = 0; start < length; start++) {
@@ -56,6 +60,18 @@ public class StanfordInsideOutsideScore extends AbstractInsideOutsideScore {
         iScore = null;
         oScore = null;
         muScore = null;
+    }
+
+    public IIndexed get(int index) {
+        return sentence.get(index);
+    }
+
+    public int getIndex() {
+        return sentence.getIndex();
+    }
+
+    public int getSize() {
+        return sentence.getSize();
     }
 }
 

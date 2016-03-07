@@ -1,8 +1,10 @@
 package com.kushalarora.test.model;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
+import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.val;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.BeforeClass;
@@ -28,8 +30,10 @@ public class ModelTest {
     public static void setUpClass() throws ConfigurationException {
         Options op = new Options();
         op.grammarOp.grammarType = GrammarFactory.GrammarType.STANFORD_GRAMMAR;
-        model = new Model(
-                10, GrammarFactory.getGrammar(op),
+        IGrammar grammar = GrammarFactory.getGrammar(op, new Parallelizer(op, 1));
+        model = new Model(op,
+                10, grammar.getVocabSize(),
+                op.grammarOp.grammarType,
                 Activations.sigmoid(),
                 Activations.linear());
     }
@@ -57,7 +61,7 @@ public class ModelTest {
     @Test
     public void testLeafEnergy() {
         val vec = Nd4j.rand(10, 1);
-        float modelEnergy = model.energy(vec);
+        double modelEnergy = model.energy(vec);
 
         float trueEnergy = identity(
                 model
@@ -75,7 +79,7 @@ public class ModelTest {
         val child1Vec = Nd4j.rand(10, 1);
         val child2Vec = Nd4j.rand(10, 1);
         val parentVec = model.compose(child1Vec, child2Vec);
-        float modelEnergy = model.energy(parentVec, child1Vec, child2Vec);
+        double modelEnergy = model.energy(parentVec, child1Vec, child2Vec);
 
         float trueEnergy = identity(
                 model

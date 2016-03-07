@@ -1,7 +1,9 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
+import com.kushalarora.compositionalLM.options.Options;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -24,33 +26,37 @@ public class Model implements Serializable {
     Parameters params;
     private ActivationFunction f;
     private ActivationFunction g;
-    private IGrammar grammar;
+    private GrammarFactory.GrammarType grammarType;
 
-    public Model(@NonNull int dimensions,
-                 @NonNull IGrammar iGrammar,
+    public Model(@NonNull Options op,
+                 @NonNull int dimensions,
+                 @NonNull int vocabSize,
+                 @NonNull GrammarFactory.GrammarType grammarType,
                  @NonNull ActivationFunction composition,
                  @NonNull ActivationFunction output) {
 
 
-        this.grammar = iGrammar;
+        this.grammarType = grammarType;
         this.dimensions = dimensions;
-        this.vocabSize = iGrammar.getVocabSize();
-        this.params = new Parameters(dimensions, vocabSize);
+        this.vocabSize = vocabSize;
+        this.params = new Parameters(op, dimensions, vocabSize);
 
         f = composition;                                // default composition activation
         g = output;                                     // default output activation
 
     }
 
-    public Model(@NonNull int dimensions,
-                 @NonNull IGrammar iGrammar) {
-        this(dimensions, iGrammar, Activations.tanh(), Activations.linear());
+    public Model(@NonNull Options op,
+                 @NonNull int dimensions,
+                 @NonNull int vocabSize,
+                 @NonNull GrammarFactory.GrammarType grammarType) {
+        this(op, dimensions, vocabSize, grammarType,  Activations.tanh(), Activations.linear());
     }
 
-    public Model(@NonNull Parameters params, @NonNull IGrammar iGrammar) {
-        this.grammar = iGrammar;
+    public Model(@NonNull Parameters params, @NonNull GrammarFactory.GrammarType grammarType) {
+        this.grammarType = grammarType;
         this.dimensions = params.getDimensions();
-        this.vocabSize = iGrammar.getVocabSize();
+        this.vocabSize = params.getVocabSize();
         this.params = params;
 
         f = Activations.tanh();                                // default composition activation
@@ -114,7 +120,7 @@ public class Model implements Serializable {
      * @param child2 right child embedding. d dimension column vector
      * @return energy value for the composition.
      */
-    public float energy(@NonNull INDArray node, INDArray child1, INDArray child2) {
+    public double energy(@NonNull INDArray node, INDArray child1, INDArray child2) {
         if (!node.isColumnVector()) {
             throw new RuntimeException("Composed node should be a column vector");
         } else if (node.size(0) != dimensions) {
@@ -126,11 +132,11 @@ public class Model implements Serializable {
         if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
         }
-        return valObj.getFloat(0);
+        return valObj.getDouble(0);
     }
 
 
-    public float energyDerivative(@NonNull INDArray node, INDArray child1, INDArray child2) {
+    public double energyDerivative(@NonNull INDArray node, INDArray child1, INDArray child2) {
         if (!node.isColumnVector()) {
             throw new RuntimeException("Composed node should be a column vector");
         } else if (node.size(0) != dimensions) {
@@ -142,11 +148,10 @@ public class Model implements Serializable {
         if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valShape.toString());
         }
-        return valObj.getFloat(0);
-
+        return valObj.getDouble(0);
     }
 
-    public float energyDerivative(@NonNull INDArray node) {
+    public double energyDerivative(@NonNull INDArray node) {
         return energyDerivative(node, null, null);
     }
 
@@ -156,7 +161,7 @@ public class Model implements Serializable {
      * @param node Leaf node embedding. d dimension column vector.
      * @return energy value for the leaf node.
      */
-    public float energy(@NonNull INDArray node) {
+    public double energy(@NonNull INDArray node) {
         return this.energy(node, null, null);
     }
 

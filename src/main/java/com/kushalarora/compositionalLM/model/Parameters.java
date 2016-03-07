@@ -1,8 +1,11 @@
 package com.kushalarora.compositionalLM.model;
 
+import java.util.Map;
+
 import com.kushalarora.compositionalLM.derivatives.Derivatives;
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
 import com.kushalarora.compositionalLM.lang.Sentence;
+import com.kushalarora.compositionalLM.options.Options;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +23,14 @@ import org.nd4j.linalg.factory.Nd4j;
 @Setter
 @Slf4j
 public class Parameters implements IParameter<Sentence> {
+    private final Options op;
     private INDArray W;
     private INDArray u;
     private INDArray X;
     private final int dimensions;
     private final int vocabSize;
 
-    public Parameters(int dimensions, int vocabSize) {
+    public Parameters(Options op, int dimensions, int vocabSize) {
         RandomGenerator rng = new JDKRandomGenerator();
         rng.setSeed(2204);
         this.dimensions = dimensions;
@@ -34,10 +38,7 @@ public class Parameters implements IParameter<Sentence> {
         W = Nd4j.rand(dimensions, 2 * dimensions, -1, 1, rng);      // d X 2d matrix
         u = Nd4j.rand(1, dimensions, -1, 1, rng);                   // row vector with d entries
         X = Nd4j.rand(dimensions, vocabSize, -1, 1, rng);           // d X V matrix
-
-        INDArray normVec =  X.norm2(0);
-        X = X.divRowVector(normVec);
-
+        this.op = op;
     }
 
 
@@ -98,11 +99,32 @@ public class Parameters implements IParameter<Sentence> {
         log.info("new u = \n {}", u);
 
         log.info("old X = \n {}", X);
-        log.info("dX = \n {}", dq.getDqdxw().getDQdXw());
-        X = X.add(dq.getDqdxw().getDQdXw());
+        log.info("dX = \n {}", dq.getDqdxw().getIndexToxMap());
+
+        for (Map.Entry<Integer, INDArray> entry :
+                ((Map<Integer, INDArray>)dq.getDqdxw().getIndexToxMap()).entrySet()) {
+            Integer key = entry.getKey();
+            INDArray value = entry.getValue();
+            X.putColumn(key, value.add(X.getColumn(key)));
+        }
+
+        double l2term = op.trainOp.l2term;
+        if (l2term != 0) {
+            u = u.sub(u.mul(l2term));
+            W = W.sub(W.mul(l2term));
+            X = X.sub(X.mul(l2term));
+        }
+
+/*
         X = X.subRowVector(X.mean(0));
         INDArray normVec =  X.norm2(0);
         X = X.divRowVector(normVec);
         log.info("new X = \n {}", X);
+*/
+
+        log.info("$#Norm2 u : {}", Nd4j.norm2(u));
+        log.info("$#Norm2 W : {}", Nd4j.norm2(W));
+        log.info("$#Norm2 X : {}", Nd4j.norm2(X));
+
     }
 }
