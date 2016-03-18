@@ -136,7 +136,8 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     if (lexScore > Double.NEGATIVE_INFINITY) {
 
                         // \zeta_{A->w_i}
-                        final double zeta_w_i = exp(-energy + lexScore);
+                        final double zeta_w_i = exp(-energy);
+                        //                                 + lexScore);
 
                         // \pi(A, w_i) = \zeta_{A->w_i}
                         s.addToScore(s.iSplitSpanStateScore, zeta_w_i, start, end, split, state);
@@ -165,10 +166,11 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                         UnaryRule[] unaries = ug.closedRulesByChild(state);
                         for (UnaryRule ur : unaries) {
                             int parentState = ur.parent;
-                            double pS = ur.score;
+                            //double pS = ur.score;
 
                             // \zeta_{A->w_i^j}
-                            double zeta_A_w_i_j = exp(iS + pS);
+                            double zeta_A_w_i_j = exp(iS);
+                            //                          + pS);
 
                             // \pi(A, w_i^j) = \zeta_{A->w_i}
                             s.addToScore(s.iSplitSpanStateScore,
