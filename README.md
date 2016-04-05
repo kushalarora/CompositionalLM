@@ -1,6 +1,7 @@
 # CompositionalLM
+Source code for 
 
-Source code for Compositional language modeling paper.
+Kushal Arora and Anand Rangarajan. “A Compositional Approach to  Language Modeling.” arXiv:1604.00100 [cs.CL], 2016.
 
 ## Dependencies:
 * Java 1.8
