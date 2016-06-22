@@ -96,12 +96,13 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
 
                 // diff wrt to self returns eye
                 INDArray udXdXwArr =
-                        model.getParams().getU()
+                        model.getParams()
+                                .getU().transpose()
                              .mmul(dcdc);
 
                 int[] udXdXwShape = udXdXwArr.shape();
-                if (udXdXwShape.length != 1 ||
-                        udXdXwShape[0] != dim) {
+                if (udXdXwShape[0] != dim &&
+                        udXdXwShape[1] != dim) {
                     throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1 " + udXdXwShape.toString());
                 }
 
@@ -121,12 +122,13 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                                     model
                                             .getParams()
                                             .getU()
+                                            .transpose()
                                             .mmul(dxdxwArr[i][start][end][split]);
 
 
                             udXdXwShape = udXdXwArr.shape();
-                            if (udXdXwShape.length != 1 ||
-                                    udXdXwShape[0] != dim) {
+                            if (udXdXwShape[0] != dim &&
+                                    udXdXwShape[1] != dim) {
                                 throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
                             }
 

@@ -86,12 +86,11 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                                         phraseMatrix[start][split],
                                         phraseMatrix[split][end]);
 
-                                INDArray udXdWArr = model.getParams().getU().mmul(
+                                INDArray udXdWArr = model.getParams().getU().transpose().mmul(
                                         dxdwArr[iF][j][start][end][split]);
 
                                 int[] udXdWShape = udXdWArr.shape();
-                                if (udXdWShape.length != 1 ||
-                                        udXdWShape[0] != 1) {
+                                if (udXdWShape[0] != 1 && udXdWShape[1] != 1) {
                                     throw new RuntimeException("udXdWArr was expected to be a matrix of shape 1 X 1");
                                 }
 

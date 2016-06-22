@@ -88,7 +88,7 @@ public class dXdXw<T extends IIndexedSized> {
                             INDArray child1 = phraseMatrix[start][split];
                             INDArray child2 = phraseMatrix[split][end];
                             INDArray dC = model.composeDerivative(child1, child2);
-                            dC = dC.broadcast(new int[] {dim, dim});
+                           dC = dC.transpose().broadcast(new int[] {dim, dim}).transpose();
 
                             // [dc_1dW_ij dc_2dW_ij].transpose()
                             INDArray dC12 = Nd4j.concat(0, dXdXwi[start][split], dXdXwi[split][end]);

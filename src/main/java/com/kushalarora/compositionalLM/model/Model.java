@@ -113,9 +113,9 @@ public class Model implements Serializable {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
-        INDArray valObj = exec(new Identity(params.getU().mmul(node)));
+        INDArray valObj = exec(new Identity(params.getU().transpose().mmul(node)));
         int[] valShape = valObj.shape();
-        if (valShape.length != 1 || valShape[0] != 1) {
+        if (valShape[0] != 1 && valShape[1] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
         }
         return valObj.getDouble(0);
@@ -129,9 +129,9 @@ public class Model implements Serializable {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
-        INDArray valObj = exec(new Identity(params.getU().mmul(node)).derivative());
+        INDArray valObj = exec(new Identity(params.getU().transpose().mmul(node)).derivative());
         int[] valShape = valObj.shape();
-        if (valShape.length != 1 || valShape[0] != 1) {
+        if (valShape[0] != 1 && valShape[1] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valShape.toString());
         }
         return valObj.getDouble(0);

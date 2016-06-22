@@ -31,7 +31,7 @@ public abstract class AbstractBaseDerivativeClass<T extends IIndexedSized> imple
      * not be a finite number.
      */
     protected boolean containsNanOrInf(INDArray arr) {
-        double sum = arr.sum(Integer.MAX_VALUE).getDouble();
+        double sum = arr.sum(Integer.MAX_VALUE).getDouble(0, 0);
         return !Double.isFinite(sum);
     }
 
