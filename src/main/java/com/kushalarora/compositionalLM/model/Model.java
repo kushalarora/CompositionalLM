@@ -1,18 +1,22 @@
 package com.kushalarora.compositionalLM.model;
 
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
-import com.kushalarora.compositionalLM.lang.IGrammar;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.activation.ActivationFunction;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.Identity;
+import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
+import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
+import org.nd4j.linalg.ops.transforms.Transforms;
+
+import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 
 /**
  * Created by karora on 6/18/15.
@@ -24,33 +28,18 @@ public class Model implements Serializable {
     private int dimensions;
     private int vocabSize;
     Parameters params;
-    private ActivationFunction f;
-    private ActivationFunction g;
     private GrammarFactory.GrammarType grammarType;
 
     public Model(@NonNull Options op,
                  @NonNull int dimensions,
                  @NonNull int vocabSize,
-                 @NonNull GrammarFactory.GrammarType grammarType,
-                 @NonNull ActivationFunction composition,
-                 @NonNull ActivationFunction output) {
+                 @NonNull GrammarFactory.GrammarType grammarType) {
 
 
         this.grammarType = grammarType;
         this.dimensions = dimensions;
         this.vocabSize = vocabSize;
         this.params = new Parameters(op, dimensions, vocabSize);
-
-        f = composition;                                // default composition activation
-        g = output;                                     // default output activation
-
-    }
-
-    public Model(@NonNull Options op,
-                 @NonNull int dimensions,
-                 @NonNull int vocabSize,
-                 @NonNull GrammarFactory.GrammarType grammarType) {
-        this(op, dimensions, vocabSize, grammarType,  Activations.tanh(), Activations.linear());
     }
 
     public Model(@NonNull Parameters params, @NonNull GrammarFactory.GrammarType grammarType) {
@@ -58,9 +47,6 @@ public class Model implements Serializable {
         this.dimensions = params.getDimensions();
         this.vocabSize = params.getVocabSize();
         this.params = params;
-
-        f = Activations.tanh();                                // default composition activation
-        g = Activations.linear();
     }
 
     /**
@@ -95,7 +81,7 @@ public class Model implements Serializable {
                     child1.size(0), child2.size(0)));
         }
         INDArray child12 = Nd4j.concat(0, child1, child2);
-        return f.apply(params.getW().mmul(child12));
+        return exec(new Sigmoid(params.getW().mmul(child12)));
     }
 
 
@@ -109,7 +95,7 @@ public class Model implements Serializable {
                     child1.size(0), child2.size(0)));
         }
         INDArray child12 = Nd4j.concat(0, child1, child2);
-        return f.applyDerivative(params.getW().mmul(child12));
+        return exec(new Sigmoid(params.getW().mmul(child12)).derivative());
     }
 
     /**
@@ -127,7 +113,7 @@ public class Model implements Serializable {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
-        INDArray valObj = g.apply(params.getU().mmul(node));
+        INDArray valObj = params.getU().mmul(node);
         int[] valShape = valObj.shape();
         if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
@@ -143,7 +129,7 @@ public class Model implements Serializable {
             throw new IllegalArgumentException(String.format("Node should of size %d. " +
                     "Current size is: (%d)", dimensions, node.size(0)));
         }
-        INDArray valObj = g.applyDerivative(params.getU().mmul(node));
+        INDArray valObj = node;
         int[] valShape = valObj.shape();
         if (valShape.length != 1 || valShape[0] != 1) {
             throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valShape.toString());
@@ -174,13 +160,7 @@ public class Model implements Serializable {
         if (dimensions != that.dimensions) return false;
         if (vocabSize != that.vocabSize) return false;
         if (!params.equals(params)) return false;
-        if (f != null ?
-                !f.getClass().equals(that.f.getClass()) :
-                that.f != null)
-            return false;
-        return !(g != null ?
-                !g.getClass().equals(that.g.getClass()) :
-                that.g != null);
+        return true;
     }
 
     @Override
@@ -188,8 +168,14 @@ public class Model implements Serializable {
         int result = dimensions;
         result = 31 * result + vocabSize;
         result = 31 * result + (params != null ? params.hashCode() : 0);
-        result = 31 * result + (f != null ? f.hashCode() : 0);
-        result = 31 * result + (g != null ? g.hashCode() : 0);
         return result;
+    }
+
+    private static INDArray exec(TransformOp op) {
+        if(op.x().isCleanedUp()) {
+            throw new IllegalStateException("NDArray already freed");
+        } else {
+            return Nd4j.getExecutioner().execAndReturn(op);
+        }
     }
 }

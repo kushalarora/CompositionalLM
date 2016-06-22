@@ -147,7 +147,7 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
     public IDerivative adaGrad(IDerivative gradient) {
         return new dQdW(adaGrad.getGradient(
-                        ((dQdW) gradient).dQdW), data, op);
+                        ((dQdW) gradient).dQdW, 100), data, op);
     }
 
     public double norm()

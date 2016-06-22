@@ -80,7 +80,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
     }
 
     public IDerivative adaGrad(IDerivative gradient) {
-        return new dQdu(adaGrad.getGradient(((dQdu) gradient).dQdu), data, options);
+        return new dQdu(adaGrad.getGradient(((dQdu) gradient).dQdu, 100), data, options);
     }
 
     public double norm()

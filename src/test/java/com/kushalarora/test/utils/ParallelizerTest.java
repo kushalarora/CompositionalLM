@@ -2,10 +2,10 @@ package com.kushalarora.test.utils;
 
 import java.util.ArrayList;
 
+import java.util.Random;
 import javax.annotation.Nullable;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.jblas.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -81,7 +81,7 @@ public class ParallelizerTest
     public void testRandomLength()
     {
         Accumulator acc = new Accumulator();
-        int size = Random.nextInt(10);
+        int size = new Random().nextInt();
         parallelizer.parallelizer(0, size, acc);
         Assert.assertEquals(size, acc.getAccumulator());
     }

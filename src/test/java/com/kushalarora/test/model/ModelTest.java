@@ -10,7 +10,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.api.activation.Activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -33,9 +32,7 @@ public class ModelTest {
         IGrammar grammar = GrammarFactory.getGrammar(op, new Parallelizer(op, 1));
         model = new Model(op,
                 10, grammar.getVocabSize(),
-                op.grammarOp.grammarType,
-                Activations.sigmoid(),
-                Activations.linear());
+                op.grammarOp.grammarType);
     }
 
     @Test

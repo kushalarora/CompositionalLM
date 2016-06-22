@@ -35,9 +35,9 @@ public class Parameters implements IParameter<Sentence> {
         rng.setSeed(2204);
         this.dimensions = dimensions;
         this.vocabSize = vocabSize;
-        W = Nd4j.rand(dimensions, 2 * dimensions, -1, 1, rng);      // d X 2d matrix
-        u = Nd4j.rand(1, dimensions, -1, 1, rng);                   // row vector with d entries
-        X = Nd4j.rand(dimensions, vocabSize, -1, 1, rng);           // d X V matrix
+        W = Nd4j.rand(dimensions, 2 * dimensions, -1, 1);      // d X 2d matrix
+        u = Nd4j.rand(1, dimensions, -1, 1);                   // row vector with d entries
+        X = Nd4j.rand(dimensions, vocabSize, -1, 1);           // d X V matrix
         this.op = op;
     }
 

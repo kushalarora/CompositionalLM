@@ -204,7 +204,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
             dqdxw.putColumn(entry.getKey(), entry.getValue());
         }
 
-        dqdxw = adaGrad.getGradient(dqdxw);
+        dqdxw = adaGrad.getGradient(dqdxw, 100);
 
         Map<Integer, INDArray> newIndexToxMap = new HashMap<Integer, INDArray>();
         for (Map.Entry<Integer, INDArray> entry : ((Map<Integer, INDArray>)other.indexToxMap).entrySet()) {

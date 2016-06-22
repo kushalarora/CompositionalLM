@@ -21,7 +21,7 @@ public abstract class AbstractBaseDerivativeClass<T extends IIndexedSized> imple
     protected int[] shape;
 
     public AbstractBaseDerivativeClass(int[] shape, T data) {
-        adaGrad = new AdaGrad(shape);
+        adaGrad = new AdaGrad(shape, 0.1);
         this.data = data;
         this.shape = shape;
     }

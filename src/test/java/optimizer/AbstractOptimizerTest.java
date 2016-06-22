@@ -12,7 +12,6 @@ import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.Getter;
 import org.apache.commons.configuration.ConfigurationException;
-import org.jblas.util.Random;
 import org.junit.Test;
 
 import java.util.ArrayList;
