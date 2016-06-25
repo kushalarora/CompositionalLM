@@ -171,12 +171,16 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
         return matrix.getAsDouble(indexes);
     }
 
-    protected synchronized void setScore(SparseMatrix matrix, double value, long... indexes) {
-        matrix.setAsDouble(value, indexes);
+    protected void setScore(SparseMatrix matrix, double value, long... indexes) {
+        synchronized (matrix) {
+            matrix.setAsDouble(value, indexes);
+        }
     }
 
-    protected synchronized void addToScore(SparseMatrix matrix, double value, long... indexes) {
-        setScore(matrix, value + getScore(matrix, indexes), indexes);
+    protected  void addToScore(SparseMatrix matrix, double value, long... indexes) {
+        synchronized (matrix) {
+            setScore(matrix, value + getScore(matrix, indexes), indexes);
+        }
     }
 
     public void postProcess() {

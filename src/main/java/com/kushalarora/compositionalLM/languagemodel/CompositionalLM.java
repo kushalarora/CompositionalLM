@@ -172,7 +172,7 @@ public class CompositionalLM {
                 }
             };
 
-            if (op.trainOp.parallel) {
+            if (op.trainOp.dataParallel) {
                 List<Future<List<Double>>> contEntropyFunc =
                         parallelizer.parallelizer(0, trainListSize, testFunc);
 
@@ -261,7 +261,7 @@ public class CompositionalLM {
                     }
                 };
 
-                if (op.trainOp.parallel) {
+                if (op.trainOp.dataParallel) {
                     List<Future<List<Double>>> testScoreFutures =
                             parallelizer.parallelizer(0, testBatchSize, testFunc);
 
@@ -324,7 +324,7 @@ public class CompositionalLM {
                     }
                 };
 
-                if (op.trainOp.parallel) {
+                if (op.trainOp.dataParallel) {
                     List<Future<List<Double>>> testScoreFutures =
                             parallelizer.parallelizer(0, testBatchSize, testFunc);
 

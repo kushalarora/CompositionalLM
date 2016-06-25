@@ -21,7 +21,6 @@ import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
 /**
  * Created by karora on 6/21/15.
@@ -102,7 +101,7 @@ public class CompositionalGrammar implements Serializable {
                     }
                 };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.modelParallel) {
             parallelizer.parallelizer(0, s.length, insideFuncUnary);
         } else {
             // compute scores and phrasal representation for leaf nodes
@@ -190,7 +189,7 @@ public class CompositionalGrammar implements Serializable {
                         }
                     };
 
-            if (op.trainOp.parallel) {
+            if (op.trainOp.modelParallel) {
                 parallelizer.parallelizer(0, s.length - diff + 1, binaryInsideFunc);
             } else
             {
@@ -253,7 +252,7 @@ public class CompositionalGrammar implements Serializable {
                 }
             };
 
-            if (op.trainOp.parallel) {
+            if (op.trainOp.modelParallel) {
                 parallelizer.parallelizer(0, s.length - diff + 1, outsideUnaryFunc);
             } else {
                 for (int start = 0; start + diff <= s.length; start++) {
@@ -311,7 +310,7 @@ public class CompositionalGrammar implements Serializable {
             }
         };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.modelParallel) {
             parallelizer.parallelizer(0, s.length, muUnaryFunc);
         } else {
             // do leaf nodes
@@ -364,7 +363,7 @@ public class CompositionalGrammar implements Serializable {
                 }
             };
 
-            if (op.trainOp.parallel) {
+            if (op.trainOp.modelParallel) {
                 parallelizer.parallelizer(0, s.length - diff + 1, muBinaryFunc);
             } else {
                 for (int start = 0; start + diff <= s.length; start++) {

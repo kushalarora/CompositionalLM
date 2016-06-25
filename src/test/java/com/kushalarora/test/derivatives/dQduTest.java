@@ -22,7 +22,7 @@ public class dQduTest extends AbstractDerivativeTest {
     public void setUp() throws ConfigurationException
     {
         Options op = new Options();
-        op.trainOp.parallel = false;
+        op.trainOp.modelParallel = false;
         dQdu = new dQdu(dim, defaultSentence, op);
     }
 

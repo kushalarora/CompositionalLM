@@ -12,7 +12,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.Nullable;
-import java.util.List;
 
 /**
  * Created by karora on 6/21/15.
@@ -119,7 +118,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
             }
         };
 
-        if (options.trainOp.parallel) {
+        if (options.trainOp.modelParallel) {
             parallelizer.parallelizer(0, length, unaryFunc);
         } else {
             // do leaf nodes
@@ -158,7 +157,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                     }
                 };
 
-                if (options.trainOp.parallel) {
+                if (options.trainOp.modelParallel) {
                     parallelizer.parallelizer(start + 1, end, binaryFunc);
                 } else {
                     for (int split = start + 1; split < end; split++) {

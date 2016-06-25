@@ -203,7 +203,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     }
                 };
 
-                if (op.trainOp.parallel) {
+                if (op.trainOp.modelParallel) {
                     parallelizer.parallelizer(0, numStates, lexFunc);
                 } else {
                     for (int state = 0; state < numStates; state++) {
@@ -258,7 +258,7 @@ public class StanfordGrammar extends AbstractGrammar {
                 }
             };
 
-            if (op.trainOp.parallel) {
+            if (op.trainOp.modelParallel) {
                 parallelizer.parallelizer(0, numStates, unaryFunc);
             } else {
                 // Apply unary rules
@@ -360,7 +360,7 @@ public class StanfordGrammar extends AbstractGrammar {
                 return null;
             }
         };
-        if (op.trainOp.parallel)
+        if (op.trainOp.modelParallel)
         {
             parallelizer.parallelizer(0, numStates, leftStatFunc);
         } else {
@@ -442,7 +442,7 @@ public class StanfordGrammar extends AbstractGrammar {
             }
         };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.modelParallel) {
             parallelizer.parallelizer(0, numStates, rightStateFunc);
         } else {
             for (int rightState = 0; rightState < numStates; rightState++) {
@@ -492,7 +492,7 @@ public class StanfordGrammar extends AbstractGrammar {
             }
         };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.modelParallel) {
             parallelizer.parallelizer(0, numStates, unaryFunc);
         } else {
             // do unary rules -- one could promote this loop and put start inside
@@ -729,7 +729,7 @@ public class StanfordGrammar extends AbstractGrammar {
 
                 log.debug("Doing oScore for span ({}, {})", startFinal, endFinal);
 
-                if (op.trainOp.parallel) {
+                if (op.trainOp.modelParallel) {
                     parallelizer.parallelizer(0, numStates, unaryFunc);
                 } else {
                     // do unaries
@@ -800,7 +800,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     }
                 };
 
-                if (op.trainOp.parallel) {
+                if (op.trainOp.modelParallel) {
                     parallelizer.parallelizer(0, numStates, binaryFunc);
                 } else {
                     // do binaries
@@ -905,7 +905,7 @@ public class StanfordGrammar extends AbstractGrammar {
                 }
             };
 
-            if (op.trainOp.parallel) {
+            if (op.trainOp.modelParallel) {
                 parallelizer.parallelizer(0, numStates, unaryFunc);
             } else {
                 for (int state = 0; state < numStates; state++)
@@ -1007,7 +1007,7 @@ public class StanfordGrammar extends AbstractGrammar {
                     }
                 };
 
-                if (op.trainOp.parallel) {
+                if (op.trainOp.modelParallel) {
                     parallelizer.parallelizer(0, s.length - diff + 1, binaryFunc);
                 } else {
                     for (int state = 0; state < numStates; state++) {

@@ -164,7 +164,7 @@ public class AbstractOptimizerTest {
 
 
         Options op = new Options();
-        op.trainOp.parallel = false;
+        op.trainOp.modelParallel = false;
         op.trainOp.learningRate = 1;
         op.trainOp.maxOptimizerEpochs = 1;
         abstractOptimizer = new AbstractSGDOptimizer<Input, Derivatives>(op, new Derivatives(derivativeFunc)) {

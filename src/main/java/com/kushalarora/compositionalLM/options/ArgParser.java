@@ -131,8 +131,8 @@ public class ArgParser {
                 argIndex++;
             } else if (args[argIndex].equalsIgnoreCase("-lowercase")) {
                 op.grammarOp.lowerCase = true;
-            } else if (args[argIndex].equalsIgnoreCase("-parallel")) {
-                op.trainOp.parallel = true;
+            } else if (args[argIndex].equalsIgnoreCase("-modelParallel")) {
+                op.trainOp.modelParallel = true;
                 String[] numThreads = ArgUtils.getStringFromArg(args, argIndex);
                 if (numThreads.length > 1) {
                     throw new RuntimeException("You can only specify one numThread value");
@@ -142,6 +142,8 @@ public class ArgParser {
                     op.trainOp.nThreads = Integer.parseInt(numThreads[0]);
                     argIndex++;
                 }
+            } else if (args[argIndex].equalsIgnoreCase("-datalParallel")) {
+                op.trainOp.dataParallel = true;
             } else if (args[argIndex].equalsIgnoreCase("-nlDelim")) {
                 op.grammarOp.newLineDelimiter = true;
             }   else if (args[argIndex].equalsIgnoreCase("-docType")) {

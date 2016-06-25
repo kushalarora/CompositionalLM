@@ -33,7 +33,7 @@ public class dXdXwTest extends AbstractDerivativeTest {
         params.setW(W);
 
         op = new Options();
-        op.trainOp.parallel = true;
+        op.trainOp.modelParallel = true;
     }
 
     @Before

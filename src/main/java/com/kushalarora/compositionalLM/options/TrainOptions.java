@@ -27,7 +27,8 @@ public class TrainOptions implements Serializable {
     public int batchSize;
     public int validationFreq;
     public double learningRate;
-    public boolean parallel;
+    public boolean modelParallel;
+    public boolean dataParallel;
     public int nThreads;
     public OptimizerFactory.OptimizerType optimizer;
     public int validBatchSize;
@@ -53,8 +54,10 @@ public class TrainOptions implements Serializable {
                 config.getInt("batchSize", 100);
         validationFreq =
                 config.getInt("validationFreq", 5);
-        parallel =
-                config.getBoolean("parallel", false);
+        modelParallel =
+                config.getBoolean("modelParallel", false);
+        dataParallel =
+                config.getBoolean("dataParallel", false);
         nThreads =
                 config.getInt("nThreads", 0);
 

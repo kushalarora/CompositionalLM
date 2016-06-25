@@ -1,7 +1,5 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import java.util.List;
-
 import javax.annotation.Nullable;
 
 import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
@@ -10,9 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import com.google.common.base.Function;
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 
@@ -121,7 +117,7 @@ public class dXdXw<T extends IIndexedSized> {
             }
         };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.modelParallel) {
             parallelizer.parallelizer(0, length, func);
         } else {
             for (int i = 0; i < length; i++) {

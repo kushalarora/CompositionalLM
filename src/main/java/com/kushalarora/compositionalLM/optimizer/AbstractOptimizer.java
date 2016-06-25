@@ -67,7 +67,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 return getValidationScore(validList.get(integer));
             }
         };
-        if (op.trainOp.parallel) {
+        if (op.trainOp.dataParallel) {
             List<Future<List<Double>>> validScoreFutures =
                     parallelizer.parallelizer(0, validBatchSize, validFunc);
 
@@ -99,7 +99,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     }
                 };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.dataParallel) {
             List<Future<List<D>>> futures =
                     parallelizer.parallelizer(0, batchSize, fitRoutine);
 
@@ -134,7 +134,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     }
                 };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.dataParallel) {
             List<Future<List<Double>>> futures =
                     parallelizer.parallelizer(0, batchSize, scoreRountine);
 

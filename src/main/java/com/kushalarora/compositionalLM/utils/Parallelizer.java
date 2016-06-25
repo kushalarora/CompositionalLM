@@ -37,10 +37,10 @@ public class Parallelizer {
         int blockNum = length / blockSize;
 
         if (blockNum < 1) {
-           /* log.error("blockNum is zero. " +
+            log.error("blockNum is zero. " +
                     "Start: " + start +
                     " End: " + end  +
-                    " blockSize: " + blockSize);*/
+                    " blockSize: " + blockSize);
             blockNum = 1;
         }
 

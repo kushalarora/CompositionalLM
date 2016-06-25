@@ -109,7 +109,7 @@ public class CompositionLMTest {
                         "-grammarFile", "src/resources/englishPCFG.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase,",
-                        "-parallel",
+                        "-modelParallel",
                       //  "-saveVisualization",
                       //  "-validBatchSize", "10"
                 };
@@ -127,7 +127,7 @@ public class CompositionLMTest {
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase",
                         "-saveVisualization",
-                        "-parallel", "-nThreads 2"};
+                        "-modelParallel", "-nThreads 2"};
         CompositionalLM.main(args);
     }
 

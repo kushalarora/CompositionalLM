@@ -1,7 +1,5 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import java.util.List;
-
 import javax.annotation.Nullable;
 
 import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
@@ -105,7 +103,7 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                 }
             };
 
-            if (op.trainOp.parallel) {
+            if (op.trainOp.modelParallel) {
                 parallelizer.parallelizer(0, 2 * dim, func);
             } else {
                 for (int j = 0; j < 2 * dim; j++) {

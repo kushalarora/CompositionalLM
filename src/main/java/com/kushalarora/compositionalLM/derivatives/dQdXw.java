@@ -1,21 +1,17 @@
 package com.kushalarora.compositionalLM.derivatives;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.kushalarora.compositionalLM.lang.StanfordCompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
-import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import com.google.common.base.Function;
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
 import com.kushalarora.compositionalLM.model.Model;
-import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 
@@ -153,7 +149,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
             }
         };
 
-        if (op.trainOp.parallel) {
+        if (op.trainOp.modelParallel) {
             parallelizer.parallelizer(0, length, func);
         } else {
             for (int i = 0; i < length; i++) {

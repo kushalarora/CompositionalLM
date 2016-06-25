@@ -37,7 +37,7 @@ public class dXdWTest extends AbstractDerivativeTest {
     public void setUp() throws ConfigurationException
     {
         Options op = new Options();
-        op.trainOp.parallel = true;
+        op.trainOp.modelParallel = true;
         dxdw = new dXdW(dim, defaultSentence, op);
     }
 

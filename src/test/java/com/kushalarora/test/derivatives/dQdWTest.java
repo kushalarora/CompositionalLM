@@ -1,7 +1,6 @@
 package com.kushalarora.test.derivatives;
 
 import com.kushalarora.compositionalLM.derivatives.dQdW;
-import com.kushalarora.compositionalLM.derivatives.dXdW;
 import com.kushalarora.compositionalLM.options.Options;
 
 import org.apache.commons.configuration.ConfigurationException;
@@ -40,7 +39,7 @@ public class dQdWTest extends AbstractDerivativeTest {
         params.setU(u);
 
         op = new Options();
-        op.trainOp.parallel = true;
+        op.trainOp.modelParallel = true;
     }
 
     @Before
