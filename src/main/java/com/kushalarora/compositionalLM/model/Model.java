@@ -1,181 +1,284 @@
 package com.kushalarora.compositionalLM.model;
 
+import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.transforms.Identity;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 
-/**
- * Created by karora on 6/18/15.
- */
 @Slf4j
 @Getter
 public class Model implements Serializable {
 
-    private int dimensions;
-    private int vocabSize;
-    Parameters params;
-    private GrammarFactory.GrammarType grammarType;
+	private int dimensions;
+	private int vocabSize;
+	Parameters params;
+	private GrammarFactory.GrammarType grammarType;
+	private double ZWord;
 
-    public Model(@NonNull Options op,
-                 @NonNull int dimensions,
-                 @NonNull int vocabSize,
-                 @NonNull GrammarFactory.GrammarType grammarType) {
+	public Model(@NonNull Options op,
+	             @NonNull int dimensions,
+	             @NonNull int vocabSize,
+	             @NonNull GrammarFactory.GrammarType grammarType) {
 
+		this.grammarType = grammarType;
+		this.dimensions = dimensions;
+		this.vocabSize = vocabSize;
+		this.params = new Parameters(op, dimensions, vocabSize);
+	}
 
-        this.grammarType = grammarType;
-        this.dimensions = dimensions;
-        this.vocabSize = vocabSize;
-        this.params = new Parameters(op, dimensions, vocabSize);
-    }
+	public Model(@NonNull Parameters params, @NonNull GrammarFactory.GrammarType grammarType) {
+		this.grammarType = grammarType;
+		this.dimensions = params.getDimensions();
+		this.vocabSize = params.getVocabSize();
+		this.params = params;
+	}
 
-    public Model(@NonNull Parameters params, @NonNull GrammarFactory.GrammarType grammarType) {
-        this.grammarType = grammarType;
-        this.dimensions = params.getDimensions();
-        this.vocabSize = params.getVocabSize();
-        this.params = params;
-    }
+	/**
+	 * Returns the continuous space embedding of the word
+	 *
+	 * @param word Queried word.
+	 * @return d dimension embedding of the word
+	 */
+	public INDArray word2vec(@NonNull Word word) {
+		int index = word.getIndex();
+		if (index < 0 || index >= vocabSize) {
+			throw new RuntimeException(String.format("Word index must be between 0 to %d. " +
+				"Word::Index %s::%d", vocabSize, word.toString(), word.getIndex()));
+		}
+		return params.getX().getRow(index).transpose();
+	}
 
-    /**
-     * Returns the continuous space embedding of the word
-     *
-     * @param word Queried word.
-     * @return d dimension embedding of the word
-     */
-    public INDArray word2vec(@NonNull Word word) {
-        int index = word.getIndex();
-        if (index < 0 || index >= vocabSize) {
-            throw new RuntimeException(String.format("Word index must be between 0 to %d. " +
-                    "Word::Index %s::%d", vocabSize, word.toString(), word.getIndex()));
-        }
-        return params.getX().getColumn(index);
-    }
-
-    /**
-     * Compose parent node from two children.
-     *
-     * @param child1 left child embedding. d dimension column vector.
-     * @param child2 right child embedding. d dimension column vector.
-     * @return return  continuous vector representation of parent node. d dimension column vector
-     */
-    public INDArray compose(@NonNull INDArray child1, @NonNull INDArray child2) {
-        if (!child1.isColumnVector() || !child2.isColumnVector()) {
-            throw new IllegalArgumentException("Child1 and Child2 should be column vectors");
-        } else if (child1.size(0) != dimensions ||
-                child2.size(0) != dimensions) {
-            throw new IllegalArgumentException(String.format("Child1 and Child2 should of size %d. " +
-                            "Current sizes are  : (%d, %d)", dimensions,
-                    child1.size(0), child2.size(0)));
-        }
-        INDArray child12 = Nd4j.concat(0, child1, child2);
-        return exec(new Sigmoid(params.getW().mmul(child12)));
-    }
-
-
-    public INDArray composeDerivative(@NonNull INDArray child1, @NonNull INDArray child2) {
-        if (!child1.isColumnVector() || !child2.isColumnVector()) {
-            throw new IllegalArgumentException("Child1 and Child2 should be column vectors");
-        } else if (child1.size(0) != dimensions ||
-                child2.size(0) != dimensions) {
-            throw new IllegalArgumentException(String.format("Child1 and Child2 should of size %d. " +
-                            "Current sizes are  : (%d, %d)", dimensions,
-                    child1.size(0), child2.size(0)));
-        }
-        INDArray child12 = Nd4j.concat(0, child1, child2);
-        return exec(new Sigmoid(params.getW().mmul(child12)).derivative());
-    }
-
-    /**
-     * Given a node and both the children compute the composition energy for the node.
-     *
-     * @param node   Parent node embedding. d dimension column vector
-     * @param child1 left child embedding. d dimension column vector
-     * @param child2 right child embedding. d dimension column vector
-     * @return energy value for the composition.
-     */
-    public double energy(@NonNull INDArray node, INDArray child1, INDArray child2) {
-        if (!node.isColumnVector()) {
-            throw new RuntimeException("Composed node should be a column vector");
-        } else if (node.size(0) != dimensions) {
-            throw new IllegalArgumentException(String.format("Node should of size %d. " +
-                    "Current size is: (%d)", dimensions, node.size(0)));
-        }
-        INDArray valObj = exec(new Identity(params.getU().transpose().mmul(node)));
-        int[] valShape = valObj.shape();
-        if (valShape[0] != 1 && valShape[1] != 1) {
-            throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
-        }
-        return valObj.getDouble(0);
-    }
+	/**
+	 * Compose parent node from two children.
+	 *
+	 * @param child1 left child embedding. d dimension column vector.
+	 * @param child2 right child embedding. d dimension column vector.
+	 * @return return  continuous vector representation of parent node. d dimension column vector
+	 */
+	public INDArray compose(@NonNull INDArray child1, @NonNull INDArray child2) {
+		if (!child1.isColumnVector() || !child2.isColumnVector()) {
+			throw new IllegalArgumentException("Child1 and Child2 should be column vectors");
+		} else if (child1.size(0) != dimensions ||
+			child2.size(0) != dimensions) {
+			throw new IllegalArgumentException(String.format("Child1 and Child2 should of size %d. " +
+					"Current sizes are  : (%d, %d)", dimensions,
+				child1.size(0), child2.size(0)));
+		}
+		INDArray child12 = Nd4j.concat(0, child1, child2);
+		return exec(new Sigmoid(params.getW().mmul(child12)));
+	}
 
 
-    public double energyDerivative(@NonNull INDArray node, INDArray child1, INDArray child2) {
-        if (!node.isColumnVector()) {
-            throw new RuntimeException("Composed node should be a column vector");
-        } else if (node.size(0) != dimensions) {
-            throw new IllegalArgumentException(String.format("Node should of size %d. " +
-                    "Current size is: (%d)", dimensions, node.size(0)));
-        }
-        INDArray valObj = exec(new Identity(params.getU().transpose().mmul(node)).derivative());
-        int[] valShape = valObj.shape();
-        if (valShape[0] != 1 && valShape[1] != 1) {
-            throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valShape.toString());
-        }
-        return valObj.getDouble(0);
-    }
+	public INDArray composeDerivative(@NonNull INDArray child1, @NonNull INDArray child2) {
+		if (!child1.isColumnVector() || !child2.isColumnVector()) {
+			throw new IllegalArgumentException("Child1 and Child2 should be column vectors");
+		} else if (child1.size(0) != dimensions ||
+			child2.size(0) != dimensions) {
+			throw new IllegalArgumentException(String.format("Child1 and Child2 should of size %d. " +
+					"Current sizes are  : (%d, %d)", dimensions,
+				child1.size(0), child2.size(0)));
+		}
+		INDArray child12 = Nd4j.concat(0, child1, child2);
+		return exec(new Sigmoid(params.getW().mmul(child12)).derivative());
+	}
 
-    public double energyDerivative(@NonNull INDArray node) {
-        return energyDerivative(node, null, null);
-    }
+	public INDArray linearWord(@NonNull INDArray node) {
+		if (node.size(0) != dimensions) {
+			throw new IllegalArgumentException(String.format(
+				"Node should of size %d. " +
+					"Current size is :(%d)",
+				dimensions, node.size(0)));
+		}
 
-    /**
-     * Compute energy for the leaf node where there are no children
-     *
-     * @param node Leaf node embedding. d dimension column vector.
-     * @return energy value for the leaf node.
-     */
-    public double energy(@NonNull INDArray node) {
-        return this.energy(node, null, null);
-    }
+		return params.getU().transpose().mmul(node);
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+	public double energyWord(@NonNull INDArray node) {
+		INDArray valObj = exec(new Identity(linearWord(node)));
+		int[] valShape = valObj.shape();
+		if (valShape[0] != 1 && valShape[1] != 1) {
+			throw new RuntimeException(
+				"Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
+		}
 
-        Model that = (Model) o;
-        if (dimensions != that.dimensions) return false;
-        if (vocabSize != that.vocabSize) return false;
-        if (!params.equals(params)) return false;
-        return true;
-    }
+		return valObj.getDouble(0);
+	}
 
-    @Override
-    public int hashCode() {
-        int result = dimensions;
-        result = 31 * result + vocabSize;
-        result = 31 * result + (params != null ? params.hashCode() : 0);
-        return result;
-    }
+	/**
+	 * Compute energy for the leaf node where there are no children
+	 *
+	 * @param node Leaf node embedding. d dimension column vector.
+	 * @return energy value for the leaf node.
+	 */
+	public double unProbabilityWord(@NonNull INDArray node) {
 
-    private static INDArray exec(TransformOp op) {
-        if(op.x().isCleanedUp()) {
-            throw new IllegalStateException("NDArray already freed");
-        } else {
-            return Nd4j.getExecutioner().execAndReturn(op);
-        }
-    }
+		return Math.exp(-energyWord(node));
+	}
+
+	public double probabilityWord(@NonNull INDArray node) {
+
+		double unProb = unProbabilityWord(node);
+		if (ZWord == 0) {
+			calculateZ();
+		}
+		return unProb/ZWord;
+	}
+
+	public double energyWordDerivative(@NonNull INDArray node) {
+
+		INDArray valObj = exec(new Identity(linearWord(node)).derivative());
+		int[] valShape = valObj.shape();
+		if (valShape[0] != 1 && valShape[1] != 1) {
+			throw new RuntimeException(
+				"Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
+		}
+		return valObj.getDouble(0);
+	}
+
+	public INDArray linearComposition(@NonNull INDArray node, INDArray child1, INDArray child2) {
+		if (node.size(0) != dimensions ||
+			child1.size(0) != dimensions ||
+			child2.size(0) != dimensions) {
+			throw new IllegalArgumentException(String.format("Node, child1 and child2 should of size %d. " +
+					"Current size are: Node:(%d), child1:(%s), child2:(%s)",
+				dimensions, node.size(0), child1.size(0), child2.size(0)));
+		}
+
+		return params.getU().transpose().mmul(node)
+			.addi(params.getH1().transpose().mmul(child1))
+			.addi(params.getH2().transpose().mmul(child2));
+	}
+
+	/**
+	 * Given a node and both the children compute the composition energy for the node.
+	 *
+	 * @param node   Parent node embedding. d dimension column vector
+	 * @param child1 left child embedding. d dimension column vector
+	 * @param child2 right child embedding. d dimension column vector
+	 * @return energy value for the composition.
+	 */
+	public double unProbabilityComp(@NonNull INDArray node, INDArray child1, INDArray child2) {
+		return Math.exp(-energyComp(node, child1, child2));
+	}
+
+
+
+	public double energyComp(@NonNull INDArray node, INDArray child1, INDArray child2) {
+		INDArray valObj = exec(new Identity(linearComposition(node, child1, child2)));
+
+		int[] valShape = valObj.shape();
+		if (valShape[0] != 1 && valShape[1] != 1) {
+			throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
+		}
+
+		return valObj.getDouble(0);
+	}
+
+	public double energyCompDerivative(@NonNull INDArray node, INDArray child1, INDArray child2) {
+
+		INDArray valObj =
+			exec(new Identity(linearComposition(node, child1, child2))
+					.derivative());
+
+		int[] valShape = valObj.shape();
+		if (valShape[0] != 1 && valShape[1] != 1) {
+			throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valShape.toString());
+		}
+		return valObj.getDouble(0);
+	}
+
+	double  calculateZ() {
+		log.info("Calculating Z_Word.");
+		for (int i = 0; i < getVocabSize(); i++) {
+			INDArray x = getParams().getX().getRow(i).transpose();
+			ZWord += unProbabilityWord(x);
+		}
+		return ZWord;
+	}
+
+	public void preProcessOnBatch() {
+		calculateZ();
+	}
+
+	public void postProcessOnBatch() {
+		log.info("Cleaning up ZWord");
+		ZWord = 0;
+	}
+
+	public INDArray Expectedl(int i, int j,
+	                          INDArray[] E_ij,
+	                          INDArray[] compositionMatrices,
+	                          INDArray[][] phraseMatrix,
+	                          double compMuSum,
+	                          int[] dims) {
+		double Zl = 0;
+		INDArray E_l = Nd4j.zeros(dims);
+		for (int s = i + 1; s < j; s++) {
+			double Zls = unProbabilityComp(
+				compositionMatrices[s],
+				phraseMatrix[i][s],
+				phraseMatrix[s][j]);
+			E_l.addi(E_ij[s].muli(Zls));
+			Zl += Zls;
+		}
+		return E_l.muli(compMuSum).divi(Zl);
+	}
+
+	public INDArray ExpectedV(Function<INDArray, INDArray> wTodELeafFunc, int[] dims) {
+
+		INDArray EV = Nd4j.zeros(dims);
+		for (int i = 0; i < getVocabSize(); i++) {
+			INDArray x = getParams().getX().getRow(i).transpose();
+			INDArray xD = wTodELeafFunc.apply(x);
+			xD.muli(probabilityWord(x));
+			EV.addi(xD);
+		}
+
+		if (ZWord == 0) {
+			calculateZ();
+		}
+		return EV.divi(ZWord);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		Model that = (Model) o;
+		if (dimensions != that.dimensions) return false;
+		if (vocabSize != that.vocabSize) return false;
+		if (!params.equals(params)) return false;
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = dimensions;
+		result = 31 * result + vocabSize;
+		result = 31 * result + (params != null ? params.hashCode() : 0);
+		return result;
+	}
+
+	private static INDArray exec(TransformOp op) {
+		if (op.x().isCleanedUp()) {
+			throw new IllegalStateException("NDArray already freed");
+		} else {
+			return Nd4j.getExecutioner().execAndReturn(op);
+		}
+	}
 }

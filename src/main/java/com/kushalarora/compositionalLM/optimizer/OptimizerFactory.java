@@ -46,6 +46,8 @@ public class OptimizerFactory {
             final Function<T, Double> validScorer,
             final Function<T, Derivatives> derivativeCalculator,
             final Function<IntTuple, Void> functionSaver,
+            final Function<Void, Void> preProcessOnBatch,
+            final Function<Void, Void> postProcessOnBatch,
             final Parallelizer parallelizer) {
 
         switch (op.trainOp.optimizer) {
@@ -70,6 +72,14 @@ public class OptimizerFactory {
                     public void saveModel(int iter, int epoch) {
                         functionSaver.apply(new IntTuple(new int[] {iter, epoch}));
                     }
+
+                    public void preProcessOnBatch() {
+                        preProcessOnBatch.apply(null);
+                    }
+
+                    public void postProcessOnBatch() {
+                        postProcessOnBatch.apply(null);
+                    }
                 };
             case ADAGRAD:
                 return new AbstractAdaGradOptimzer<T, Derivatives>(
@@ -91,6 +101,13 @@ public class OptimizerFactory {
                     }
                     public void saveModel(int iter, int epoch) {
                         functionSaver.apply(new IntTuple(new int[] {iter, epoch}));
+                    }
+                    public void preProcessOnBatch() {
+                        preProcessOnBatch.apply(null);
+                    }
+
+                    public void postProcessOnBatch() {
+                        postProcessOnBatch.apply(null);
                     }
                 };
             default:

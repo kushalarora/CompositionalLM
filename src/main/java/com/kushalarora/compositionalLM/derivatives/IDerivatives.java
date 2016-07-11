@@ -1,7 +1,5 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import com.kushalarora.compositionalLM.model.CompositionalInsideOutsideScore;
-import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 
 /**

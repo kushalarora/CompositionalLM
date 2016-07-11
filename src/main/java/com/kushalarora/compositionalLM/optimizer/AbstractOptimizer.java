@@ -27,7 +27,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
     protected double bestValidationScore;
     protected boolean done;
     private Parallelizer parallelizer;
-
     protected D dvAcc;
 
     protected AbstractOptimizer(Options op, D dvAcc, Parallelizer parallelizer) {
@@ -39,7 +38,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         bestValidationScore = Double.NEGATIVE_INFINITY;
         done = false;
         this.parallelizer = parallelizer;
-
     }
 
     public D fitOne(T data) {
@@ -114,11 +112,6 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 derivativeAcc(derivative);
             }
         }
-
-        // update param for this batch
-        D dAcc = getAccumulatedDerivative();
-        dAcc.mul(1.0 / batchSize);
-        updateParams(dAcc);
     }
 
 
@@ -146,7 +139,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         } else {
             for (int i = 0; i < batchSize; i++) {
                 Double score = scoreRountine.apply(i);
-                atomicDouble.addAndGet(score);
+                atomicDouble.getAndAdd(score);
             }
         }
 
@@ -177,6 +170,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 }
                 int trainBatchSize = trainList.size();
 
+                preProcessOnBatch();
                 // train batch
                 fitBatch(trainList);
                 double trainBatchScore = getTrainBatchScore(trainList);
@@ -219,7 +213,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     log.info("$Validation$ Mean validation score epoch#{}, iter#{}, time#{}: {}",
                             epoch, iter, estimatedValidTime, mean);
 
-                    // is better than the bestt
+                    // is better than the best
                     if (mean > bestValidationScore) {
 
                         // good enough for us?
@@ -239,6 +233,12 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                         return;
                     } // end if mean < bestValidationScore
                 }   // end if validate
+
+                // update param for this batch
+                D dAcc = getAccumulatedDerivative();
+                dAcc.mul(1.0 / trainBatchSize);
+                updateParams(dAcc);
+                postProcessOnBatch();
             } // end for batch
 
             long estimatedEpochTime = System.currentTimeMillis() - epochStartTime;

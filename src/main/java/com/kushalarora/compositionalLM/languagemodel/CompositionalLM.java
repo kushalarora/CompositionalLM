@@ -24,6 +24,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.log4j.PropertyConfigurator;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -65,28 +66,13 @@ public class CompositionalLM {
                 docProcessorFactory.getDocumentProcessor();
 
         final List<Sentence> trainSentList = Lists.newArrayList();
-        final List<Sentence> trainDistSentList = Lists.newArrayList();
         for (String filename : op.trainOp.trainFiles) {
             trainSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
-            trainDistSentList.addAll(Lists.newArrayList(
-                    docProcessor.getIterator(getDistortedFilename(filename))));
         }
 
-        final Map<Integer, Integer> validIndexToDistListIdxMapping =
-                new HashMap<Integer, Integer>();
         List<Sentence> validSentList = Lists.newArrayList();
-        final List<Sentence> validDistSentList = Lists.newArrayList();
         for (String filename : op.trainOp.validationFiles) {
-            List<Sentence> validList = Lists.newArrayList(docProcessor.getIterator(filename));
-            List<Sentence> validDistList = Lists.newArrayList(docProcessor.getIterator(getDistortedFilename(filename)));
-            assert(validList.size() == validDistList.size());
-            for (int i = 0; i < validList.size(); i++) {
-                validIndexToDistListIdxMapping.put(
-                        validList.get(i).getIndex(), validDistSentList.size());
-                validSentList.add(validList.get(i));
-                validDistSentList.add(validDistList.get(i));
-
-            }
+	        validSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
         }
 
         final CacheWrapper<Sentence, StanfordCompositionalInsideOutsideScore> trainCache =
@@ -101,28 +87,27 @@ public class CompositionalLM {
         // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
                 OptimizerFactory.getOptimizer(op, model,
+                        // train scorer
                         new Function<Sentence, Double>() {
                             @Nullable
-                            // train scorer
-                            // TODO:: QScore;
                             public Double apply(Sentence sentence) {
-                                return grammar.getQScore(trainCache.get(sentence));
+	                            return grammar.getQScore(trainCache.get(sentence));
                             }
                         },
+
+                        // valid scorer
                         new Function<Sentence, Double>() {
                             @Nullable
-                            // valid scorer
                             public Double apply(Sentence sentence) {
-                                int distListIdx =
-                                        validIndexToDistListIdxMapping
-                                                .get(sentence.getIndex());
-                                Sentence distSentence = validDistSentList.get(distListIdx);
-                                return crossEntropySent(sentence, distSentence);
+                                return ((StanfordCompositionalInsideOutsideScore)
+                                        grammar.getInsideScore(sentence, true))
+	                                .getSentenceScore();
                             }
                         },
+
+                        // derivative calculator
                         new Function<Sentence, Derivatives>() {
                             @Nullable
-                            // derivative calculator
                             public Derivatives apply(@Nullable Sentence sentence) {
                                 Derivatives derivatives = new Derivatives(op,
                                         model, trainCache.get(sentence));
@@ -130,9 +115,10 @@ public class CompositionalLM {
                                 return derivatives;
                             }
                         },
+
+                        // saver
                         new Function<IntTuple, Void>() {
                             @Nullable
-                            // saver
                             public Void apply(@Nullable IntTuple tuple) {
                                 String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
                                 str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
@@ -140,58 +126,52 @@ public class CompositionalLM {
                                 saveModelSerialized(outFilename);
                                 return null;
                             }
+                        },
+
+                        // preprocessor
+                        new Function<Void, Void>() {
+                            @Nullable
+                            public Void apply(@Nullable Void aVoid) {
+                                model.preProcessOnBatch();
+                                Derivatives.preProcessOnBatch();
+                                return null;
+                            }
+                        },
+
+                        // postprocessor
+                        new Function<Void, Void>() {
+                            @Nullable
+                            public Void apply(@Nullable Void aVoid) {
+                                model.postProcessOnBatch();
+                                Derivatives.postProcessOnBatch();
+                                return null;
+                            }
                         }, parallelizer);
 
-        int EMIter = 0;
+        int emIter = 0;
         double bestEMIterValidScore = 0;
         // TODO: Add early stopping logic.
-        while (EMIter < op.trainOp.maxEMEpochs) {
+        while (emIter < op.trainOp.maxEMEpochs) {
+            log.info("Starting EMIter#: {}", emIter);
             trainCache.clear();
             // Fit training data with validation on validation file.
             optimizer.fit(trainSentList, validSentList);
-            double bestEMIterTillNow = optimizer.getBestValidationScore();
-            log.info("EMIter#: {}, bestValidationScore => {}",
-                    EMIter, bestEMIterTillNow);
+            double emIterValidScore = optimizer.getBestValidationScore();
+            log.info("EMIter#: {}, emIterValidScore => {}", emIter, emIterValidScore);
 
-            if (bestEMIterValidScore < bestEMIterTillNow)
+            if (bestEMIterValidScore > emIterValidScore)
             {
-                bestEMIterValidScore = bestEMIterTillNow;
+                log.info("EMIter#: {} improved validation score. " +
+	                        "Old best: {}, new best: {}",
+	                emIter, bestEMIterValidScore, emIterValidScore );
+
+                bestEMIterValidScore = emIterValidScore;
                 String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
-                str[0] = String.format("%s-%d", str[0], EMIter);
+                str[0] = String.format("%s-%d", str[0], emIter);
                 String outFilename = String.join(".", str);
                 saveModelSerialized(outFilename);
             }
-/*            final int trainListSize = trainSentList.size();
-
-           double contEntropyScore = 0;
-            Function<Integer, Double> testFunc = new Function<Integer, Double>() {
-                @Nullable
-                public Double apply(@Nullable Integer i) {
-                    return crossEntropySent(trainSentList.get(i),
-                            trainDistSentList.get(i));
-                }
-            };
-
-            if (op.trainOp.dataParallel) {
-                List<Future<List<Double>>> contEntropyFunc =
-                        parallelizer.parallelizer(0, trainListSize, testFunc);
-
-                for (Future<List<Double>> future : contEntropyFunc) {
-                    List<Double> scoreList = future.get();
-                    for (double score : scoreList) {
-                        contEntropyScore += score;
-                    }
-                }
-            } else {
-                for (int j = 0; j < trainListSize; j++) {
-                    double score = testFunc.apply(j);
-                    contEntropyScore += score;
-                }
-            }
-
-            log.info("$ContEnt$ Avg Contrastive Train Entropy : {}",
-                    contEntropyScore/trainListSize);*/
-            EMIter++;
+            emIter++;
             saveModelSerialized(op.modelOp.outFilename);
         }
 
@@ -513,7 +493,7 @@ public class CompositionalLM {
      * @param args
      */
     public static void main(String[] args) throws Exception {
-
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         PropertyConfigurator.configure("log4j.properties");
         Options op = ArgParser.parseArgs(args);
         log.info("Options: {}", op);
@@ -547,7 +527,7 @@ public class CompositionalLM {
         } else if (op.parse) {
             cLM.parse();
         } else if (op.test) {
-            cLM.crossEntropy();
+            cLM.entropy();
         } // end processing if statement
 
 

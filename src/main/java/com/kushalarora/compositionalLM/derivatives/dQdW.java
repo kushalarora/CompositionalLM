@@ -58,59 +58,123 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
 
-    public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer)
-    {
-        final INDArray[][][][][] dxdwArr = new dXdW(dim, data, op).calcDerivative(model, scorer);
+    public static INDArray dEdWBinary(INDArray dXdWijParent,
+                                      INDArray dXdWijChild1, INDArray dXdWijChild2,
+                                      INDArray parent,
+                                      INDArray child1, INDArray child2, Model model) {
+
+	    double dE = model.energyCompDerivative(parent, child1, child2);
+
+        INDArray dEdWBinary =
+	        model.linearComposition(dXdWijParent,
+		            dXdWijChild1,
+		            dXdWijChild2)
+		            .mul(dE);
+
+	    int[] dEdWBinaryShape = dEdWBinary.shape();
+	    if (dEdWBinaryShape[0] != 1 &&
+		        dEdWBinaryShape[1] != 1) {
+		    throw new RuntimeException("Dim should be 1X1.");
+	    }
+
+	    return dEdWBinary;
+    }
+
+    public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
+
+        if (length < 2) {
+            // There is nothing to do here.
+            return;
+        }
+
         final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         final double[][][] compositionalMu = scorer.getCompMuScores();
         final double[][] compositionalIScore = scorer.getCompIScores();
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
 
-        for (int i = 0; i < dim; i++)
-        {
-            final int iF = i;
-            Function<Integer, Void> func = new Function<Integer, Void>()
-            {
-                @Nullable
-                public Void apply(Integer j)
-                {
-                    double dEdW_ij = 0;
+        Function<Integer, Void> funci = new Function<Integer, Void>() {
+            @Nullable
+            public Void apply(final Integer i) {
+                Function<Integer, Void> funcj = new Function<Integer, Void>() {
+                    @Nullable
+                    public Void apply(final Integer j) {
 
-                    for (int start = 0; start < length; start++) {
-                        for (int end = start + 1; end <= length; end++) {
-                            for (int split = start + 1; split < end; split++) {
-                                double dE = model.energyDerivative(
-                                        compositionMatrix[start][end][split],
-                                        phraseMatrix[start][split],
-                                        phraseMatrix[split][end]);
+                        final INDArray[][] dxdwArr = new dXdWij(dim, data, op, i, j)
+                                .calcDerivative(model, scorer);
 
-                                INDArray udXdWArr = model.getParams().getU().transpose().mmul(
-                                        dxdwArr[iF][j][start][end][split]);
+                        INDArray dEdW_ij = Nd4j.zeros(1,1);
+                        INDArray[] dEW_ij_l = new INDArray[length];
 
-                                int[] udXdWShape = udXdWArr.shape();
-                                if (udXdWShape[0] != 1 && udXdWShape[1] != 1) {
-                                    throw new RuntimeException("udXdWArr was expected to be a matrix of shape 1 X 1");
+                        for (int diff = 2; diff <= length; diff++) {
+                            for (int st = 0; st + diff <= length; st++) {
+                                final int start = st;
+                                final int end = start + diff;
+
+                                for (int split = start + 1; split < end; split++) {
+
+
+                                    INDArray lineardXdW = dEdWBinary(
+                                                            dxdwArr[start][end],
+                                                            dxdwArr[start][split],
+                                                            dxdwArr[split][end],
+                                                            compositionMatrix[start][end][split],
+                                                            phraseMatrix[start][split],
+                                                            phraseMatrix[split][end],
+                                                            model);
+
+                                    dEW_ij_l[split] = lineardXdW;
+
+                                    synchronized (dEdW_ij) {
+                                        dEdW_ij.addi(lineardXdW
+                                                .muli(compositionalMu[start][end][split]));
+                                    }
                                 }
 
-                                double udXdW = udXdWArr.getDouble(0);
-                                dEdW_ij += dE * udXdW * compositionalMu[start][end][split];
+                                double compMuSum = 0;
+                                for (int sp = start + 1; sp < end; sp++) {
+                                    compMuSum += compositionalMu[start][end][sp];
+                                }
+
+                                dEdW_ij.subi(model
+                                        .Expectedl(
+                                                start, end, dEW_ij_l,
+                                                compositionMatrix[start][end],
+                                                phraseMatrix,
+                                                compMuSum, new int[]{1, 1}));
                             }
                         }
+
+                        int[] dEdW_ijShape = dEdW_ij.shape();
+                        if (dEdW_ijShape[0] != 1 && dEdW_ijShape[1] != 1) {
+                            throw new RuntimeException("udXdWArr was expected to be a matrix of shape 1 X 1");
+                        }
+                        double dEdW_ijVal = dEdW_ij.getDouble(0, 0);
+                        dQdW.putScalar(new int[]{i, j}, dEdW_ijVal);
+
+                        return null;
                     }
+                };
 
-                    dQdW.putScalar(new int[]{iF, j}, dEdW_ij);
-                    return null;
+                if (op.trainOp.modelParallel) {
+                    parallelizer.parallelizer(0, 2 * dim, funcj);
+                } else {
+                    for (int j = 0; j < 2 * dim; j++) {
+                        funcj.apply(j);
+                    }
                 }
-            };
+                return null;
+            }
+        };
 
-            if (op.trainOp.modelParallel) {
-                parallelizer.parallelizer(0, 2 * dim, func);
-            } else {
-                for (int j = 0; j < 2 * dim; j++) {
-                    func.apply(j);
-                }
+
+        if (op.trainOp.modelParallel) {
+            parallelizer.parallelizer(0, dim, funci);
+        } else {
+            for (int i = 0; i < dim; i++) {
+                funci.apply(i);
             }
         }
+
 
         if (compositionalIScore[0][length] == 0) {
             throw new RuntimeException("Z is zero for sentence " + data);

@@ -1,13 +1,9 @@
 package com.kushalarora.compositionalLM.optimizer;
 
 import com.kushalarora.compositionalLM.derivatives.IDerivatives;
-import com.kushalarora.compositionalLM.documentprocessor.DocumentProcessorWrapper;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 
-/**
- * Created by karora on 7/22/15.
- */
 public abstract class AbstractAdaGradOptimzer<T extends IIndexedSized, D extends IDerivatives>
         extends AbstractOptimizer<T, D> {
 

@@ -1,6 +1,5 @@
 package com.kushalarora.compositionalLM.derivatives;
 
-import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import com.kushalarora.compositionalLM.optimizer.IIndexedSized;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -8,11 +7,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;
 
 import java.io.Serializable;
-import java.util.List;
-
-/**
- * Created by karora on 6/30/15.
- */
 
 @Slf4j
 public abstract class AbstractBaseDerivativeClass<T extends IIndexedSized> implements Serializable {
@@ -41,7 +35,7 @@ public abstract class AbstractBaseDerivativeClass<T extends IIndexedSized> imple
         if (norm2 > cutoff) {
             log.error("Clipping gradiant of shape {} for data:{}::{}. Norm = {}",
                     shape, data.getIndex(), data.getSize(),  norm2);
-            return arr.div(norm2).mul(cutoff);
+            return arr.divi(norm2).muli(cutoff);
         }
         return arr;
     }

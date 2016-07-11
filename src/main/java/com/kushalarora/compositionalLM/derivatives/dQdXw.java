@@ -18,9 +18,7 @@ import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Created by karora on 6/21/15.
- */
+
 @Slf4j
 public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T> implements IDerivative<T>
 {
@@ -30,6 +28,8 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
     private int length;
     private Options op;
     private Parallelizer parallelizer;
+    private static INDArray zLeaf;
+
 
     @Getter
     private Map<Integer, INDArray> indexToxMap;
@@ -65,6 +65,53 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
     }
 
+    public static INDArray dEdXwUnary(INDArray word, Model model) {
+
+        int dim = model.getDimensions();
+
+        // g'(s)
+        double dE = model.energyWordDerivative(word);
+
+        // dE/dXw =  g'(s) X u^T.dot(I_{dXd})
+        INDArray dEdXw = model.linearWord( Nd4j.eye(dim)).mul(dE).transpose();
+
+        int[] dEdXwShape = dEdXw.shape();
+        if (dEdXwShape[0] != dim ||
+                dEdXwShape[1] != 1) {
+            throw new RuntimeException("dEdXw unary was expected to be a matrix of shape dim X 1");
+        }
+        return dEdXw;
+    }
+
+    public static INDArray  dEdXwBinary(INDArray dXdXwParent, INDArray dXdXwChild1, INDArray dXdXwChild2,
+                                INDArray parent, INDArray child1, INDArray child2,
+                                Model model) {
+
+        // g'(s)
+        double dE = model.energyCompDerivative(
+                parent,
+                child1,
+                child2);
+
+        // dE/dXw = g'(s) X {u^T.dot(dX_p/dXw) +
+        //              h1^T.dot(dX_c1/dXw) +
+        //              h2^T.dot(dX_c2/dXw)
+        INDArray dEdXw = model.linearComposition(
+                        dXdXwParent,
+                        dXdXwChild1,
+                        dXdXwChild2)
+                        .mul(dE)
+                        .transpose();
+
+         int[] dEdXwShape = dEdXw.shape();
+        if (dEdXwShape[0] != model.getDimensions() ||
+                dEdXwShape[1] != 1) {
+            throw new RuntimeException("dEdXw binary was expected to be a matrix of shape dim X 1");
+        }
+
+        return dEdXw;
+    }
+
     public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
 
         // Save indexes
@@ -73,63 +120,60 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
             indexes[i] = data.get(i).getIndex();
         }
 
-        final INDArray[][][][] dxdxwArr = new dXdXw(dim, V, data, op).calcDerivative(model, scorer);
         final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         final double[][][] compositionalMu = scorer.getCompMuScores();
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
         final double[][] compositionalIScore = scorer.getCompIScores();
 
 
-        final INDArray dcdc = Nd4j.eye(dim);
         Function<Integer, Void> func = new Function<Integer, Void>() {
             @Nullable
             public Void apply(Integer i) {
-                INDArray dQdXw_i = Nd4j.zeros(dim);
+                INDArray dQdXw_i = Nd4j.zeros(dim, 1);
 
                 // handle leaf node
-                INDArray vector = phraseMatrix[i][i + 1];
-                double dE = model.energyDerivative(vector);
+                INDArray lineardEdXi_s = dEdXwUnary(phraseMatrix[i][i+1], model);
 
-                // diff wrt to self returns eye
-                INDArray udXdXwArr =
-                        model.getParams()
-                                .getU().transpose()
-                             .mmul(dcdc);
+               dQdXw_i
+                   .addi(lineardEdXi_s
+                       .muli(compositionalMu[i][i + 1][i]));
 
-                int[] udXdXwShape = udXdXwArr.shape();
-                if (udXdXwShape[0] != dim &&
-                        udXdXwShape[1] != dim) {
-                    throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1 " + udXdXwShape.toString());
-                }
-
-                dQdXw_i = dQdXw_i.add(udXdXwArr
-                        .mul(compositionalMu[i][i + 1][i]))
-                        .mul(dE);
+                final INDArray[][] dxdxwArr =
+                    new dXdXwi(dim, V, data, op, i)
+                        .calcDerivative(model, scorer);
 
                 // handle the composition case
                 for (int diff = 2; diff <= length; diff++) {
                     for (int start = 0; start + diff <= length; start++) {
                         int end = start + diff;
+
+                        INDArray[] lineardEdXi = new INDArray[length];
                         for (int split = start + 1; split < end; split++) {
-                            dE = model.energyDerivative(compositionMatrix[start][end][split],
-                                    phraseMatrix[start][split], phraseMatrix[split][end]);
+                            lineardEdXi_s = dEdXwBinary(
+                                                dxdxwArr[start][end],
+                                                dxdxwArr[start][split],
+                                                dxdxwArr[split][end],
+                                                compositionMatrix[start][end][split],
+                                                phraseMatrix[start][split],
+                                                phraseMatrix[split][end],
+                                                model);
 
-                            udXdXwArr =
-                                    model
-                                            .getParams()
-                                            .getU()
-                                            .transpose()
-                                            .mmul(dxdxwArr[i][start][end][split]);
+                            lineardEdXi[split] = lineardEdXi_s;
 
-
-                            udXdXwShape = udXdXwArr.shape();
-                            if (udXdXwShape[0] != dim &&
-                                    udXdXwShape[1] != dim) {
-                                throw new RuntimeException("udXdXwArr was expected to be a matrix of shape dim X 1");
-                            }
-
-                            dQdXw_i = dQdXw_i.add(udXdXwArr.mul(compositionalMu[start][end][split]).mul(dE));
+                            dQdXw_i.addi(lineardEdXi_s
+                                .muli(compositionalMu[start][end][split]));
                         }
+
+                        double compMuSum = 0;
+                        for (int sp = start + 1; sp < end; sp++) {
+                            compMuSum += compositionalMu[start][end][sp];
+                        }
+
+                        dQdXw_i.subi(model
+                                .Expectedl(start, end, lineardEdXi,
+                                        compositionMatrix[start][end],
+                                        phraseMatrix, compMuSum,
+	                                    new int[]{dim, 1}));
                     }
                 }
 
@@ -137,7 +181,9 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                     throw new RuntimeException("Z is zero for sentence " + data);
                 }
 
-                dQdXw_i = dQdXw_i.div(compositionalIScore[0][length]);
+                dQdXw_i = dQdXw_i.divi(compositionalIScore[0][length])
+                                    .subi(ZLeaf_dEdXw(model, dim, V));
+
                 if (containsNanOrInf(dQdXw_i)) {
                     log.error("dQdXw contains Nan Or Inf for index: {} data {}::{}. Norm::{}",
                             i, data.getIndex(), data.getSize(), Nd4j.norm2(dQdXw_i));
@@ -220,5 +266,24 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
             norm += Nd4j.norm2(entry.getValue()).getDouble(0);
         }
         return norm;
+    }
+
+    public static INDArray ZLeaf_dEdXw(final Model model, final int dimensions, int vocabSize) {
+        if (zLeaf == null) {
+            log.info("Calculating ZLeaf_dEdXw");
+            zLeaf = model.ExpectedV(new Function<INDArray, INDArray>() {
+                @Nullable
+                public INDArray apply(@Nullable INDArray indArray) {
+                    return dEdXwUnary(indArray, model);
+                }
+            }, new int[]{dimensions, 1});
+        }
+
+        return zLeaf;
+    }
+
+    public static void cleanZLeaf() {
+        log.info("Cleaning up ZLeaf_dEdXw");
+        zLeaf = null;
     }
 }
