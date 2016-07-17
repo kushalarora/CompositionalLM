@@ -263,10 +263,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
             pComp[sp] = unProbComp;
 
-	        if (Double.isNaN(unProbComp)) {
-		        return;
-	        }
-
             Z_energy_split += unProbComp;
         }
 
@@ -786,7 +782,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         long muTimeEnd = System.currentTimeMillis();
         log.info("Computed mu score computation:{}::{} in {} secs", idx, sz, (muTimeEnd - muTimeStart));
 
-        s.postProcess();
+        // s.postProcess();
 
         log.info("Compositional Score for sentence#{}:: {} => {}",
                 idx, sz, s.getSentenceScore());
@@ -820,7 +816,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         doLexScores(s);
         doInsideScores(s);
         log.info("Computed inside score computation:{}::{}", idx, sz);
-        s.postProcess();
         return s;
     }
 

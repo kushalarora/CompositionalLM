@@ -229,9 +229,9 @@ public class Model implements Serializable {
 		INDArray E_l = Nd4j.zeros(dims);
 		for (int s = i + 1; s < j; s++) {
 			double Zls = unProbabilityComp(
-				compositionMatrices[s],
-				phraseMatrix[i][s],
-				phraseMatrix[s][j]);
+								compositionMatrices[s],
+								phraseMatrix[i][s],
+								phraseMatrix[s][j]);
 			E_l.addi(E_ij[s].muli(Zls));
 			Zl += Zls;
 		}

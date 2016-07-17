@@ -4,5 +4,5 @@ target/
 target/*
 log.out
 log.out*
-src/resources/model.gz
+src/resources/model*
 out/*

@@ -90,7 +90,7 @@ public class CompositionLMTest {
                 new String[] {"-train", "src/resources/train10",
                         "-validate", "src/resources/valid4",
                         "-grammarType", "stanford",
-                        "-grammarFile", "src/resources/englishPCFG.ser.gz",
+                        "-grammarFile", "src/resources/englishFactored.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase,",
                         "-saveVisualization",

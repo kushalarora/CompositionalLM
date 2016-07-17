@@ -80,7 +80,7 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 	    return dEdWBinary;
     }
 
-    public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
+    public void  calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
 
         if (length < 2) {
             // There is nothing to do here.

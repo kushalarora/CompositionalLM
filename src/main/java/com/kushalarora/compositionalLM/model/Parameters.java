@@ -98,6 +98,8 @@ public class Parameters implements IParameter<Sentence> {
         W = parameters.W;
         u = parameters.u;
         X = parameters.X;
+        h1 = parameters.h1;
+        h2 = parameters.h2;
     }
 
     public void update(IDerivatives<Sentence> derivatives) {

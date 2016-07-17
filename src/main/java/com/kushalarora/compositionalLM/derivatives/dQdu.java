@@ -124,8 +124,10 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
                 synchronized (dQdu) {
                     // dQdu * p(w) += dEdu * mu(start, end, split)
-                    dQdu.addi(dEdu
-                            .muli(compositionMu[start][end][split]));
+                    dQdu
+	                    .addi(dEdu
+	                            .subi(ZLeaf_dEdu(model, dimensions))
+                                .muli(compositionMu[start][end][split]));
                 }
                 return null;
             }
@@ -193,10 +195,9 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         }
 
         // dQdu = dQdu * p(w)/p(w)
-        dQdu.divi(compositionalIScore[0][length])
-                    .subi(ZLeaf_dEdu(model, dimensions));
+	    dQdu.divi(compositionalIScore[0][length]);
 
-        if (containsNanOrInf()) {
+	    if (containsNanOrInf()) {
             log.error("dQdu contains Nan Or Inf. data {}::{}. Norm::{}",
                     data.getIndex(), data.getSize(), norm());
             dQdu = Nd4j.zeros(dimensions, 1);

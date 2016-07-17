@@ -135,8 +135,10 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                 INDArray lineardEdXi_s = dEdXwUnary(phraseMatrix[i][i+1], model);
 
                dQdXw_i
-                   .addi(lineardEdXi_s
-                       .muli(compositionalMu[i][i + 1][i]));
+                   .addi(
+                       lineardEdXi_s
+	                       .subi(ZLeaf_dEdXw(model, dim, V))
+	                       .muli(compositionalMu[i][i + 1][i]));
 
                 final INDArray[][] dxdxwArr =
                     new dXdXwi(dim, V, data, op, i)
@@ -181,10 +183,9 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                     throw new RuntimeException("Z is zero for sentence " + data);
                 }
 
-                dQdXw_i = dQdXw_i.divi(compositionalIScore[0][length])
-                                    .subi(ZLeaf_dEdXw(model, dim, V));
+	            dQdXw_i.divi(compositionalIScore[0][length]);
 
-                if (containsNanOrInf(dQdXw_i)) {
+	            if (containsNanOrInf(dQdXw_i)) {
                     log.error("dQdXw contains Nan Or Inf for index: {} data {}::{}. Norm::{}",
                             i, data.getIndex(), data.getSize(), Nd4j.norm2(dQdXw_i));
                     dQdXw_i = Nd4j.zeros(dim);
