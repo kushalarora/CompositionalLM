@@ -30,18 +30,18 @@ public class Parameters implements IParameter<Sentence> {
     private INDArray h2;
     private INDArray X;
     private final int dimensions;
-    private final int vocabSize;
+    private final int grammarVocabSize;
 
-    public Parameters(Options op, int dimensions, int vocabSize) {
+    public Parameters(Options op, int dimensions, int grammarVocabSize) {
         RandomGenerator rng = new JDKRandomGenerator();
         rng.setSeed(2204);
         this.dimensions = dimensions;
-        this.vocabSize = vocabSize;
+        this.grammarVocabSize = grammarVocabSize;
         W = Nd4j.rand(dimensions, 2 * dimensions);      // d X 2d matrix
         u = Nd4j.rand(dimensions, 1);                   // row vector with d entries
         h1 = Nd4j.rand(dimensions, 1);                  // row vector with d entries
         h2 = Nd4j.rand(dimensions, 1);                  // row vector with d entries
-        X = Nd4j.rand(vocabSize, dimensions);           // V X d matrix
+        X = Nd4j.rand(grammarVocabSize, dimensions);           // V X d matrix
         this.op = op;
     }
 
@@ -87,12 +87,12 @@ public class Parameters implements IParameter<Sentence> {
     public void update(IParameter<Sentence> params) {
         Parameters parameters = (Parameters) params;
         if (dimensions != parameters.dimensions ||
-                vocabSize != parameters.vocabSize) {
+                grammarVocabSize != parameters.grammarVocabSize) {
             new RuntimeException("parameter("
-                    + dimensions + ", " + vocabSize + ") " +
+                    + dimensions + ", " + grammarVocabSize + ") " +
                     "and updated parameter ("
                     + parameters.dimensions + ", " +
-                    parameters.vocabSize + ") " +
+                    parameters.grammarVocabSize + ") " +
                     "are not of same size");
         }
         W = parameters.W;

@@ -32,7 +32,7 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdh1 = new dQdh1(model.getDimensions(), data, op);
         dqdh2 = new dQdh2(model.getDimensions(), data, op);
         dqdw = new dQdW(model.getDimensions(), data, op);
-        dqdxw = new dQdXw(model.getDimensions(), model.getVocabSize(), data, op);
+        dqdxw = new dQdXw(model.getDimensions(), model.getParams().getGrammarVocabSize(), data, op);
         this.op = op;
     }
 
@@ -61,7 +61,7 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdh1 = new dQdh1(model.getDimensions(), new Sentence(-1), op);
         dqdh2 = new dQdh2(model.getDimensions(), new Sentence(-1), op);
         dqdw = new dQdW(model.getDimensions(), new Sentence(-1), op);
-        dqdxw = new dQdXw(model.getDimensions(), model.getVocabSize(), new Sentence(-1), op);
+        dqdxw = new dQdXw(model.getDimensions(), model.getParams().getGrammarVocabSize(), new Sentence(-1), op);
     }
 
     public void add(IDerivatives derivatives) {

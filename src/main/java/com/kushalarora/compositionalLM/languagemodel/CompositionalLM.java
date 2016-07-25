@@ -18,6 +18,7 @@ import com.kushalarora.compositionalLM.utils.Parallelizer;
 import com.kushalarora.compositionalLM.utils.Visualization;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
+import edu.stanford.nlp.parser.lexparser.Lexicon;
 import edu.stanford.nlp.util.IntTuple;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -63,12 +64,24 @@ public class CompositionalLM {
     @SneakyThrows
     public void train() {
         DocumentProcessorWrapper<Sentence> docProcessor =
-                docProcessorFactory.getDocumentProcessor();
+            docProcessorFactory.getDocumentProcessor();
 
         final List<Sentence> trainSentList = Lists.newArrayList();
         for (String filename : op.trainOp.trainFiles) {
             trainSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
         }
+
+        // Get the vocab from the training set.
+        Set<Word> vocab = new HashSet<Word>();
+        for (Sentence sentence : trainSentList) {
+            for (Word word : sentence) {
+                vocab.add(word);
+            }
+        }
+        // Add EOS.
+        vocab.add(grammar.getToken(Lexicon.BOUNDARY, -1));
+        model.setVocab(vocab);
+
 
         List<Sentence> validSentList = Lists.newArrayList();
         for (String filename : op.trainOp.validationFiles) {

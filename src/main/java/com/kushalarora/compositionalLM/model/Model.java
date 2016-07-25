@@ -4,11 +4,10 @@ import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.lang.GrammarFactory;
 import com.kushalarora.compositionalLM.lang.Word;
 import com.kushalarora.compositionalLM.options.Options;
+import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.transforms.Identity;
@@ -28,6 +27,8 @@ public class Model implements Serializable {
 	Parameters params;
 	private GrammarFactory.GrammarType grammarType;
 	private double ZWord;
+	private Set<Word> vocab;
+	private int grammarVocabSize;
 
 	public Model(@NonNull Options op,
 	             @NonNull int dimensions,
@@ -43,8 +44,13 @@ public class Model implements Serializable {
 	public Model(@NonNull Parameters params, @NonNull GrammarFactory.GrammarType grammarType) {
 		this.grammarType = grammarType;
 		this.dimensions = params.getDimensions();
-		this.vocabSize = params.getVocabSize();
 		this.params = params;
+		this.grammarVocabSize = params.getGrammarVocabSize();
+	}
+
+	public void setVocab(Set<Word> vocab) {
+		this.vocab = vocab;
+		vocabSize = vocab.size();
 	}
 
 	/**
@@ -55,9 +61,10 @@ public class Model implements Serializable {
 	 */
 	public INDArray word2vec(@NonNull Word word) {
 		int index = word.getIndex();
-		if (index < 0 || index >= vocabSize) {
+		int grammarVocabSize = params.getGrammarVocabSize();
+		if (index < 0 || index >= grammarVocabSize) {
 			throw new RuntimeException(String.format("Word index must be between 0 to %d. " +
-				"Word::Index %s::%d", vocabSize, word.toString(), word.getIndex()));
+				"Word::Index %s::%d", params.getGrammarVocabSize(), word.toString(), word.getIndex()));
 		}
 		return params.getX().getRow(index).transpose();
 	}
@@ -203,8 +210,12 @@ public class Model implements Serializable {
 
 	double  calculateZ() {
 		log.info("Calculating Z_Word.");
-		for (int i = 0; i < getVocabSize(); i++) {
-			INDArray x = getParams().getX().getRow(i).transpose();
+		if (vocab != null) {
+			throw new RuntimeException(
+				"Vocab should be set before running the model");
+		}
+		for (Word word: vocab) {
+			INDArray x = word2vec(word);
 			ZWord += unProbabilityWord(x);
 		}
 		return ZWord;
@@ -241,8 +252,12 @@ public class Model implements Serializable {
 	public INDArray ExpectedV(Function<INDArray, INDArray> wTodELeafFunc, int[] dims) {
 
 		INDArray EV = Nd4j.zeros(dims);
-		for (int i = 0; i < getVocabSize(); i++) {
-			INDArray x = getParams().getX().getRow(i).transpose();
+		if (vocab != null) {
+			throw new RuntimeException(
+						"Vocab must be set before running the model.")
+		}
+		for (Word word : vocab) {
+			INDArray x = word2vec(word);
 			INDArray xD = wTodELeafFunc.apply(x);
 			xD.muli(probabilityWord(x));
 			EV.addi(xD);
