@@ -87,14 +87,14 @@ public class CompositionLMTest {
     @Ignore
     public void testTrain() throws Exception {
         String[] args =
-                new String[] {"-train", "src/resources/train10",
-                        "-validate", "src/resources/valid4",
+                new String[] {"-train", "src/resources/train100",
+                        "-validate", "src/resources/valid10",
                         "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishFactored.ser.gz",
                         "-saveOutputModelSerialized", "/tmp/tmpmodel.ser.gz",
                         "-lowercase,",
                         "-saveVisualization",
-                        "-validBatchSize", "10"};
+                        "-validBatchSize", "1"};
         CompositionalLM.main(args);
     }
 

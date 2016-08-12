@@ -4,6 +4,7 @@ import com.kushalarora.compositionalLM.optimizer.IIndexed;
 import edu.stanford.nlp.parser.lexparser.BinaryRule;
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,6 +36,9 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
     // start idx, end idx, state -> logProb (ragged; null for end <= start)
     protected  SparseMatrix iScore;
 
+    // IScore of the pcfg trees.
+    protected  SparseMatrix iScorePCFG;
+
     // outside scores
     // start idx, end idx, state -> logProb
     protected  SparseMatrix oScore;
@@ -54,7 +58,9 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
 
     Set<BinaryRule> binaryRuleSet;
 
-
+    @Setter
+    @Getter
+    private double Z_theta_r_w;
 
 
     public StanfordCompositionalInsideOutsideScore(Sentence sentence,
@@ -104,6 +110,8 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
 
         iScore = SparseMatrix.Factory.zeros(length, length + 1, numStates);
 
+        iScorePCFG = SparseMatrix.Factory.zeros(length, length + 1, numStates);
+
         oScore = SparseMatrix.Factory.zeros(length, length + 1, numStates);
 
         iSplitSpanStateScore = SparseMatrix.Factory.zeros(length, length + 1, length, numStates);
@@ -150,7 +158,7 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
     }
 
     public double getSentenceScore() {
-        double score = compIScore[0][length];
+        double score = compIScore[0][length]/Z_theta_r_w;
         if (score == 0) {
             log.error("Score is 0 for sentence : {}", sentence);
             return -100;

@@ -210,7 +210,7 @@ public class Model implements Serializable {
 
 	double  calculateZ() {
 		log.info("Calculating Z_Word.");
-		if (vocab != null) {
+		if (vocab == null) {
 			throw new RuntimeException(
 				"Vocab should be set before running the model");
 		}
@@ -252,9 +252,9 @@ public class Model implements Serializable {
 	public INDArray ExpectedV(Function<INDArray, INDArray> wTodELeafFunc, int[] dims) {
 
 		INDArray EV = Nd4j.zeros(dims);
-		if (vocab != null) {
+		if (vocab == null) {
 			throw new RuntimeException(
-						"Vocab must be set before running the model.")
+						"Vocab must be set before running the model.");
 		}
 		for (Word word : vocab) {
 			INDArray x = word2vec(word);

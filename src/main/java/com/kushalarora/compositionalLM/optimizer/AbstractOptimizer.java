@@ -133,7 +133,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
             for (Future<List<Double>> future : futures) {
                 for (Double score : future.get()) {
-                    atomicDouble.addAndGet(score);
+                    atomicDouble.getAndAdd(score);
                 }
             }
         } else {
@@ -198,12 +198,12 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                         log.info("Starting  validBatch#: {}", validBatchIdx);
 
                         for (int idx = 0; idx < op.trainOp.validBatchSize && validIter.hasNext(); idx++) {
-                            validList.add(validIter.next());
+                            T validSent = validIter.next();
+                            validList.add(validSent);
+                            cumlValidSize += validSent.getSize() + 1;
                         }
 
-                        int validBatchSize = validList.size();
                         cumlValidScore += getValidationScore(validList);
-                        cumlValidSize += validBatchSize;
                         validBatchIdx++;
                     }
 

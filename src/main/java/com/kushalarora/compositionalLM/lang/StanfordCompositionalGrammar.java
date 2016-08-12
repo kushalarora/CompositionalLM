@@ -101,107 +101,124 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             final int end = start + 1;
             final int split = start;
 
-            // Set phrase for word sentence[start]
-            s.phraseMatrix[start][end] =
-                        s.phraseMatrix[start][end]
-                                .addi(model.word2vec(s.sentence.get(start)));
+	        // Set phrase for word sentence[start]
+	        s.phraseMatrix[start][end] =
+		        s.phraseMatrix[start][end]
+			        .addi(model.word2vec(s.sentence.get(start)));
 
-                s.compositionMatrix[start][end][split] =
-                        s.compositionMatrix[start][end][split]
-	                        .addi(s.phraseMatrix[start][end]);
+	        s.compositionMatrix[start][end][split] =
+		        s.compositionMatrix[start][end][split]
+			        .addi(s.phraseMatrix[start][end]);
 
-                // For leaf nodes, the energy of the node is
-                // a function of phrase representation
-                final double pWord = model.probabilityWord(s.phraseMatrix[start][end]);
+	        // For leaf nodes, the energy of the node is
+	        // a function of phrase representation
+	        final double pWord = model.probabilityWord(s.phraseMatrix[start][end]);
 
-                log.debug("Doing lex score lookup for index {}", start);
+	        log.debug("Doing lex score lookup for index {}", start);
 
-                // For each word, figure out the corresponding tag,
-                final int word = words[start];
-                Iterator<IntTaggedWord> taggingI;
-                for (taggingI = lex.ruleIteratorByWord(word, start, null);
-                     taggingI.hasNext(); ) {
+	        // For each word, figure out the corresponding tag,
+	        final int word = words[start];
+	        Iterator<IntTaggedWord> taggingI;
 
-                    IntTaggedWord tagging = taggingI.next();
-                    int state = stateIndex.indexOf(tagIndex.get(tagging.tag));
-                    // score the cell according to P(word|tag) in the lexicon
-                    // this is equivalent to log(\theta_r)
-                    double lexScore = lex.score(tagging, start,
-                            wordIndex.get(tagging.word), null);
+	        for (taggingI = lex.ruleIteratorByWord(word, start, null);
+	             taggingI.hasNext(); ) {
 
-                    if (lexScore > Double.NEGATIVE_INFINITY) {
+		        IntTaggedWord tagging = taggingI.next();
+		        int state = stateIndex.indexOf(tagIndex.get(tagging.tag));
+		        // score the cell according to P(word|tag) in the lexicon
+		        // this is equivalent to log(\theta_r)
+		        double lexScore = lex.score(tagging,
+                                            start,
+			                                wordIndex
+                                                .get(tagging.word),
+                                            null);
 
-                        // \zeta_{A->w_i}
-                        final double zeta_w_i = exp(log(pWord) + lexScore);
+		        if (lexScore > Double.NEGATIVE_INFINITY) {
 
-                        // \pi(A, w_i) = \zeta_{A->w_i}
-                        s.addToScore(s.iSplitSpanStateScore, zeta_w_i, start, end, split, state);
-                        // \pi (w_i^j) += = \zeta_{A->w_i}
-                        s.addToScore(s.iScore, zeta_w_i, start, end, state);
+			        // \pi(A->w_i)
+			        s.addToScore(s.iScorePCFG, exp(lexScore), start, end, state);
 
-                        s.compISplitScore[start][end][split] += zeta_w_i;
+			        // \zeta_{A->w_i}
+			        final double zeta_w_i = exp(log(pWord) + lexScore);
 
-                        s.compIScore[start][end] += zeta_w_i;
+                    // \pi (w_i^j) += = \zeta_{A->w_i}
+                    s.addToScore(s.iScore, zeta_w_i, start, end, state);
 
-                    }
-                }
+                    // \pi(A, w_i) = \zeta_{A->w_i}
+			        s.addToScore(s.iSplitSpanStateScore, zeta_w_i, start, end, split, state);
 
-                Function<Integer, Void> unaryFunc = new Function<Integer, Void>() {
-                    @Nullable
-                    public Void apply(final @Nullable Integer state) {
-                        double iS = s.iScore.getAsDouble(start, end, state);
-                        if (iS == 0) {
-                            return null;
-                        }
-                        iS = log(iS);
+			        s.compISplitScore[start][end][split] += zeta_w_i;
 
-                        double cumlCompScore = 0f;
+			        s.compIScore[start][end] += zeta_w_i;
 
-                        UnaryRule[] unaries = ug.closedRulesByChild(state);
-                        for (UnaryRule ur : unaries) {
-                            int parentState = ur.parent;
-                            double pS = ur.score;
+		        }
+	        }
 
-                            // \zeta_{A->w_i^j}
-                            double zeta_A_w_i_j = exp(iS + pS);
+	        Function<Integer, Void> unaryFunc = new Function<Integer, Void>() {
+		        @Nullable
+		        public Void apply(final @Nullable Integer state) {
+			        double iS = s.iScore.getAsDouble(start, end, state);
+			        if (iS == 0) {
+				        return null;
+			        }
+			        iS = log(iS);
 
-                            // \pi(A, w_i^j) = \zeta_{A->w_i}
-                            s.addToScore(s.iSplitSpanStateScore,
-                                         zeta_A_w_i_j, start,
-                                         end, split, parentState);
+			        double iS_pcfg = s.iScorePCFG.getAsDouble(start, end, state);
+			        if (iS_pcfg == 0) {
+				        return null;
+			        }
+			        iS_pcfg = log(iS_pcfg);
 
-                            // \pi (w_i^j) += \zeta_{A->w_i}
-                            s.addToScore(s.iScore,
-                                         zeta_A_w_i_j,
-                                         start, end, parentState);
+			        double cumlCompScore = 0f;
 
-                            cumlCompScore += zeta_A_w_i_j;
+			        UnaryRule[] unaries = ug.closedRulesByChild(state);
+			        for (UnaryRule ur : unaries) {
+				        int parentState = ur.parent;
+				        double pS = ur.score;
 
-                        }
+				        // \pi(A->w_i)
+				        s.addToScore(s.iScorePCFG,
+					                    exp(iS_pcfg + pS),
+                                        start, end, parentState);
 
-                        if (cumlCompScore > 0) {
+				        // \zeta_{A->w_i^j}
+				        double zeta_A_w_i_j = exp(iS + pS);
 
-                            synchronized (s.compISplitScore) {
-                                s.compISplitScore[start][end][split] += cumlCompScore;
-                            }
+				        // \pi (w_i^j) += \zeta_{A->w_i}
+				        s.addToScore(s.iScore,
+					                    zeta_A_w_i_j,
+					                    start, end, parentState);
 
-                            synchronized (s.compIScore) {
-                                s.compIScore[start][end] += cumlCompScore;
-                            }
-                        }
+				        // \pi(A, w_i^j) = \zeta_{A->w_i}
+				        s.addToScore(s.iSplitSpanStateScore,
+					        zeta_A_w_i_j, start, end, split, parentState);
 
-                        return null;
-                    }
-                };
+				        cumlCompScore += zeta_A_w_i_j;
+			        }
 
-                if (op.trainOp.modelParallel) {
-                    parallelizer.parallelizer(0, numStates, unaryFunc, blockSize);
-                } else {
-                    for (int state = 0; state < numStates; state++) {
-                        unaryFunc.apply(state);
-                    }
-                }
-            }
+			        if (cumlCompScore > 0) {
+
+				        synchronized (s.compISplitScore) {
+					        s.compISplitScore[start][end][split] += cumlCompScore;
+				        }
+
+				        synchronized (s.compIScore) {
+					        s.compIScore[start][end] += cumlCompScore;
+				        }
+			        }
+
+			        return null;
+		        }
+	        };
+
+	        if (op.trainOp.modelParallel) {
+		        parallelizer.parallelizer(0, numStates, unaryFunc, blockSize);
+	        } else {
+		        for (int state = 0; state < numStates; state++) {
+			        unaryFunc.apply(state);
+		        }
+	        }
+        }
     } // end doLexScores(List sentence)
 
     /**
@@ -252,14 +269,15 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             // Compose parent (start, end) from children
             // (start, split), (split, end)
             s.compositionMatrix[start][end][sp] =
-                    s.compositionMatrix[start][end][sp].addi(
-                            model.compose(child1, child2));
+                    s.compositionMatrix[start][end][sp]
+                        .addi(model.compose(child1, child2));
 
             // Composition energy of parent (start,end)
             // by children (start, split), (split, end)
             double unProbComp =
-	            model.unProbabilityComp(
-		            s.compositionMatrix[start][end][sp], child1, child2);
+	            model
+		            .unProbabilityComp(s.compositionMatrix[start][end][sp],
+			                            child1, child2);
 
             pComp[sp] = unProbComp;
 
@@ -288,8 +306,13 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                         if (lS == 0f) {
                             continue;
                         }
-
                         lS = log(lS);
+
+                        double ls_pcfg = s.getScore(s.iScorePCFG, start, split, leftState);
+                        if (ls_pcfg == 0f) {
+                            continue;
+                        }
+                        ls_pcfg = log(ls_pcfg);
 
                         // \pi(C, w_{k+1}^j)
                         double rS = s.getScore(s.iScore, split, end, rightState);
@@ -298,12 +321,22 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                         }
                         rS = log(rS);
 
+                        double rS_pcfg = s.getScore(s.iScorePCFG, split, end, rightState);
+                        if (rS_pcfg == 0f) {
+                            continue;
+                        }
+                        rS_pcfg = log(rS_pcfg);
+
                         // Its a synchronized set
                         // so should allow one entry at a
                         // time.
                         s.binaryRuleSet.add(rule);
 
-                        // This binary split might be able to cover the span depending upon children's coverage.
+	                    s.addToScore(s.iScorePCFG,
+		                                exp(rule.score + ls_pcfg + rS_pcfg),
+		                                start, end, parentState);
+
+	                    // This binary split might be able to cover the span depending upon children's coverage.
                         double pS = log(pComp[split]) + rule.score;
 
                         // \zeta_(A,w_i^j -> BC, w_i^k w_{k+1}^j) =
@@ -313,7 +346,10 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
                         // in left child
                         // \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
-                        s.addToScore(s.iSplitSpanStateScore, compScore, start, end, split, parentState);
+                        s.addToScore(s.iSplitSpanStateScore,
+	                                    compScore,
+	                                    start, end,
+	                                    split, parentState);
 
                         // \pi(A,w_i^j) += \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j)
                         s.addToScore(s.iScore, compScore, start, end, parentState);
@@ -369,15 +405,33 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                         }
                         lS = log(lS);
 
+	                    double lS_pcfg = s.getScore(s.iScorePCFG, start, split, leftState);
+	                    if (lS_pcfg == 0f) {
+		                    continue;
+	                    }
+	                    lS_pcfg = log(lS_pcfg);
+
                         double rS = s.getScore(s.iScore, split, end, rightState);
                         if (rS == 0f) {
                             continue;
                         }
                         rS = log(rS);
 
+                        double rS_pcfg = s.getScore(s.iScorePCFG, split, end, rightState);
+                        if (rS_pcfg == 0f) {
+                            continue;
+                        }
+                        rS_pcfg = log(rS_pcfg);
+
                         s.binaryRuleSet.add(rule);
 
-                        // This binary split might be able to cover the span depending upon children's coverage.
+	                    s.addToScore(s.iScorePCFG,
+		                                exp(rule.score + lS_pcfg + rS_pcfg),
+		                                start,
+		                                end,
+		                                parentState);
+
+	                    // This binary split might be able to cover the span depending upon children's coverage.
                         double pS = log(pComp[split]) + rule.score;
 
                         // \pi(A,w_i^j -> BC, w_i^k w_{k+1}^j) =
@@ -426,10 +480,8 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             Function<Integer, Void> unaryFuncSplit = new Function<Integer, Void>() {
                 @Nullable
                 public Void apply(@Nullable Integer state) {
-                    double iSS =
-	                    s.getScore(s.iSplitSpanStateScore,
-                                    start, end, split, state);
-
+                    double iSS = s.getScore(s.iSplitSpanStateScore,
+                                            start, end, split, state);
                     if (iSS == 0d) {
                         return null;
                     }
@@ -476,12 +528,23 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                 }
                 iS = log(iS);
 
+                double iS_pcfg = s.getScore(s.iScorePCFG, start, end, state);
+                if (iS_pcfg == 0f) {
+                    return null;
+                }
+                iS_pcfg = log(iS_pcfg);
+
                 double cumlUnaryScore = 0;
                 UnaryRule[] unaries = ug.closedRulesByChild(state);
                 for (UnaryRule ur : unaries) {
                     int parentState = ur.parent;
                     double pS = ur.score;
-                    double unaryScore = exp(iS + pS);
+
+	                s.addToScore(s.iScorePCFG,
+		                            exp(iS_pcfg + pS),
+		                            start, end, parentState);
+
+	                double unaryScore = exp(iS + pS);
                     s.addToScore(s.iScore, unaryScore,
                                  start, end, parentState);
 
@@ -552,7 +615,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
                         UnaryRule[] rules = ug.closedRulesByParent(parentState);
                         for (UnaryRule ur : rules) {
-                            double pS = ur.score;
+                            double pS = ur.score/s.getZ_theta_r_w();
                             int childState = ur.child;
                             double tot = exp(oS + pS);
                             log.debug("Adding unary rule {} to outside score for Start: {}, End: {}"
@@ -617,7 +680,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                                     int leftState = br.leftChild;
                                     int rightState = br.rightChild;
 
-                                    double pS = log(pCompArr[split]) + br.score;
+                                    double pS = log(pCompArr[split]) + br.score/s.getZ_theta_r_w();
 
                                     int lStart = start, lEnd = split;
                                     double rS = s.getScore(s.iScore, split, end, rightState);
@@ -766,6 +829,12 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         doLexScores(s);
 
         doInsideScores(s);
+
+        s.setZ_theta_r_w(
+            s.iScorePCFG
+                .getAsDouble(0, s.getLength(),
+                                stateIndex.indexOf(goalStr)));
+
         long insideTimeEnd = System.currentTimeMillis();
         log.info("Computed inside score computation:{}::{} in {} secs", idx, sz, (insideTimeEnd - insideTimeStart));
 
@@ -815,6 +884,12 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         log.info("Starting inside score computation:{}::{}", idx, sz);
         doLexScores(s);
         doInsideScores(s);
+
+        s.setZ_theta_r_w(
+            s.iScorePCFG
+                .getAsDouble(0, s.getLength(),
+                    stateIndex.indexOf(goalStr)));
+
         log.info("Computed inside score computation:{}::{}", idx, sz);
         return s;
     }
