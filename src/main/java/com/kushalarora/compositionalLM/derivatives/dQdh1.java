@@ -151,12 +151,11 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                             phraseMatrix, compMuSum, new int[] {dimensions, 1}));
             }
         }
-        if (compositionalIScore[0][length] == 0) {
-            throw new RuntimeException("Z is zero for sentence " + data);
+        if (compositionalIScore[0][length] != 0) {
+            // dQdh1 = dQdh1 * p(w)/p(w)
+            dQdh1.divi(compositionalIScore[0][length]);
         }
 
-        // dQdh1 = dQdh1 * p(w)/p(w)
-        dQdh1.divi(compositionalIScore[0][length]);
 
         if (containsNanOrInf()) {
             log.error("dQdh1 contains Nan Or Inf. data {}::{}. Norm::{}",

@@ -39,6 +39,8 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
     // IScore of the pcfg trees.
     protected  SparseMatrix iScorePCFG;
 
+    protected double[][] compIScorePCFG;
+
     // outside scores
     // start idx, end idx, state -> logProb
     protected  SparseMatrix oScore;
@@ -73,7 +75,7 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
         this.sentence = new Sentence(sentence.getIndex());
         this.sentence.addAll(sentence);
         if (addEOS) {
-            this.sentence.add(new Word(Lexicon.BOUNDARY, sentence.size()));
+//            this.sentence.add(new Word(Lexicon.BOUNDARY, sentence.size()));
         }
         length = this.sentence.size();
         log.info("Creating Compositional matrices for length {}: {}", length, sentence.getIndex());
@@ -100,6 +102,8 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
         }
 
         compIScore = new double[length][length + 1];
+        compIScorePCFG = new double[length][length + 1];
+
 
         compISplitScore = new double[length][length + 1][];
         for (int start = 0; start < length; start++) {
@@ -158,12 +162,12 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
     }
 
     public double getSentenceScore() {
-        double score = compIScore[0][length]/Z_theta_r_w;
-        if (score == 0) {
+        if (Z_theta_r_w == 0 && compIScore[0][length] == 0) {
             log.error("Score is 0 for sentence : {}", sentence);
             return -100;
         }
-        if (Double.isInfinite(score)) {
+        double score = compIScore[0][length]/Z_theta_r_w;
+        if (Double.isInfinite(score) || Double.isNaN(score)) {
             log.error("Score is Nan or Inf for sentence {}: {}", sentence, score);
             return 100;
         }

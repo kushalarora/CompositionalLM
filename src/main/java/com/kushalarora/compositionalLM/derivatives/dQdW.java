@@ -176,11 +176,10 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         }
 
 
-        if (compositionalIScore[0][length] == 0) {
-            throw new RuntimeException("Z is zero for sentence " + data);
+        if (compositionalIScore[0][length] != 0) {
+            dQdW.divi(compositionalIScore[0][length]);
         }
 
-        dQdW = dQdW.div(compositionalIScore[0][length]);
 
         if (containsNanOrInf()) {
             log.error("dQdW contains Nan Or Inf. for data {}::{}. Norm::{}", data.getIndex(), data.getSize(), norm());

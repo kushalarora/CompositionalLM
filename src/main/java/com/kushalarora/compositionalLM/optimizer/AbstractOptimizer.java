@@ -83,8 +83,9 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         return validBatchScore;
     }
 
-    private void fitBatch(final List<T> trainList)
+    private double fitBatch(final List<T> trainList)
             throws ExecutionException, InterruptedException {
+        double score = 0;
         Collections.shuffle(trainList, rand);
         int batchSize = trainList.size();
         Function<Integer, D> fitRoutine =
@@ -103,15 +104,19 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
             for (Future<List<D>> future : futures) {
                 for (D derivative : future.get()) {
+                    score += derivative.getScore();
                     derivativeAcc(derivative);
                 }
             }
         } else {
             for (int i = 0; i < batchSize; i++) {
                 D derivative = fitRoutine.apply(i);
+                score += derivative.getScore();
                 derivativeAcc(derivative);
             }
         }
+
+        return score;
     }
 
 
@@ -178,7 +183,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 cumlTrainingBatchSize += trainBatchSize;
                 long estimatedTime = System.currentTimeMillis() - batchStartTime;
                 log.info("$Training$ Ending epoch#: {}, batch#: {}, time: {} => {}",
-                        epoch, trainBatchIdx, estimatedTime, trainBatchScore / trainBatchSize);
+                    epoch, trainBatchIdx, estimatedTime, trainBatchScore / trainBatchSize);
 
                 // this iteration done
                 iter += 1;

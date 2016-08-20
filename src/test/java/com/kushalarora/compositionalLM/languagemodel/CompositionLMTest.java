@@ -87,7 +87,7 @@ public class CompositionLMTest {
     @Ignore
     public void testTrain() throws Exception {
         String[] args =
-                new String[] {"-train", "src/resources/train100",
+                new String[] {"-train", "src/resources/train10",
                         "-validate", "src/resources/valid10",
                         "-grammarType", "stanford",
                         "-grammarFile", "src/resources/englishFactored.ser.gz",

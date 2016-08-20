@@ -185,7 +185,6 @@ public class CompositionalLM {
                 saveModelSerialized(outFilename);
             }
             emIter++;
-            saveModelSerialized(op.modelOp.outFilename);
         }
 
         if (op.trainOp.saveVisualization) {
