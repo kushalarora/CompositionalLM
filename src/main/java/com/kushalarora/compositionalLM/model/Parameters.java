@@ -38,10 +38,12 @@ public class Parameters implements IParameter<Sentence> {
         this.dimensions = dimensions;
         this.grammarVocabSize = grammarVocabSize;
         W = Nd4j.rand(dimensions, 2 * dimensions);      // d X 2d matrix
+        // TODO:: Use column vectors instead.
         u = Nd4j.rand(dimensions, 1);                   // row vector with d entries
         h1 = Nd4j.rand(dimensions, 1);                  // row vector with d entries
         h2 = Nd4j.rand(dimensions, 1);                  // row vector with d entries
-        X = Nd4j.rand(grammarVocabSize, dimensions);           // V X d matrix
+
+        X = Nd4j.rand(grammarVocabSize, dimensions);    // V X d matrix
         this.op = op;
     }
 
@@ -105,31 +107,55 @@ public class Parameters implements IParameter<Sentence> {
     public void update(IDerivatives<Sentence> derivatives) {
         Derivatives dq = (Derivatives) derivatives;
 
-        log.info("old W =\n {}", W);
-        log.info("dW =\n {}", dq.getDqdw().getDQdW());
-        W.addi(dq.getDqdw().getDQdW());
-        log.info("new W =\n {}", W);
+        if (op.debug) {
+            log.info("old W =\n {}", W);
+            log.info("dW =\n {}", dq.getDqdw().getDQdW());
+        }
+        W.subi(dq.getDqdw().getDQdW().muli(op.trainOp.learningRate));
+        if (op.debug) {
+            log.info("new W =\n {}", W);
+        }
 
-        log.info("old u = \n {}", u);
-        log.info("du = \n {}", dq.getDqdu().getDQdu());
-        u.addi(dq.getDqdu().getDQdu());
-        log.info("new u = \n {}", u);
+        if (op.debug) {
+            log.info("old u = \n {}", u);
+            log.info("du = \n {}", dq.getDqdu().getDQdu());
+        }
+        u.subi(dq.getDqdu().getDQdu().muli(op.trainOp.learningRate));
+        if (op.debug) {
+            log.info("new u = \n {}", u);
+        }
 
-	    log.info("dh1 = \n {}", dq.getDqdh1().getDQdh1());
-	    h1.addi(dq.getDqdh1().getDQdh1());
-	    log.info("new h1 = \n {}", h1);
+        if (op.debug) {
+            log.info("old h1 = \n {}", h1);
+            log.info("dh1 = \n {}", dq.getDqdh1().getDQdh1());
+        }
+	    h1.subi(dq.getDqdh1().getDQdh1().muli(op.trainOp.learningRate));
+        if (op.debug) {
+            log.info("new h1 = \n {}", h1);
+        }
 
-	    log.info("dh2 = \n {}", dq.getDqdh2().getDQdh2());
-	    h2.addi(dq.getDqdh2().getDQdh2());
-	    log.info("new h2 = \n {}", h2);
+        if (op.debug) {
+            log.info("old h2 = \n {}", h2);
+            log.info("dh2 = \n {}", dq.getDqdh2().getDQdh2());
+        }
+	    h2.subi(dq.getDqdh2().getDQdh2());
+        if (op.debug) {
+            log.info("new h2 = \n {}", h2);
+        }
 
-        log.info("dX = \n {}", dq.getDqdxw().getIndexToxMap());
+        if (op.debug) {
+            log.info("dX = \n {}", dq.getDqdxw().getIndexToxMap());
+        }
 
         for (Map.Entry<Integer, INDArray> entry :
                 ((Map<Integer, INDArray>)dq.getDqdxw().getIndexToxMap()).entrySet()) {
+
             Integer key = entry.getKey();
-            INDArray value = entry.getValue();
-            X.putRow(key, value.transpose().addi(X.getRow(key)));
+            INDArray value = entry.getValue()
+                                    .transpose()
+                                    .muli(op.trainOp.learningRate);
+
+            X.putRow(key, X.getRow(key).subi(value));
         }
 
         double l2term = op.trainOp.l2term;

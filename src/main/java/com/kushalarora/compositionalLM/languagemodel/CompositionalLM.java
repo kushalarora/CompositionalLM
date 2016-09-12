@@ -113,8 +113,7 @@ public class CompositionalLM {
                             @Nullable
                             public Double apply(Sentence sentence) {
                                 return ((StanfordCompositionalInsideOutsideScore)
-                                        grammar.getInsideScore(sentence, true))
-	                                .getSentenceScore();
+                                        grammar.getInsideScore(sentence, true)).getSentenceScore();
                             }
                         },
 
@@ -163,6 +162,7 @@ public class CompositionalLM {
 
         int emIter = 0;
         double bestEMIterValidScore = 0;
+
         // TODO: Add early stopping logic.
         while (emIter < op.trainOp.maxEMEpochs) {
             log.info("Starting EMIter#: {}", emIter);

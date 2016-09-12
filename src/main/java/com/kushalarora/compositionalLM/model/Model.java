@@ -18,6 +18,8 @@ import java.io.Serializable;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 
+
+// TODO: Try to remove code duplication from derivatives. Use forward pass instead.
 @Slf4j
 @Getter
 public class Model implements Serializable {
@@ -79,11 +81,10 @@ public class Model implements Serializable {
 	public INDArray compose(@NonNull INDArray child1, @NonNull INDArray child2) {
 		if (!child1.isColumnVector() || !child2.isColumnVector()) {
 			throw new IllegalArgumentException("Child1 and Child2 should be column vectors");
-		} else if (child1.size(0) != dimensions ||
-			child2.size(0) != dimensions) {
-			throw new IllegalArgumentException(String.format("Child1 and Child2 should of size %d. " +
-					"Current sizes are  : (%d, %d)", dimensions,
-				child1.size(0), child2.size(0)));
+		} else if (child1.size(0) != dimensions || child2.size(0) != dimensions) {
+			throw new IllegalArgumentException(
+				String.format("Child1 and Child2 should of size %d. " +
+					"Current sizes are  : (%d, %d)", dimensions, child1.size(0), child2.size(0)));
 		}
 		INDArray child12 = Nd4j.concat(0, child1, child2);
 		return exec(new Sigmoid(params.getW().mmul(child12)));
@@ -170,6 +171,17 @@ public class Model implements Serializable {
 			.addi(params.getH2().transpose().mmul(child2));
 	}
 
+	public double energyComp(@NonNull INDArray node, INDArray child1, INDArray child2) {
+		INDArray valObj = exec(new Identity(linearComposition(node, child1, child2)));
+
+		int[] valShape = valObj.shape();
+		if (valShape[0] != 1 && valShape[1] != 1) {
+			throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
+		}
+
+		return valObj.getDouble(0);
+	}
+
 	/**
 	 * Given a node and both the children compute the composition energy for the node.
 	 *
@@ -180,19 +192,6 @@ public class Model implements Serializable {
 	 */
 	public double unProbabilityComp(@NonNull INDArray node, INDArray child1, INDArray child2) {
 		return Math.exp(-energyComp(node, child1, child2));
-	}
-
-
-
-	public double energyComp(@NonNull INDArray node, INDArray child1, INDArray child2) {
-		INDArray valObj = exec(new Identity(linearComposition(node, child1, child2)));
-
-		int[] valShape = valObj.shape();
-		if (valShape[0] != 1 && valShape[1] != 1) {
-			throw new RuntimeException("Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
-		}
-
-		return valObj.getDouble(0);
 	}
 
 	public double energyCompDerivative(@NonNull INDArray node, INDArray child1, INDArray child2) {
@@ -262,11 +261,7 @@ public class Model implements Serializable {
 			xD.muli(probabilityWord(x));
 			EV.addi(xD);
 		}
-
-		if (ZWord == 0) {
-			calculateZ();
-		}
-		return EV.divi(ZWord);
+		return EV;
 	}
 
 	@Override
