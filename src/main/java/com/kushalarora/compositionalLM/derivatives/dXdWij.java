@@ -28,8 +28,6 @@ public class dXdWij<T extends IIndexedSized> {
         length = data.getSize();
         this.data = data;
         this.op = op;
-        op.trainOp.modelParallel = false;
-        op.trainOp.dataParallel = false;
         this.i = i;
         this.j = j;
         dXdWij = new INDArray[length][length + 1];
