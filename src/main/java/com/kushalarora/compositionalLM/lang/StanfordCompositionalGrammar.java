@@ -4,17 +4,22 @@ import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.model.Model;
 import com.kushalarora.compositionalLM.options.Options;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
-import edu.stanford.nlp.parser.lexparser.*;
+import edu.stanford.nlp.parser.lexparser.BinaryGrammar;
+import edu.stanford.nlp.parser.lexparser.BinaryRule;
+import edu.stanford.nlp.parser.lexparser.IntTaggedWord;
+import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
+import edu.stanford.nlp.parser.lexparser.Lexicon;
+import edu.stanford.nlp.parser.lexparser.UnaryGrammar;
+import edu.stanford.nlp.parser.lexparser.UnaryRule;
 import edu.stanford.nlp.util.Index;
+import java.util.Iterator;
+import java.util.List;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
-import javax.annotation.Nullable;
-import java.util.Iterator;
-import java.util.List;
 
 import static com.kushalarora.compositionalLM.utils.ObjectSizeFetcher.getSize;
 import static java.lang.Math.exp;
@@ -101,14 +106,15 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             final int end = start + 1;
             final int split = start;
 
+
 	        // Set phrase for word sentence[start]
 	        s.phraseMatrix[start][end] =
 		        s.phraseMatrix[start][end]
-			        .addi(model.word2vec(s.sentence.get(start)));
+			        .add(model.word2vec(s.sentence.get(start)));
 
 	        s.compositionMatrix[start][end][split] =
 		        s.compositionMatrix[start][end][split]
-			        .addi(s.phraseMatrix[start][end]);
+			        .add(s.phraseMatrix[start][end]);
 
 	        // For leaf nodes, the energy of the node is
 	        // a function of phrase representation
@@ -120,8 +126,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 	        final int word = words[start];
 	        Iterator<IntTaggedWord> taggingI;
 
-	        for (taggingI = lex.ruleIteratorByWord(word, start, null);
-	             taggingI.hasNext(); ) {
+	        for (taggingI = lex.ruleIteratorByWord(word, start, null); taggingI.hasNext(); ) {
 
 		        IntTaggedWord tagging = taggingI.next();
 		        int state = stateIndex.indexOf(tagIndex.get(tagging.tag));
@@ -129,8 +134,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 		        // this is equivalent to log(\theta_r)
 		        double lexScore = lex.score(tagging,
                                             start,
-			                                wordIndex
-                                                .get(tagging.word),
+			                                wordIndex.get(tagging.word),
                                             null);
 
 		        if (lexScore > Double.NEGATIVE_INFINITY) {
@@ -182,8 +186,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
 				        // \pi(A->w_i)
                         final double theta_w_i = exp(iS_pcfg + pS);
-				        s.addToScore(s.iScorePCFG, theta_w_i,
-                                        start, end, parentState);
+				        s.addToScore(s.iScorePCFG, theta_w_i, start, end, parentState);
 
                         s.compIScorePCFG[start][end] += theta_w_i;
 
@@ -191,13 +194,10 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 				        double zeta_A_w_i_j = exp(iS + pS);
 
 				        // \pi (w_i^j) += \zeta_{A->w_i}
-				        s.addToScore(s.iScore,
-					                    zeta_A_w_i_j,
-					                    start, end, parentState);
+				        s.addToScore(s.iScore, zeta_A_w_i_j, start, end, parentState);
 
 				        // \pi(A, w_i^j) = \zeta_{A->w_i}
-				        s.addToScore(s.iSplitSpanStateScore,
-					        zeta_A_w_i_j, start, end, split, parentState);
+				        s.addToScore(s.iSplitSpanStateScore, zeta_A_w_i_j, start, end, split, parentState);
 
 				        cumlCompScore += zeta_A_w_i_j;
 			        }
@@ -342,7 +342,6 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 	                    s.addToScore(s.iScorePCFG, theta_A_BC, start, end, parentState);
 
                         s.compIScorePCFG[start][end] += theta_A_BC;
-
 
 	                    // This binary split might be able to cover the span depending upon children's coverage.
                         double pS = log(pComp[split]) + rule.score;
@@ -548,15 +547,15 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     int parentState = ur.parent;
                     double pS = ur.score;
 
-	                s.addToScore(s.iScorePCFG,
-		                            exp(iS_pcfg + pS),
-		                            start, end, parentState);
+                    s.addToScore(s.iScorePCFG,
+                        exp(iS_pcfg + pS),
+                        start, end, parentState);
 
                     s.compIScorePCFG[start][end] += exp(iS_pcfg + pS);
 
-	                double unaryScore = exp(iS + pS);
+                    double unaryScore = exp(iS + pS);
                     s.addToScore(s.iScore, unaryScore,
-                                 start, end, parentState);
+                        start, end, parentState);
 
                     cumlUnaryScore += unaryScore;
 
@@ -583,15 +582,15 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         for (int split = start + 1; split < end; split++) {
             // X(i,j) * \pi(i,j) = X(i,k,j) * \pi(i,j,k)
             s.phraseMatrix[start][end]
-                    .addi(s.compositionMatrix[start][end][split]
-                            .mul(s.compISplitScore[start][end][split]));
+                .addi(s.compositionMatrix[start][end][split]
+                    .mul(s.compISplitScore[start][end][split]));
         }
 
         // normalize weights to get them to sum to 1.
         // X(i,j) = X(i,k) * \pi(i,j)/\pi(i,j)
         if (s.compIScore[start][end] != 0) {
             s.phraseMatrix[start][end]
-                    .divi(s.compIScore[start][end]);
+                .divi(s.compIScore[start][end]);
         }
     }
 
@@ -604,18 +603,32 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         final int initialEnd = s.length;
         final int startSymbol = stateIndex.indexOf(goalStr);
 
-        for (int states = 0; states < numStates; states++) {
-            s.setScore(s.oScore, 1.0f,
-                initialStart, initialEnd, states);
+        // TODO: Figure out if this makes sense or not.
+        int iSTotal = 0;
+        for (int state = 0; state < numStates; state++) {
+            double iS = s.getScore(s.iScore, initialStart, initialEnd, state);
+            if (iS == 0) {
+                continue;
+            }
+            iSTotal += 1;
         }
 
+        for (int state = 0; state < numStates; state++) {
+            double iS = s.getScore(s.iScore, initialStart, initialEnd, state);
+            if (iS == 0) {
+                continue;
+            }
+            s.addToScore(s.oScore, 1.0/iSTotal, initialStart, initialEnd, state);
+
+        }
 
         for (int diff = s.length; diff >= 1; diff--) {
             for (int st = 0; st + diff <= s.length; st++) {
                 final int start = st;
                 final int end = st + diff;
+                log.debug("Doing oScore for span ({}, {})", start, end);
 
-                Function<Integer, Void> unaryFunc = new Function<Integer, Void>() {
+               /* Function<Integer, Void> unaryFunc = new Function<Integer, Void>() {
                     @Nullable
                     public Void apply(@Nullable Integer parentState) {
                         // if current parentState's outside score is zero,
@@ -640,9 +653,8 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     }
                 };
 
-                log.debug("Doing oScore for span ({}, {})", start, end);
 
-/*
+
                 if (op.trainOp.modelParallel) {
                    // parallelizer.parallelizer(0, numStates, unaryFunc, blockSize);
                 } else {
@@ -650,8 +662,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     for (int parentState = 0; parentState < numStates; parentState++) {
                         unaryFunc.apply(parentState);
                     }   // end for parentState
-                }
-*/
+                }*/
 
                 final double[] pCompArr = new double[end];
                 double ZEnergySplit = 0;
@@ -680,53 +691,53 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                 for (int sp = start + 1; sp < end; sp++) {
                     final int split = sp;
                     Function<Integer, Void> binaryFunc = new Function<Integer, Void>() {
-                            @Nullable
-                            public Void apply(@Nullable Integer parentState) {
-                                // if current parentState's outside score is zero,
-                                // child's would be zero as well
-                                double oS = s.getScore(s.oScore, start, end, parentState);
-                                if (oS == 0f) {
-                                    return null;
-                                }
-                                oS = log(oS);
-
-                                List<BinaryRule> rules = bg.ruleListByParent(parentState);
-                                for (BinaryRule br : rules) {
-                                    int leftState = br.leftChild;
-                                    int rightState = br.rightChild;
-
-                                    double pS = log(pCompArr[split]) + br.score;
-
-                                    int lStart = start, lEnd = split;
-                                    double rS = s.getScore(s.iScore, split, end, rightState);
-                                    if (rS > 0f) {
-                                        rS = log(rS);
-                                        s.addToScore(s.oScore, exp(pS + rS + oS), lStart, lEnd, leftState);
-                                    } // end if rs > 0
-
-
-                                    // If iScore of the left span is zero, so is the
-                                    // oScore of left span
-                                    int rStart = split, rEnd = end;
-                                    double lS = s.getScore(s.iScore, start, split, leftState);
-                                    if (lS > 0f) {
-                                        lS = log(lS);
-                                        s.addToScore(s.oScore, exp(pS + lS + oS), rStart, rEnd, rightState);
-                                    }   // end if ls > 0
-                                }
+                        @Nullable
+                        public Void apply(@Nullable Integer parentState) {
+                            // if current parentState's outside score is zero,
+                            // child's would be zero as well
+                            double oS = s.getScore(s.oScore, start, end, parentState);
+                            if (oS == 0f) {
                                 return null;
                             }
-                        };
+                            oS = log(oS);
 
-                        if (op.trainOp.modelParallel) {
-                            parallelizer.parallelizer(0, numStates, binaryFunc, blockSize);
-                        } else {
-                            // do binaries
-                            for (int parentState = 0; parentState < numStates; parentState++) {
-                                binaryFunc.apply(parentState);
-                            }   // end for parent state
+                            List<BinaryRule> rules = bg.ruleListByParent(parentState);
+                            for (BinaryRule br : rules) {
+                                int leftState = br.leftChild;
+                                int rightState = br.rightChild;
+
+                                double pS = log(pCompArr[split]) + br.score;
+
+                                int lStart = start, lEnd = split;
+                                double rS = s.getScore(s.iScore, split, end, rightState);
+                                if (rS > 0f) {
+                                    rS = log(rS);
+                                    s.addToScore(s.oScore, exp(pS + rS + oS), lStart, lEnd, leftState);
+                                } // end if rs > 0
+
+
+                                // If iScore of the left span is zero, so is the
+                                // oScore of left span
+                                int rStart = split, rEnd = end;
+                                double lS = s.getScore(s.iScore, start, split, leftState);
+                                if (lS > 0f) {
+                                    lS = log(lS);
+                                    s.addToScore(s.oScore, exp(pS + lS + oS), rStart, rEnd, rightState);
+                                }   // end if ls > 0
+                            }
+                            return null;
                         }
+                    };
+
+                    if (op.trainOp.modelParallel) {
+                        parallelizer.parallelizer(0, numStates, binaryFunc, blockSize);
+                    } else {
+                        // do binaries
+                        for (int parentState = 0; parentState < numStates; parentState++) {
+                            binaryFunc.apply(parentState);
+                        }   // end for parent state
                     }
+                }
             }   // end for start
         }   // end for end
     }   // end doOutsideScores
@@ -738,7 +749,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         final StanfordCompositionalInsideOutsideScore s =
                 (StanfordCompositionalInsideOutsideScore) score;
 
-        // Handle lead node case.
+        // Handle leaf node case.
         // There is no split here and span value
         // is stored at start
         for (int st = 0; st < s.length; st++) {
@@ -864,7 +875,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         long muTimeEnd = System.currentTimeMillis();
         log.info("Computed mu score computation:{}::{} in {} secs", idx, sz, (muTimeEnd - muTimeStart));
 
-        // s.postProcess();
+        s.postProcess();
 
         log.info("Compositional Score for sentence#{}:: {} => {}",
                 idx, sz, s.getSentenceScore());
@@ -916,7 +927,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             phraseMatrix[start][end] = Nd4j.zeros(model.getDimensions(), 1);
             phraseMatrix[start][end].addi(model.word2vec(sentence.get(start)));
             qScore += log(model.probabilityWord(phraseMatrix[start][end]))
-	                    * score.compositionalMu[start][end][start];
+	                        * score.compositionalMu[start][end][start];
         }
 
         for (int diff = 2; diff <= length; diff++) {
@@ -928,8 +939,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                 for (int split = start + 1; split < end; split++) {
                     INDArray child1 = phraseMatrix[start][split];
                     INDArray child2 = phraseMatrix[split][end];
-                    INDArray compVector =
-                            model.compose(child1, child2);
+                    INDArray compVector = model.compose(child1, child2);
 
 	                phraseMatrix[start][end]
 		                .addi(compVector)
@@ -949,7 +959,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                 }
             }
         }
-        return qScore / p_W;
+        return -1.0 * qScore / p_W;
     }
 
 
@@ -976,6 +986,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
      *
      * @return vocab size
      */
+    // TODO: Remove this vocab thing.
     public int getVocabSize() {
         return wordIndex.size();
     }

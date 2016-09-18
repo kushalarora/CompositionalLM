@@ -37,11 +37,11 @@ public class Parameters implements IParameter<Sentence> {
         rng.setSeed(2204);
         this.dimensions = dimensions;
         this.grammarVocabSize = grammarVocabSize;
-        W = Nd4j.rand(dimensions, 2 * dimensions);      // d X 2d matrix
+        W = Nd4j.randn(dimensions, 2 * dimensions);      // d X 2d matrix
         // TODO:: Use column vectors instead.
-        u = Nd4j.rand(dimensions, 1);                   // row vector with d entries
-        h1 = Nd4j.rand(dimensions, 1);                  // row vector with d entries
-        h2 = Nd4j.rand(dimensions, 1);                  // row vector with d entries
+        u = Nd4j.randn(dimensions, 1);                   // row vector with d entries
+        h1 = Nd4j.randn(dimensions, 1);                  // row vector with d entries
+        h2 = Nd4j.randn(dimensions, 1);                  // row vector with d entries
 
         X = Nd4j.rand(grammarVocabSize, dimensions);    // V X d matrix
         this.op = op;
@@ -111,7 +111,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old W =\n {}", W);
             log.info("dW =\n {}", dq.getDqdw().getDQdW());
         }
-        W.subi(dq.getDqdw().getDQdW().muli(op.trainOp.learningRate));
+        W.subi(dq.getDqdw().getDQdW());
         if (op.debug) {
             log.info("new W =\n {}", W);
         }
@@ -120,7 +120,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old u = \n {}", u);
             log.info("du = \n {}", dq.getDqdu().getDQdu());
         }
-        u.subi(dq.getDqdu().getDQdu().muli(op.trainOp.learningRate));
+        u.subi(dq.getDqdu().getDQdu());
         if (op.debug) {
             log.info("new u = \n {}", u);
         }
@@ -129,7 +129,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old h1 = \n {}", h1);
             log.info("dh1 = \n {}", dq.getDqdh1().getDQdh1());
         }
-	    h1.subi(dq.getDqdh1().getDQdh1().muli(op.trainOp.learningRate));
+	    h1.subi(dq.getDqdh1().getDQdh1());
         if (op.debug) {
             log.info("new h1 = \n {}", h1);
         }
@@ -152,8 +152,7 @@ public class Parameters implements IParameter<Sentence> {
 
             Integer key = entry.getKey();
             INDArray value = entry.getValue()
-                                    .transpose()
-                                    .muli(op.trainOp.learningRate);
+                                    .transpose();
 
             X.putRow(key, X.getRow(key).subi(value));
         }

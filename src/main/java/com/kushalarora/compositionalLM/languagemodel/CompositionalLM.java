@@ -71,6 +71,12 @@ public class CompositionalLM {
             trainSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
         }
 
+        List<Sentence> validSentList = Lists.newArrayList();
+        for (String filename : op.trainOp.validationFiles) {
+            validSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
+        }
+
+
         // Get the vocab from the training set.
         Set<Word> vocab = new HashSet<Word>();
         for (Sentence sentence : trainSentList) {
@@ -78,15 +84,16 @@ public class CompositionalLM {
                 vocab.add(word);
             }
         }
+
+        for (Sentence sentence : validSentList) {
+            for (Word word : sentence) {
+                vocab.add(word);
+            }
+        }
+
         // Add EOS.
         vocab.add(grammar.getToken(Lexicon.BOUNDARY, -1));
         model.setVocab(vocab);
-
-
-        List<Sentence> validSentList = Lists.newArrayList();
-        for (String filename : op.trainOp.validationFiles) {
-	        validSentList.addAll(Lists.newArrayList(docProcessor.getIterator(filename)));
-        }
 
         final CacheWrapper<Sentence, StanfordCompositionalInsideOutsideScore> trainCache =
                 CacheFactory.getCache(op, new Function<Sentence, StanfordCompositionalInsideOutsideScore>() {
@@ -96,72 +103,74 @@ public class CompositionalLM {
                     }
                 });
 
-
         // Optimizer with scorer, derivative calculator and saver as argument.
         AbstractOptimizer<Sentence, Derivatives> optimizer =
-                OptimizerFactory.getOptimizer(op, model,
-                        // train scorer
-                        new Function<Sentence, Double>() {
-                            @Nullable
-                            public Double apply(Sentence sentence) {
-	                            return grammar.getQScore(trainCache.get(sentence));
-                            }
-                        },
+            OptimizerFactory.getOptimizer(op, model,
+                // train scorer
+                new Function<Sentence, Double>() {
+                    @Nullable
+                    @SneakyThrows
+                    public Double apply(Sentence sentence) {
+                        return grammar.getQScore(trainCache.get(sentence));
+//                        return ((StanfordCompositionalInsideOutsideScore)
+//                            grammar.getInsideScore(sentence, true)).getSentenceScore();
+                    }
+                },
 
-                        // valid scorer
-                        new Function<Sentence, Double>() {
-                            @Nullable
-                            public Double apply(Sentence sentence) {
-                                return ((StanfordCompositionalInsideOutsideScore)
-                                        grammar.getInsideScore(sentence, true)).getSentenceScore();
-                            }
-                        },
+                // valid scorer
+                new Function<Sentence, Double>() {
+                    @Nullable
+                    public Double apply(Sentence sentence) {
+                        return ((StanfordCompositionalInsideOutsideScore)
+                            grammar.getInsideScore(sentence, true)).getSentenceScore();
+                    }
+                },
 
-                        // derivative calculator
-                        new Function<Sentence, Derivatives>() {
-                            @Nullable
-                            public Derivatives apply(@Nullable Sentence sentence) {
-                                Derivatives derivatives = new Derivatives(op,
-                                        model, trainCache.get(sentence));
-                                derivatives.calcDerivative();
-                                return derivatives;
-                            }
-                        },
+                // derivative calculator
+                new Function<Sentence, Derivatives>() {
+                    @Nullable
+                    public Derivatives apply(@Nullable Sentence sentence) {
+                        Derivatives derivatives = new Derivatives(op,
+                            model, trainCache.get(sentence));
+                        derivatives.calcDerivative();
+                        return derivatives;
+                    }
+                },
 
-                        // saver
-                        new Function<IntTuple, Void>() {
-                            @Nullable
-                            public Void apply(@Nullable IntTuple tuple) {
-                                String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
-                                str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
-                                String outFilename = String.join(".", str);
-                                saveModelSerialized(outFilename);
-                                return null;
-                            }
-                        },
+                // saver
+                new Function<IntTuple, Void>() {
+                    @Nullable
+                    public Void apply(@Nullable IntTuple tuple) {
+                        String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
+                        str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
+                        String outFilename = String.join(".", str);
+                        saveModelSerialized(outFilename);
+                        return null;
+                    }
+                },
 
-                        // preprocessor
-                        new Function<Void, Void>() {
-                            @Nullable
-                            public Void apply(@Nullable Void aVoid) {
-                                model.preProcessOnBatch();
-                                Derivatives.preProcessOnBatch();
-                                return null;
-                            }
-                        },
+                // preprocessor
+                new Function<Void, Void>() {
+                    @Nullable
+                    public Void apply(@Nullable Void aVoid) {
+                        model.preProcessOnBatch();
+                        Derivatives.preProcessOnBatch();
+                        return null;
+                    }
+                },
 
-                        // postprocessor
-                        new Function<Void, Void>() {
-                            @Nullable
-                            public Void apply(@Nullable Void aVoid) {
-                                model.postProcessOnBatch();
-                                Derivatives.postProcessOnBatch();
-                                return null;
-                            }
-                        }, parallelizer);
+                // postprocessor
+                new Function<Void, Void>() {
+                    @Nullable
+                    public Void apply(@Nullable Void aVoid) {
+                        model.postProcessOnBatch();
+                        Derivatives.postProcessOnBatch();
+                        return null;
+                    }
+                }, parallelizer);
 
         int emIter = 0;
-        double bestEMIterValidScore = 0;
+        double bestEMIterValidScore = Double.NEGATIVE_INFINITY;
 
         // TODO: Add early stopping logic.
         while (emIter < op.trainOp.maxEMEpochs) {
@@ -169,10 +178,11 @@ public class CompositionalLM {
             trainCache.clear();
             // Fit training data with validation on validation file.
             optimizer.fit(trainSentList, validSentList);
+            optimizer.flushDerivaiveAcc();
             double emIterValidScore = optimizer.getBestValidationScore();
             log.info("EMIter#: {}, emIterValidScore => {}", emIter, emIterValidScore);
 
-            if (bestEMIterValidScore > emIterValidScore)
+            if (bestEMIterValidScore < emIterValidScore)
             {
                 log.info("EMIter#: {} improved validation score. " +
 	                        "Old best: {}, new best: {}",

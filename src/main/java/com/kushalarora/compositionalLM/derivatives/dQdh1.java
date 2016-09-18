@@ -85,7 +85,7 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         double dE = model.energyCompDerivative(parent, child1, child2);
 
         // dEdu = g'(s) X u^T.dot(c1)
-        return child1.muli(dE);
+        return child1.mul(dE);
     }
 
     public double norm()
@@ -118,14 +118,14 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                         // dEdu = dE * p = g'(u.t().dot(p)) * c1
                         INDArray dEdh1s =
                             dEduBinary(compositionMatrix[start][end][split],
-                                phraseMatrix[start][split],
-                                phraseMatrix[split][end], model);
+                                        phraseMatrix[start][split],
+                                        phraseMatrix[split][end],
+                                        model);
 
                         dEdh1[split] = dEdh1s;
                         synchronized (dQdh1) {
                             // dQdh1 * p(w) += dEdu * \mu[start][end][split]
-                            dQdh1.addi(dEdh1s
-                                    .muli(compositionMu[start][end][split]));
+                            dQdh1.addi(dEdh1s.muli(compositionMu[start][end][split]));
                         }
 
                         return null;
@@ -151,6 +151,7 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                             phraseMatrix, compMuSum, new int[] {dimensions, 1}));
             }
         }
+
         if (compositionalIScore[0][length] != 0) {
             // dQdh1 = dQdh1 * p(w)/p(w)
             dQdh1.divi(compositionalIScore[0][length]);

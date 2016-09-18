@@ -92,7 +92,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         // dE = g'(u.t().dot(p))
         double dE = model.energyWordDerivative(word);
 
-        // dEdu = g'(s) X u^T.dot(p)
+        // dEdu = g'(s) * p
         return word.mul(dE);
     }
 
@@ -124,9 +124,8 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
                 synchronized (dQdu) {
                     // dQdu * p(w) += dEdu * mu(start, end, split)
-                    dQdu.addi(dEdu
-                            .subi(ZLeaf_dEdu(model, dimensions))
-                            .muli(compositionMu[start][end][split]));
+                    dQdu.addi(dEdu.subi(ZLeaf_dEdu(model, dimensions))
+                                .muli(compositionMu[start][end][split]));
                 }
                 return null;
             }
@@ -156,8 +155,9 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
                         INDArray dEdus =
                             dEduBinary(compositionMatrix[start][end][split],
-                                phraseMatrix[start][split],
-                                phraseMatrix[split][end], model);
+                                        phraseMatrix[start][split],
+                                        phraseMatrix[split][end],
+                                        model);
 
                         dEdu[split] = dEdus;
                         synchronized (dQdu) {
@@ -183,9 +183,10 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                 }
 
                 dQdu.subi(model
-                        .Expectedl(start, end, dEdu,
-                            compositionMatrix[start][end],
-                            phraseMatrix, compMuSum, new int[]{dimensions, 1}));
+                            .Expectedl(start, end, dEdu,
+                                        compositionMatrix[start][end],
+                                        phraseMatrix, compMuSum,
+                                        new int[]{dimensions, 1}));
             }
         }
 

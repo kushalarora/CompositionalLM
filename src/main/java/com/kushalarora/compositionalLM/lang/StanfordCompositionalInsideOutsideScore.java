@@ -196,12 +196,11 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
     }
 
     public void postProcess() {
-
-        Sentence newSentence = new Sentence(sentence.getIndex());
+/*      Sentence newSentence = new Sentence(sentence.getIndex());
         for (int i = 0; i < sentence.getSize() - 1; i++) {
             newSentence.add(sentence.get(i));
         }
-        this.sentence = newSentence;
+        this.sentence = newSentence;*/
         this.length = sentence.getSize();
         iScore = null;
         oScore = null;

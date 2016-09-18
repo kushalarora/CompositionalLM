@@ -91,7 +91,7 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         double dE = model.energyCompDerivative(parent, child1, child2);
 
         // dEdu = g'(s) X u^T.dot(c2)
-        return child2.muli(dE);
+        return child2.mul(dE);
     }
 
     public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
@@ -123,8 +123,7 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                         dEdh2[split] = dEdh2s;
                         synchronized (dQdh2) {
                             // dQdh2 * p(w) += dEdh2s * \mu[start][end][split]
-                            dQdh2.addi(dEdh2s
-                                    .muli(compositionMu[start][end][split]));
+                            dQdh2.addi(dEdh2s.muli(compositionMu[start][end][split]));
                         }
 
                         return null;
