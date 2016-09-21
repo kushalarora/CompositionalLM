@@ -268,9 +268,8 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         return norm;
     }
 
-    public static INDArray ZLeaf_dEdXw(final Model model, final int dimensions, int vocabSize) {
+    public static synchronized INDArray ZLeaf_dEdXw(final Model model, final int dimensions, int vocabSize) {
         if (zLeaf == null) {
-            synchronized (zLeaf) {
                 log.info("Calculating ZLeaf_dEdXw");
                 zLeaf = model.ExpectedV(new Function<INDArray, INDArray>() {
                     @Nullable
@@ -278,7 +277,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                         return dEdXwUnary(indArray, model);
                     }
                 }, new int[]{dimensions, 1});
-            }
+
         }
 
         return zLeaf;

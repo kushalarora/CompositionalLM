@@ -28,7 +28,7 @@ public class Model implements Serializable {
 	private int vocabSize;
 	Parameters params;
 	private GrammarFactory.GrammarType grammarType;
-	private Double ZWord;
+	private double ZWord;
 	private Set<Word> vocab;
 	private int grammarVocabSize;
 
@@ -207,9 +207,8 @@ public class Model implements Serializable {
 		return valObj.getDouble(0);
 	}
 
-	double  calculateZ() {
+	public synchronized double  calculateZ() {
 		log.info("Calculating Z_Word.");
-		synchronized (ZWord) {
 			if (vocab == null) {
 				throw new RuntimeException(
 					"Vocab should be set before running the model");
@@ -218,7 +217,6 @@ public class Model implements Serializable {
 				INDArray x = word2vec(word);
 				ZWord += unProbabilityWord(x);
 			}
-		}
 		return ZWord;
 	}
 
