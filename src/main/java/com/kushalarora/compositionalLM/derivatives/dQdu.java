@@ -206,13 +206,15 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
     private static INDArray ZLeaf_dEdu(final Model model, int dimensions) {
         if (zLeaf == null) {
-            log.info("Calculating ZLeaf_dEdu");
-            zLeaf = model.ExpectedV(new Function<INDArray, INDArray>() {
-                @Nullable
-                public INDArray apply(@Nullable INDArray indArray) {
-                    return dEduUnary(indArray, model);
-                }
-            }, new int[]{dimensions, 1});
+            synchronized (zLeaf) {
+                log.info("Calculating ZLeaf_dEdu");
+                zLeaf = model.ExpectedV(new Function<INDArray, INDArray>() {
+                    @Nullable
+                    public INDArray apply(@Nullable INDArray indArray) {
+                        return dEduUnary(indArray, model);
+                    }
+                }, new int[]{dimensions, 1});
+            }
         }
         return zLeaf;
     }

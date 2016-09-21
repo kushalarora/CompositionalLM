@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -34,15 +35,15 @@ public class Parameters implements IParameter<Sentence> {
     private final int grammarVocabSize;
 
     public Parameters(Options op, int dimensions, int grammarVocabSize) {
-        RandomGenerator rng = new JDKRandomGenerator();
-        rng.setSeed(2204);
+        DefaultRandom random = new DefaultRandom();
+        random.setSeed(2204);
         this.dimensions = dimensions;
         this.grammarVocabSize = grammarVocabSize;
-        W = Nd4j.randn(dimensions, 2 * dimensions);      // d X 2d matrix
+        W = Nd4j.randn(dimensions, 2 * dimensions, random);      // d X 2d matrix
         // TODO:: Use column vectors instead.
-        u = Nd4j.randn(dimensions, 1);                   // row vector with d entries
-        h1 = Nd4j.randn(dimensions, 1);                  // row vector with d entries
-        h2 = Nd4j.randn(dimensions, 1);                  // row vector with d entries
+        u = Nd4j.randn(dimensions, 1, random);                   // row vector with d entries
+        h1 = Nd4j.randn(dimensions, 1, random);                  // row vector with d entries
+        h2 = Nd4j.randn(dimensions, 1, random);                  // row vector with d entries
 
         X = Nd4j.rand(grammarVocabSize, dimensions);    // V X d matrix
         this.op = op;
