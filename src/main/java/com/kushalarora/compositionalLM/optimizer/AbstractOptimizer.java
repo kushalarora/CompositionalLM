@@ -236,7 +236,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                         cumlValidSize += validSent.getSize();
                     }
 
-                    cumlValidScore += getTrainBatchScore(validList);
+                    cumlValidScore += getValidationScore(validList);
                     validBatchIdx++;
                 }
 
