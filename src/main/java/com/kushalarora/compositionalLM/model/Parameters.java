@@ -185,11 +185,11 @@ public class Parameters implements IParameter<Sentence> {
 
     private void normalizeZeroMeanAndUnitVariance()
     {
-        u = Transforms.normalizeZeroMeanAndUnitVariance(u.transpose()).transpose();
-        h1 = Transforms.normalizeZeroMeanAndUnitVariance(h1.transpose()).transpose();
-        h2 = Transforms.normalizeZeroMeanAndUnitVariance(h2.transpose()).transpose();
-        W = Transforms.normalizeZeroMeanAndUnitVariance(W);
-        X = Transforms.normalizeZeroMeanAndUnitVariance(X);
+        Transforms.normalizeZeroMeanAndUnitVariance(u);
+        Transforms.normalizeZeroMeanAndUnitVariance(h1);
+        Transforms.normalizeZeroMeanAndUnitVariance(h2);
+        Transforms.normalizeZeroMeanAndUnitVariance(W);
+        Transforms.normalizeZeroMeanAndUnitVariance(X);
 
     }
 }
