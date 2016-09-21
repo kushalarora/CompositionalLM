@@ -36,6 +36,7 @@ public class TrainOptions implements Serializable {
     public String visualizationFilename;
     public int blockNum;
     public double l2term;
+    public boolean normalize;
 
     public TrainOptions(Configuration config) throws IOException {
         trainFiles =
@@ -96,6 +97,8 @@ public class TrainOptions implements Serializable {
 
         blockNum =
                 config.getInt("blockNum", 6);
+
+        normalize = config.getBoolean("normalize", true);
     }
 
 

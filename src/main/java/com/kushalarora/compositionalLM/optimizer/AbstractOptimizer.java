@@ -218,6 +218,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             // shall validate?
             if (op.trainOp.validate &&
                 (iter + 1) % op.trainOp.validationFreq == 0) {
+                preProcessOnBatch();
                 long validStartTime = System.currentTimeMillis();
                 // calc mean for validation set
                 double cumlValidScore = 0;
@@ -232,7 +233,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     for (int idx = 0; idx < op.trainOp.validBatchSize && validIter.hasNext(); idx++) {
                         T validSent = validIter.next();
                         validList.add(validSent);
-                        cumlValidSize += validSent.getSize() + 1;
+                        cumlValidSize += validSent.getSize();
                     }
 
                     cumlValidScore += getTrainBatchScore(validList);
@@ -258,6 +259,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     bestValidationScore = mean;
                     log.info("$Updated Validation$  Updated best validation score epoch# {}, iter# {}:: {}", epoch, iter, mean);
                     saveModel(iter, epoch);
+                    postProcessOnBatch();
                 }
                 else {
                     // if mean isn't going down, no point looping

@@ -13,6 +13,7 @@ import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 
 /**
@@ -45,6 +46,10 @@ public class Parameters implements IParameter<Sentence> {
 
         X = Nd4j.rand(grammarVocabSize, dimensions);    // V X d matrix
         this.op = op;
+
+        if (op.trainOp.normalize) {
+            normalizeZeroMeanAndUnitVariance();
+        }
     }
 
 
@@ -166,10 +171,25 @@ public class Parameters implements IParameter<Sentence> {
 	        h2.subi(h2.mul(l2term));
         }
 
+        if (op.trainOp.normalize) {
+            normalizeZeroMeanAndUnitVariance();
+        }
+
 	    if (op.debug) {
 		    log.info("$#Norm2 u : {}", Nd4j.norm2(u));
 		    log.info("$#Norm2 W : {}", Nd4j.norm2(W));
 		    log.info("$#Norm2 X : {}", Nd4j.norm2(X));
 	    }
+    }
+
+
+    private void normalizeZeroMeanAndUnitVariance()
+    {
+        u = Transforms.normalizeZeroMeanAndUnitVariance(u.transpose()).transpose();
+        h1 = Transforms.normalizeZeroMeanAndUnitVariance(h1.transpose()).transpose();
+        h2 = Transforms.normalizeZeroMeanAndUnitVariance(h2.transpose()).transpose();
+        W = Transforms.normalizeZeroMeanAndUnitVariance(W);
+        X = Transforms.normalizeZeroMeanAndUnitVariance(X);
+
     }
 }
