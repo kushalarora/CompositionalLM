@@ -25,16 +25,11 @@
         <exec-maven-plugin.version>1.4.0</exec-maven-plugin.version>
     </properties>
     <dependencies>
-		<dependency>
-			<groupId>org.bytedeco</groupId>
-			<artifactId>javacpp</artifactId>
-			<version>1.2.4</version>
-		 </dependency>
-         <dependency>
-             <groupId>org.bytedeco</groupId>
-             <artifactId>javacpp</artifactId>
-             <version>1.2.3</version>
-        </dependency>
+ <!--       <dependency>
+            <groupId>com.googlecode.matrix-toolkits-java</groupId>
+            <artifactId>mtj</artifactId>
+            <version>1.0.3-SNAPSHOT</version>
+        </dependency>-->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
@@ -58,15 +53,26 @@
             <classifier>models</classifier>
         </dependency>
 
-         <dependency>
+<!--
+        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>0.4.0</version>
         </dependency>
+-->
+
+<!--
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-x86</artifactId>
             <version>0.4-rc3.6</version>
+        </dependency>
+-->
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
 
 		<dependency>
