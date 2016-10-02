@@ -187,7 +187,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
                 if (trainBatchScore > prevBatchScore) {
                     double old_lr = learningRate;
-                    learningRate = learningRate/(1.1);
+                    learningRate = learningRate/(2);
                     log.warn("TrainingBatchScore {} < prevBatchScore {}. Old lr {}, new lr {}",
                                 trainBatchScore, prevBatchScore,
                                 old_lr, learningRate);
