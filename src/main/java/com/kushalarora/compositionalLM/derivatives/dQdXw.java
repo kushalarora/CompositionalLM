@@ -134,11 +134,9 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                 // handle leaf node
                 INDArray lineardEdXi_s = dEdXwUnary(phraseMatrix[i][i+1], model);
 
-               dQdXw_i
-                   .addi(
-                       lineardEdXi_s
-	                       .subi(ZLeaf_dEdXw(model, dim, V))
-	                       .muli(compositionalMu[i][i + 1][i]));
+               dQdXw_i.add(lineardEdXi_s
+                            .sub(ZLeaf_dEdXw(model, dim, V))
+	                        .mul(compositionalMu[i][i + 1][i]));
 
                 final INDArray[][] dxdxwArr =
                     new dXdXwi(dim, V, data, op, i)
@@ -162,8 +160,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
 
                             lineardEdXi[split] = lineardEdXi_s;
 
-                            dQdXw_i.addi(lineardEdXi_s
-                                .muli(compositionalMu[start][end][split]));
+                            dQdXw_i.add(lineardEdXi_s.mul(compositionalMu[start][end][split]));
                         }
 
                         double compMuSum = 0;
@@ -171,22 +168,23 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                             compMuSum += compositionalMu[start][end][sp];
                         }
 
-                        dQdXw_i.subi(model
-                                .Expectedl(start, end, lineardEdXi,
+                        dQdXw_i.sub(model
+                                    .Expectedl(start, end, lineardEdXi,
                                         compositionMatrix[start][end],
                                         phraseMatrix, compMuSum,
-	                                    new int[]{dim, 1}));
+                                        new int[]{dim, 1}));
                     }
                 }
 
                 if (compositionalIScore[0][length] != 0) {
-                    dQdXw_i.divi(compositionalIScore[0][length]);
+                    double tmp = Math.pow(10, 6);
+                    dQdXw_i.div(compositionalIScore[0][length] * tmp).div(tmp);
                 }
 
 
 	            if (containsNanOrInf(dQdXw_i)) {
                     log.error("dQdXw contains Nan Or Inf for index: {} data {}::{}. Norm::{}",
-                            i, data.getIndex(), data.getSize(), Nd4j.norm2(dQdXw_i));
+                            i, data.getIndex(), data.getSize(), Nd4j.norm2(dQdXw_i)) ;
                     dQdXw_i = Nd4j.zeros(dim);
                 }
 

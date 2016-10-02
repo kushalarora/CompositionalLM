@@ -276,13 +276,11 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             // (start, split), (split, end)
             s.compositionMatrix[start][end][sp] =
                     s.compositionMatrix[start][end][sp]
-                        .addi(model.compose(child1, child2));
+                        .add(model.compose(child1, child2));
 
             // Composition energy of parent (start,end)
             // by children (start, split), (split, end)
-            double unProbComp =
-	            model.unProbabilityComp(s.compositionMatrix[start][end][sp],
-			                            child1, child2);
+            double unProbComp = model.unProbabilityComp(s.compositionMatrix[start][end][sp], child1, child2);
 
             pComp[sp] = unProbComp;
 
@@ -581,16 +579,20 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
         for (int split = start + 1; split < end; split++) {
             // X(i,j) * \pi(i,j) = X(i,k,j) * \pi(i,j,k)
-            s.phraseMatrix[start][end]
-                .addi(s.compositionMatrix[start][end][split]
+            s.phraseMatrix[start][end] =
+                s.phraseMatrix[start][end]
+                .add(s.compositionMatrix[start][end][split]
                     .mul(s.compISplitScore[start][end][split]));
         }
 
         // normalize weights to get them to sum to 1.
         // X(i,j) = X(i,k) * \pi(i,j)/\pi(i,j)
         if (s.compIScore[start][end] != 0) {
-            s.phraseMatrix[start][end]
-                .divi(s.compIScore[start][end]);
+            double tmp = Math.pow(10, 6);
+            s.phraseMatrix[start][end] =
+                s.phraseMatrix[start][end]
+                .div(s.compIScore[start][end] * tmp)
+                .div(tmp);
         }
     }
 
@@ -675,8 +677,8 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     // by children (start, split), (split, end)
                     final double unProbComp =
                         model.unProbabilityComp(
-                                s.compositionMatrix[start][end][split],
-                                child1, child2);
+                            s.compositionMatrix[start][end][split],
+                            child1, child2);
 
 
                     pCompArr[sp] = unProbComp;
@@ -925,7 +927,8 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         for (int start = 0; start < length; start++) {
             int end = start + 1;
             phraseMatrix[start][end] = Nd4j.zeros(model.getDimensions(), 1);
-            phraseMatrix[start][end].addi(model.word2vec(sentence.get(start)));
+            phraseMatrix[start][end] = phraseMatrix[start][end]
+                                        .add(model.word2vec(sentence.get(start)));
             qScore += log(model.probabilityWord(phraseMatrix[start][end]))
 	                        * score.compositionalMu[start][end][start];
         }
@@ -941,9 +944,10 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                     INDArray child2 = phraseMatrix[split][end];
                     INDArray compVector = model.compose(child1, child2);
 
-	                phraseMatrix[start][end]
-		                .addi(compVector)
-		                .muli(score.compISplitScore[start][end][split]);
+                    phraseMatrix[start][end] =
+                        phraseMatrix[start][end]
+		                .add(compVector)
+		                .mul(score.compISplitScore[start][end][split]);
 
 	                unProbComp[split] = model.unProbabilityComp(compVector, child1, child2);
 	                zUnProbComp += unProbComp[split];
@@ -955,7 +959,10 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 	            }
 
                 if (score.compIScore[start][end] != 0) {
-	                phraseMatrix[start][end].divi(score.compIScore[start][end]);
+                    double tmp = Math.pow(10, 6);
+                    phraseMatrix[start][end] =
+                        phraseMatrix[start][end].div(score.compIScore[start][end] * tmp)
+                                                .div(tmp);
                 }
             }
         }

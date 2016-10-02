@@ -15,9 +15,6 @@ import com.kushalarora.compositionalLM.utils.Parallelizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Created by karora on 6/21/15.
- */
 @Slf4j
 public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T> implements IDerivative<T>
 {
@@ -99,7 +96,8 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                     @Nullable
                     public Void apply(final Integer j) {
 
-                        final INDArray[][] dxdwArr = new dXdWij(dim, data, op, i, j)
+                        final INDArray[][] dxdwArr =
+                            new dXdWij(dim, data, op, i, j)
                                 .calcDerivative(model, scorer);
 
                         INDArray dEdW_ij = Nd4j.zeros(1,1);
@@ -111,8 +109,6 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                                 final int end = start + diff;
 
                                 for (int split = start + 1; split < end; split++) {
-
-
                                     INDArray lineardXdW = dEdWBinary(
                                                             dxdwArr[start][end],
                                                             dxdwArr[start][split],
@@ -125,8 +121,9 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                                     dEW_ij_l[split] = lineardXdW;
 
                                     synchronized (dEdW_ij) {
-                                        dEdW_ij.addi(lineardXdW
-                                                .muli(compositionalMu[start][end][split]));
+                                        dEdW_ij = dEdW_ij
+                                            .add(lineardXdW
+                                                    .mul(compositionalMu[start][end][split]));
                                     }
                                 }
 
@@ -135,8 +132,8 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                                     compMuSum += compositionalMu[start][end][sp];
                                 }
 
-                                dEdW_ij.subi(model
-                                        .Expectedl(
+                                dEdW_ij = dEdW_ij.sub(model
+                                            .Expectedl(
                                                 start, end, dEW_ij_l,
                                                 compositionMatrix[start][end],
                                                 phraseMatrix,
@@ -177,7 +174,8 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
 
         if (compositionalIScore[0][length] != 0) {
-            dQdW.divi(compositionalIScore[0][length]);
+            double tmp = Math.pow(10, 6);
+            dQdW = dQdW.div(compositionalIScore[0][length] * tmp).div(tmp);
         }
 
 

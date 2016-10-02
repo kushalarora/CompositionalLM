@@ -68,11 +68,11 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
     }
 
     public void add(IDerivative other) {
-        dQdu.addi(((dQdu) other).getDQdu());
+        dQdu = dQdu.add(((dQdu) other).getDQdu());
     }
 
     public void mul(double learningRate) {
-        dQdu.muli(learningRate);
+        dQdu =dQdu.mul(learningRate);
     }
 
     public boolean containsNanOrInf() {
@@ -124,8 +124,8 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
                 synchronized (dQdu) {
                     // dQdu * p(w) += dEdu * mu(start, end, split)
-                    dQdu.addi(dEdu.subi(ZLeaf_dEdu(model, dimensions))
-                                .muli(compositionMu[start][end][split]));
+                    dQdu = dQdu.add(dEdu.sub(ZLeaf_dEdu(model, dimensions))
+                                        .mul(compositionMu[start][end][split]));
                 }
                 return null;
             }
@@ -162,8 +162,12 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                         dEdu[split] = dEdus;
                         synchronized (dQdu) {
                             // dQdu * p(w) += dEdu * \mu[start][end][split]
-                            dQdu.addi(dEdus
-                                    .muli(compositionMu[start][end][split]));
+                            dQdu = dQdu.add(dEdus
+                                    .mul(compositionMu[start][end][split]));
+
+                            if (containsNanOrInf(dQdu)) {
+                                log.error("Contains Nan ");
+                            }
                         }
                         return null;
                     }
@@ -182,7 +186,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                     compMuSum += compositionMu[start][end][sp];
                 }
 
-                dQdu.subi(model
+                dQdu = dQdu.sub(model
                             .Expectedl(start, end, dEdu,
                                         compositionMatrix[start][end],
                                         phraseMatrix, compMuSum,
@@ -192,7 +196,12 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
         if (compositionalIScore[0][length] != 0) {
             // dQdu = dQdu * p(w)/p(w)
-            dQdu.divi(compositionalIScore[0][length]);
+            double tmp = Math.pow(10, 6);
+            INDArray dqDu1 = dQdu.div(compositionalIScore[0][length] * tmp).div(tmp);
+            if (containsNanOrInf(dqDu1)) {
+                log.error("Contains Nana");
+            }
+            dQdu = dqDu1;
         }
 
 	    if (containsNanOrInf()) {

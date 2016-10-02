@@ -64,33 +64,34 @@ public class dXdWij<T extends IIndexedSized> {
                         INDArray child2 = phraseMatrix[split][end];
                         INDArray dC = model.composeDerivative(child1, child2);
 
-                        final INDArray vec = Nd4j.zeros(dim, 1);
+                        INDArray vec = Nd4j.zeros(dim, 1);
 
                         // 1_j \dot c_12
                         vec.putScalar((j < dim ? j : j - dim),
-                                (j < dim ?
-                                    child1.getDouble(j) :
-                                    child2.getDouble(j - dim)));
+                                        (j < dim ?
+                                            child1.getDouble(j) :
+                                            child2.getDouble(j - dim)));
 
                         // [dc_1dW_ij dc_2dW_ij].transpose()
                         INDArray dC12 = Nd4j.concat(0, dXdWij[start][split], dXdWij[split][end]);
 
                         // (1_j \dot c_12
-                        vec
+                        vec = vec
                             // + (W
-                            .addi(model
+                            .add(model
                                 .getParams()
                                 .getW()
                                 //* [dc_1 dc_2]^T)))
                                 .mmul(dC12))
                             // \dot  f'(c_1, c_2)
-                            .muli(dC);
+                            .mul(dC)
+                            .mul(compositionISplitScore[start][end][split]);
 
                         // weighted marginalization over split
                         // dXdW_ij += dXW_ij[k] * \pi(start,end,split)
                         synchronized (dXdWij[start][end]) {
-                            dXdWij[start][end]
-                                .addi(vec.muli(compositionISplitScore[start][end][split]));
+                            dXdWij[start][end] =
+                                dXdWij[start][end].add(vec);
                         }
                         return null;
                     }
@@ -107,8 +108,10 @@ public class dXdWij<T extends IIndexedSized> {
 
                 if (compositionIScore[start][end] != 0) {
                     // dXdW_ij /= \pi(start,end)
-                    dXdWij[start][end]
-                            .divi(compositionIScore[start][end]);
+                    double tmp = Math.pow(10, 6);
+                    dXdWij[start][end] =
+                        dXdWij[start][end]
+                            .div(compositionIScore[start][end] * tmp).div(tmp);
                 }
             }
         }

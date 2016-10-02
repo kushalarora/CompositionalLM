@@ -65,11 +65,11 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
     }
 
     public void add(IDerivative other) {
-        dQdh1.addi(((dQdh1) other).getDQdh1());
+        dQdh1 = dQdh1.add(((dQdh1) other).getDQdh1());
     }
 
     public void mul(double learningRate) {
-        dQdh1.muli(learningRate);
+        dQdh1 = dQdh1.mul(learningRate);
     }
 
     public boolean containsNanOrInf() {
@@ -125,7 +125,7 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                         dEdh1[split] = dEdh1s;
                         synchronized (dQdh1) {
                             // dQdh1 * p(w) += dEdu * \mu[start][end][split]
-                            dQdh1.addi(dEdh1s.muli(compositionMu[start][end][split]));
+                            dQdh1 = dQdh1.add(dEdh1s.mul(compositionMu[start][end][split]));
                         }
 
                         return null;
@@ -145,7 +145,7 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                     compMuSum += compositionMu[start][end][sp];
                 }
 
-                dQdh1.subi(model
+                dQdh1 = dQdh1.sub(model
                         .Expectedl(start, end, dEdh1,
                             compositionMatrix[start][end],
                             phraseMatrix, compMuSum, new int[] {dimensions, 1}));
@@ -154,7 +154,8 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
 
         if (compositionalIScore[0][length] != 0) {
             // dQdh1 = dQdh1 * p(w)/p(w)
-            dQdh1.divi(compositionalIScore[0][length]);
+            double tmp = Math.pow(10, 6);
+            dQdh1 = dQdh1.div(compositionalIScore[0][length] * tmp).div(tmp);
         }
 
 

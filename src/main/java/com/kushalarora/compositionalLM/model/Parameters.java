@@ -16,11 +16,6 @@ import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-
-/**
- * Created by karora on 7/14/15.
- */
-
 @Getter
 @Setter
 @Slf4j
@@ -39,18 +34,14 @@ public class Parameters implements IParameter<Sentence> {
         random.setSeed(2204);
         this.dimensions = dimensions;
         this.grammarVocabSize = grammarVocabSize;
-        W = Nd4j.randn(dimensions, 2 * dimensions, random);      // d X 2d matrix
+        W = Nd4j.rand(dimensions, 2 * dimensions, -1, 1, random);      // d X 2d matrix
         // TODO:: Use column vectors instead.
-        u = Nd4j.randn(dimensions, 1, random);                   // row vector with d entries
-        h1 = Nd4j.randn(dimensions, 1, random);                  // row vector with d entries
-        h2 = Nd4j.randn(dimensions, 1, random);                  // row vector with d entries
+        u = Nd4j.rand(dimensions, 1, -1, 1, random);                   // row vector with d entries
+        h1 = Nd4j.rand(dimensions, 1, -1, 1, random);                  // row vector with d entries
+        h2 = Nd4j.rand(dimensions, 1, -1, 1, random);                  // row vector with d entries
 
         X = Nd4j.rand(grammarVocabSize, dimensions);    // V X d matrix
         this.op = op;
-
-        if (op.trainOp.normalize) {
-            normalizeZeroMeanAndUnitVariance();
-        }
     }
 
 
@@ -117,7 +108,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old W =\n {}", W);
             log.info("dW =\n {}", dq.getDqdw().getDQdW());
         }
-        W.subi(dq.getDqdw().getDQdW());
+        W = W.sub(dq.getDqdw().getDQdW());
         if (op.debug) {
             log.info("new W =\n {}", W);
         }
@@ -126,7 +117,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old u = \n {}", u);
             log.info("du = \n {}", dq.getDqdu().getDQdu());
         }
-        u.subi(dq.getDqdu().getDQdu());
+        u = u.sub(dq.getDqdu().getDQdu());
         if (op.debug) {
             log.info("new u = \n {}", u);
         }
@@ -135,7 +126,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old h1 = \n {}", h1);
             log.info("dh1 = \n {}", dq.getDqdh1().getDQdh1());
         }
-	    h1.subi(dq.getDqdh1().getDQdh1());
+	    h1 = h1.sub(dq.getDqdh1().getDQdh1());
         if (op.debug) {
             log.info("new h1 = \n {}", h1);
         }
@@ -144,7 +135,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old h2 = \n {}", h2);
             log.info("dh2 = \n {}", dq.getDqdh2().getDQdh2());
         }
-	    h2.subi(dq.getDqdh2().getDQdh2());
+	    h2 = h2.sub(dq.getDqdh2().getDQdh2());
         if (op.debug) {
             log.info("new h2 = \n {}", h2);
         }
@@ -159,21 +150,16 @@ public class Parameters implements IParameter<Sentence> {
             Integer key = entry.getKey();
             INDArray value = entry.getValue()
                                     .transpose();
-
-            X.putRow(key, X.getRow(key).subi(value));
+            X.putRow(key, X.getRow(key).sub(value));
         }
 
         double l2term = op.trainOp.l2term;
         if (l2term != 0) {
-            u.subi(u.mul(l2term));
-            W.subi(W.mul(l2term));
-            X.subi(X.mul(l2term));
-	        h1.subi(h1.mul(l2term));
-	        h2.subi(h2.mul(l2term));
-        }
-
-        if (op.trainOp.normalize) {
-            normalizeZeroMeanAndUnitVariance();
+            u = u.sub(u.mul(l2term));
+            W = W.sub(W.mul(l2term));
+            X = X.sub(X.mul(l2term));
+	        h1 = h1.sub(h1.mul(l2term));
+	        h2 = h2.sub(h2.mul(l2term));
         }
 
 	    if (op.debug) {
@@ -186,11 +172,11 @@ public class Parameters implements IParameter<Sentence> {
 
     private void normalizeZeroMeanAndUnitVariance()
     {
-        Transforms.normalizeZeroMeanAndUnitVariance(u);
-        Transforms.normalizeZeroMeanAndUnitVariance(h1);
-        Transforms.normalizeZeroMeanAndUnitVariance(h2);
-        Transforms.normalizeZeroMeanAndUnitVariance(W);
-        Transforms.normalizeZeroMeanAndUnitVariance(X);
+        u = Transforms.normalizeZeroMeanAndUnitVariance(u);
+        h1 = Transforms.normalizeZeroMeanAndUnitVariance(h1);
+        h2 = Transforms.normalizeZeroMeanAndUnitVariance(h2);
+        W = Transforms.normalizeZeroMeanAndUnitVariance(W);
+        X = Transforms.normalizeZeroMeanAndUnitVariance(X);
 
     }
 }

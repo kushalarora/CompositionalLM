@@ -111,7 +111,6 @@ public class Model implements Serializable {
 					"Current size is :(%d)",
 				dimensions, node.size(0)));
 		}
-
 		return params.getU().transpose().mmul(node);
 	}
 
@@ -122,7 +121,6 @@ public class Model implements Serializable {
 			throw new RuntimeException(
 				"Expected a 1 X 1 matrix. Got " + valObj.shape().toString());
 		}
-
 		return valObj.getDouble(0);
 	}
 
@@ -167,8 +165,8 @@ public class Model implements Serializable {
 		}
 
 		return params.getU().transpose().mmul(node)
-			.addi(params.getH1().transpose().mmul(child1))
-			.addi(params.getH2().transpose().mmul(child2));
+				.add(params.getH1().transpose().mmul(child1))
+				.add(params.getH2().transpose().mmul(child2));
 	}
 
 	public double energyComp(@NonNull INDArray node, INDArray child1, INDArray child2) {
@@ -242,10 +240,10 @@ public class Model implements Serializable {
 								compositionMatrices[s],
 								phraseMatrix[i][s],
 								phraseMatrix[s][j]);
-			E_l.addi(E_ij[s].muli(Zls));
+			E_l = E_l.add(E_ij[s].mul(Zls));
 			Zl += Zls;
 		}
-		return E_l.muli(compMuSum).divi(Zl);
+		return E_l.mul(compMuSum).div(Zl);
 	}
 
 	public INDArray ExpectedV(Function<INDArray, INDArray> wTodELeafFunc, int[] dims) {
@@ -258,8 +256,8 @@ public class Model implements Serializable {
 		for (Word word : vocab) {
 			INDArray x = word2vec(word);
 			INDArray xD = wTodELeafFunc.apply(x);
-			xD.muli(probabilityWord(x));
-			EV.addi(xD);
+			xD = xD.mul(probabilityWord(x));
+			EV = EV.add(xD);
 		}
 		return EV;
 	}

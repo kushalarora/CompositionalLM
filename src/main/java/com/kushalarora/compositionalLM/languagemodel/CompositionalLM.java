@@ -515,6 +515,7 @@ public class CompositionalLM {
      * @param args
      */
     public static void main(String[] args) throws Exception {
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
         PropertyConfigurator.configure("log4j.properties");
         Options op = ArgParser.parseArgs(args);

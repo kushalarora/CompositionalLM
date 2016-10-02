@@ -77,7 +77,7 @@ public class dXdXwi<T extends IIndexedSized> {
 						INDArray dC12 = Nd4j.concat(0, dXdXwl[start][split], dXdXwl[split][end]);
 
 						// f'(c1, c2) \circ
-						dC.muli(
+						dC = dC.mul(
 							// W *
 							model
 								.getParams()
@@ -86,11 +86,13 @@ public class dXdXwi<T extends IIndexedSized> {
 								.mmul(dC12));
 
 						// weighted marginalization over split
-						synchronized (dXdXwl) {
-							dXdXwl[start][end].addi(
-								dC
-									// \pi[start][end][split]
-									.muli(compositionISplitScore[start][end][split]));
+						synchronized (dXdXwl[start][end]) {
+							dXdXwl[start][end] =
+								dXdXwl[start][end]
+									.add(
+										dC
+										// \pi[start][end][split]
+										.mul(compositionISplitScore[start][end][split]));
 						}
 						return null;
 					}
@@ -106,8 +108,10 @@ public class dXdXwi<T extends IIndexedSized> {
 
 				if (compositionIScore[start][end] != 0) {
 					// dXdXwl /= \pi[start][end]
-					dXdXwl[start][end]
-						.divi(compositionIScore[start][end]);
+					double tmp = Math.pow(10, 6);
+					dXdXwl[start][end] =
+						dXdXwl[start][end]
+							.div(compositionIScore[start][end] * tmp).div(tmp);
 				}
 
 			}
