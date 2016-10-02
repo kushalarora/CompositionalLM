@@ -174,8 +174,8 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
 
         if (compositionalIScore[0][length] != 0) {
-            double tmp = Math.pow(10, 6);
-            dQdW = dQdW.div(compositionalIScore[0][length] * tmp).div(tmp);
+            double tmp = Math.pow(10, 10);
+            dQdW = dQdW.mul(tmp).div(compositionalIScore[0][length] * tmp);
         }
 
 

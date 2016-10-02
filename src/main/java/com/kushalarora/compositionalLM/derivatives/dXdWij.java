@@ -108,10 +108,10 @@ public class dXdWij<T extends IIndexedSized> {
 
                 if (compositionIScore[start][end] != 0) {
                     // dXdW_ij /= \pi(start,end)
-                    double tmp = Math.pow(10, 6);
+                    double tmp = Math.pow(10, 10);
                     dXdWij[start][end] =
-                        dXdWij[start][end]
-                            .div(compositionIScore[start][end] * tmp).div(tmp);
+                        dXdWij[start][end].mul(tmp)
+                            .div(compositionIScore[start][end] * tmp);
                 }
             }
         }

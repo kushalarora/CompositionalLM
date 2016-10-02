@@ -152,8 +152,8 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         }
         if (compositionalIScore[0][length] != 0) {
             // dQdh2 = dQdh2 * p(w)/p(w)
-            double tmp = Math.pow(10, 6);
-            dQdh2 = dQdh2.div(compositionalIScore[0][length] * tmp).div(tmp);
+            double tmp = Math.pow(10, 10);
+            dQdh2 = dQdh2.mul(tmp).div(compositionalIScore[0][length] * tmp);
         }
 
         if (containsNanOrInf()) {

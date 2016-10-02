@@ -108,10 +108,10 @@ public class dXdXwi<T extends IIndexedSized> {
 
 				if (compositionIScore[start][end] != 0) {
 					// dXdXwl /= \pi[start][end]
-					double tmp = Math.pow(10, 6);
+					double tmp = Math.pow(10, 10);
 					dXdXwl[start][end] =
-						dXdXwl[start][end]
-							.div(compositionIScore[start][end] * tmp).div(tmp);
+						dXdXwl[start][end].mul(tmp)
+							.div(compositionIScore[start][end] * tmp);
 				}
 
 			}

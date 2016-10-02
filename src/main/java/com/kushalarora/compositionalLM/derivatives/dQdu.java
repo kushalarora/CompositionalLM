@@ -196,8 +196,8 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
         if (compositionalIScore[0][length] != 0) {
             // dQdu = dQdu * p(w)/p(w)
-            double tmp = Math.pow(10, 6);
-            INDArray dqDu1 = dQdu.div(compositionalIScore[0][length] * tmp).div(tmp);
+            double tmp = Math.pow(10, 10);
+            INDArray dqDu1 = dQdu.mul(tmp).div(compositionalIScore[0][length] * tmp);
             if (containsNanOrInf(dqDu1)) {
                 log.error("Contains Nana");
             }

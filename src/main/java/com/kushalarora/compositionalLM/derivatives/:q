@@ -1,0 +1,16 @@
+dQdXw.java|48 col 18 warning| [rawtypes] found raw type: dQdXw
+dQdXw.java|50 col 28 warning| [unchecked] unchecked conversion
+dQdXw.java|58 col 55 warning| [rawtypes] found raw type: dQdXw
+dQdXw.java|142 col 25 warning| [rawtypes] found raw type: dXdXwi
+dQdXw.java|142 col 21 warning| [unchecked] unchecked call to dXdXwi(int,int,T,Options,int) as a member of the raw type dXdXwi
+dQdXw.java|208 col 21 warning| [rawtypes] found raw type: IDerivative
+dQdXw.java|209 col 9 warning| [rawtypes] found raw type: dQdXw
+dQdXw.java|212 col 75 warning| [unchecked] unchecked cast
+dQdXw.java|240 col 32 warning| [rawtypes] found raw type: IDerivative
+dQdXw.java|240 col 12 warning| [rawtypes] found raw type: IDerivative
+dQdXw.java|241 col 9 warning| [rawtypes] found raw type: dQdXw
+dQdXw.java|244 col 81 warning| [unchecked] unchecked cast
+dQdXw.java|251 col 81 warning| [unchecked] unchecked cast
+dQdXw.java|256 col 20 warning| [rawtypes] found raw type: dQdXw
+dQdXw.java|256 col 16 warning| [unchecked] unchecked call to dQdXw(Map<Integer,INDArray>,dQdXw,T,Options) as a member of the raw type dQdXw
+dQdXw.java|23 col 8 warning| [serial] serializable class dQdXw has no definition of serialVersionUID
