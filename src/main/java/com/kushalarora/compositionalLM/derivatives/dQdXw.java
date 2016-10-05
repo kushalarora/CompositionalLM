@@ -169,7 +169,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                             double muByPW =
                                 compositionalMu[start][end][split]/pW;
 
-                            dQdXw_i.add(lineardEdXi_s.mul(muByPW));
+                            dQdXw_i = dQdXw_i.add(lineardEdXi_s.mul(muByPW));
                         }
 
                         double compMuSum = 0;
