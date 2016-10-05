@@ -126,6 +126,12 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         final double[][] compositionalIScore = scorer.getCompIScores();
 
 
+        final double pW = compositionalIScore[0][length];
+
+        if (pW == 0) {
+            log.error("pW for sentence#%d is zero.", data.getIndex());
+        }
+
         Function<Integer, Void> func = new Function<Integer, Void>() {
             @Nullable
             public Void apply(Integer i) {
@@ -160,13 +166,18 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
 
                             lineardEdXi[split] = lineardEdXi_s;
 
-                            dQdXw_i.add(lineardEdXi_s.mul(compositionalMu[start][end][split]));
+                            double muByPW =
+                                compositionalMu[start][end][split]/pW;
+
+                            dQdXw_i.add(lineardEdXi_s.mul(muByPW));
                         }
 
                         double compMuSum = 0;
                         for (int sp = start + 1; sp < end; sp++) {
                             compMuSum += compositionalMu[start][end][sp];
                         }
+
+                        compMuSum /= pW;
 
                         dQdXw_i.sub(model
                                     .Expectedl(start, end, lineardEdXi,
@@ -175,12 +186,6 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                                         new int[]{dim, 1}));
                     }
                 }
-
-                if (compositionalIScore[0][length] != 0) {
-                    double tmp = Math.pow(10, 10);
-                    dQdXw_i.mul(tmp).div(compositionalIScore[0][length] * tmp);
-                }
-
 
 	            if (containsNanOrInf(dQdXw_i)) {
                     log.error("dQdXw contains Nan Or Inf for index: {} data {}::{}. Norm::{}",

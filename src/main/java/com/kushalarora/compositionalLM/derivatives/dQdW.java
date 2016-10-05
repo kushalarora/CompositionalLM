@@ -79,15 +79,22 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
     public void  calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
 
-        if (length < 2) {
-            // There is nothing to do here.
-            return;
-        }
 
         final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         final double[][][] compositionalMu = scorer.getCompMuScores();
         final double[][] compositionalIScore = scorer.getCompIScores();
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
+
+        final double pW = compositionalIScore[0][length];
+
+        if (length < 2) {
+            // Nothing to do here.
+            return;
+        }
+
+        if (pW == 0) {
+            log.error("pW for sentence#%d is zero.", data.getIndex());
+        }
 
         Function<Integer, Void> funci = new Function<Integer, Void>() {
             @Nullable
@@ -120,10 +127,14 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
                                     dEW_ij_l[split] = lineardXdW;
 
+                                    double muByPW =
+                                        compositionalMu[start][end][split]/pW;
+
+
                                     synchronized (dEdW_ij) {
                                         dEdW_ij = dEdW_ij
                                             .add(lineardXdW
-                                                    .mul(compositionalMu[start][end][split]));
+                                                    .mul(muByPW));
                                     }
                                 }
 
@@ -131,6 +142,8 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                                 for (int sp = start + 1; sp < end; sp++) {
                                     compMuSum += compositionalMu[start][end][sp];
                                 }
+
+                                compMuSum /= pW;
 
                                 dEdW_ij = dEdW_ij.sub(model
                                             .Expectedl(
@@ -171,13 +184,6 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                 funci.apply(i);
             }
         }
-
-
-        if (compositionalIScore[0][length] != 0) {
-            double tmp = Math.pow(10, 10);
-            dQdW = dQdW.mul(tmp).div(compositionalIScore[0][length] * tmp);
-        }
-
 
         if (containsNanOrInf()) {
             log.error("dQdW contains Nan Or Inf. for data {}::{}. Norm::{}", data.getIndex(), data.getSize(), norm());

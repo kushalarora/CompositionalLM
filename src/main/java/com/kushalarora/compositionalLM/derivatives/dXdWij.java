@@ -56,6 +56,10 @@ public class dXdWij<T extends IIndexedSized> {
                 final int start = st;
                 final int end = start + diff;
 
+                if (compositionIScore[start][end] == 0) {
+                    continue;
+                }
+
                 Function<Integer, Void> splitFunction = new Function<Integer, Void>() {
                     @Nullable
                     public Void apply(@Nullable Integer split) {
@@ -72,6 +76,9 @@ public class dXdWij<T extends IIndexedSized> {
                                             child1.getDouble(j) :
                                             child2.getDouble(j - dim)));
 
+                        double splitNorm =
+                            compositionISplitScore[start][end][split]/compositionIScore[start][end];
+
                         // [dc_1dW_ij dc_2dW_ij].transpose()
                         INDArray dC12 = Nd4j.concat(0, dXdWij[start][split], dXdWij[split][end]);
 
@@ -85,7 +92,7 @@ public class dXdWij<T extends IIndexedSized> {
                                 .mmul(dC12))
                             // \dot  f'(c_1, c_2)
                             .mul(dC)
-                            .mul(compositionISplitScore[start][end][split]);
+                            .mul(splitNorm);
 
                         // weighted marginalization over split
                         // dXdW_ij += dXW_ij[k] * \pi(start,end,split)
@@ -106,13 +113,6 @@ public class dXdWij<T extends IIndexedSized> {
                     }
                 }
 
-                if (compositionIScore[start][end] != 0) {
-                    // dXdW_ij /= \pi(start,end)
-                    double tmp = Math.pow(10, 10);
-                    dXdWij[start][end] =
-                        dXdWij[start][end].mul(tmp)
-                            .div(compositionIScore[start][end] * tmp);
-                }
             }
         }
         return dXdWij;

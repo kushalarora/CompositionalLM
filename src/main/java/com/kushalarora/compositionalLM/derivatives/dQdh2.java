@@ -95,14 +95,21 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
     }
 
     public void calcDerivative(final Model model, final StanfordCompositionalInsideOutsideScore scorer) {
-        if (length < 2) {
-            // Nothing to do here.
-            return;
-        }
+
         final INDArray[][][] compositionMatrix = scorer.getCompositionMatrix();
         final INDArray[][] phraseMatrix = scorer.getPhraseMatrix();
         final double[][][] compositionMu = scorer.getCompMuScores();
         final double[][] compositionalIScore = scorer.getCompIScores();
+
+        final double pW = compositionalIScore[0][length];
+        if (length < 2) {
+            // Nothing to do here.
+            return;
+        }
+
+        if (pW == 0) {
+            log.error("pW for sentence#%d is zero.", data.getIndex());
+        }
 
         for (int diff = 2; diff <= length; diff++) {
             final int diffFinal = diff;
@@ -121,9 +128,13 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                                         phraseMatrix[split][end], model);
 
                         dEdh2[split] = dEdh2s;
+
+                        double muByPW =
+                            compositionMu[start][end][split]/pW;
+
                         synchronized (dQdh2) {
                             // dQdh2 * p(w) += dEdh2s * \mu[start][end][split]
-                            dQdh2 = dQdh2.add(dEdh2s.mul(compositionMu[start][end][split]));
+                            dQdh2 = dQdh2.add(dEdh2s.mul(muByPW));
                         }
 
                         return null;
@@ -143,17 +154,14 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                     compMuSum += compositionMu[start][end][sp];
                 }
 
+                compMuSum /= pW;
+
                 dQdh2 = dQdh2.sub(model
                             .Expectedl(start, end, dEdh2,
                                 compositionMatrix[start][end],
                                 phraseMatrix,
                                 compMuSum, new int[]{dimensions, 1}));
             }
-        }
-        if (compositionalIScore[0][length] != 0) {
-            // dQdh2 = dQdh2 * p(w)/p(w)
-            double tmp = Math.pow(10, 10);
-            dQdh2 = dQdh2.mul(tmp).div(compositionalIScore[0][length] * tmp);
         }
 
         if (containsNanOrInf()) {
