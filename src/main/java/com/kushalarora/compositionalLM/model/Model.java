@@ -165,8 +165,8 @@ public class Model implements Serializable {
 		}
 
 		return params.getU().transpose().mmul(node)
-				.add(params.getH1().transpose().mmul(child1))
-				.add(params.getH2().transpose().mmul(child2));
+				.addi(params.getH1().transpose().mmul(child1))
+				.addi(params.getH2().transpose().mmul(child2));
 	}
 
 	public double energyComp(@NonNull INDArray node, INDArray child1, INDArray child2) {
@@ -240,10 +240,10 @@ public class Model implements Serializable {
 								compositionMatrices[s],
 								phraseMatrix[i][s],
 								phraseMatrix[s][j]);
-			E_l = E_l.add(E_ij[s].mul(Zls));
+			E_l = E_l.addi(E_ij[s].muli(Zls));
 			Zl += Zls;
 		}
-		return E_l.mul(compMuSum).div(Zl);
+		return E_l.muli(compMuSum/Zl);
 	}
 
 	public INDArray ExpectedV(Function<INDArray, INDArray> wTodELeafFunc, int[] dims) {
@@ -256,8 +256,8 @@ public class Model implements Serializable {
 		for (Word word : vocab) {
 			INDArray x = word2vec(word);
 			INDArray xD = wTodELeafFunc.apply(x);
-			xD = xD.mul(probabilityWord(x));
-			EV = EV.add(xD);
+			xD = xD.muli(probabilityWord(x));
+			EV = EV.addi(xD);
 		}
 		return EV;
 	}

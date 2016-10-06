@@ -169,7 +169,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                             double muByPW =
                                 compositionalMu[start][end][split]/pW;
 
-                            dQdXw_i = dQdXw_i.add(lineardEdXi_s.mul(muByPW));
+                            dQdXw_i = dQdXw_i.addi(lineardEdXi_s.muli(muByPW));
                         }
 
                         double compMuSum = 0;
@@ -179,7 +179,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
 
                         compMuSum /= pW;
 
-                        dQdXw_i.sub(model
+                        dQdXw_i.subi(model
                                     .Expectedl(start, end, lineardEdXi,
                                         compositionMatrix[start][end],
                                         phraseMatrix, compMuSum,
@@ -189,7 +189,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
 
 	            if (containsNanOrInf(dQdXw_i)) {
                     log.error("dQdXw contains Nan Or Inf for index: {} data {}::{}. Norm::{}",
-                            i, data.getIndex(), data.getSize(), Nd4j.norm2(dQdXw_i)) ;
+                            i, data.getIndex(), data.getSize(), Nd4j.norm2(dQdXw_i));
                     dQdXw_i = Nd4j.zeros(dim);
                 }
 

@@ -133,8 +133,8 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                             compositionMu[start][end][split]/pW;
 
                         synchronized (dQdh2) {
-                            // dQdh2 * p(w) += dEdh2s * \mu[start][end][split]
-                            dQdh2 = dQdh2.add(dEdh2s.mul(muByPW));
+                            // dQdh2 * p(w) += dEdh2s * \mu[start][end][split]/p(W)
+                            dQdh2 = dQdh2.addi(dEdh2s.muli(muByPW));
                         }
 
                         return null;
@@ -156,7 +156,7 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
 
                 compMuSum /= pW;
 
-                dQdh2 = dQdh2.sub(model
+                dQdh2 = dQdh2.subi(model
                             .Expectedl(start, end, dEdh2,
                                 compositionMatrix[start][end],
                                 phraseMatrix,

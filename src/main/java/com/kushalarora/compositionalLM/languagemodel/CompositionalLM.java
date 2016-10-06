@@ -182,18 +182,21 @@ public class CompositionalLM {
             double emIterValidScore = optimizer.getBestValidationScore();
             log.info("EMIter#: {}, emIterValidScore => {}", emIter, emIterValidScore);
 
-            if (bestEMIterValidScore < emIterValidScore)
-            {
-                log.info("EMIter#: {} improved validation score. " +
-	                        "Old best: {}, new best: {}",
-	                emIter, bestEMIterValidScore, emIterValidScore );
-
-                bestEMIterValidScore = emIterValidScore;
-                String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
-                str[0] = String.format("%s-%d", str[0], emIter);
-                String outFilename = String.join(".", str);
-                saveModelSerialized(outFilename);
+            if (bestEMIterValidScore > emIterValidScore) {
+                log.info("Done Training. Total Iter: {}, Best Validation Score: {}", emIter, bestEMIterValidScore);
+                break;
             }
+
+            log.info("EMIter#: {} improved validation score. " +
+                        "Old best: {}, new best: {}",
+                     emIter, bestEMIterValidScore, emIterValidScore );
+
+            bestEMIterValidScore = emIterValidScore;
+            String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
+            str[0] = String.format("%s-%d", str[0], emIter);
+            String outFilename = String.join(".", str);
+            saveModelSerialized(outFilename);
+
             emIter++;
         }
 

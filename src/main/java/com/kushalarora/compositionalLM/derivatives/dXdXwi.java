@@ -81,7 +81,7 @@ public class dXdXwi<T extends IIndexedSized> {
 						INDArray dC12 = Nd4j.concat(0, dXdXwl[start][split], dXdXwl[split][end]);
 
 						// f'(c1, c2) \circ
-						dC = dC.mul(
+						dC = dC.muli(
 							// W *
 							model
 								.getParams()
@@ -98,10 +98,10 @@ public class dXdXwi<T extends IIndexedSized> {
 
 							dXdXwl[start][end] =
 								dXdXwl[start][end]
-									.add(
+									.addi(
 										dC
 										// \pi[start][end][split]
-										.mul(splitNorm));
+										.muli(splitNorm));
 						}
 						return null;
 					}

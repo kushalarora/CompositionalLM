@@ -158,6 +158,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
         done = false;
         double prevBatchScore = Double.POSITIVE_INFINITY;
         double learningRate = op.trainOp.learningRate;
+        double tolerance = .999;
 
         // do training these many times
         while (epoch < op.trainOp.maxOptimizerEpochs && !done) {
@@ -185,12 +186,9 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
 
                 double trainBatchScore = getTrainBatchScore(trainList);
 
-                if (trainBatchScore > prevBatchScore) {
-                    double old_lr = learningRate;
-                    learningRate = learningRate * (1.0- 1.0/(1 + iter));
-                    log.warn("TrainingBatchScore {} < prevBatchScore {}. Old lr {}, new lr {}",
-                                trainBatchScore, prevBatchScore,
-                                old_lr, learningRate);
+                if (trainBatchScore > prevBatchScore * tolerance) {
+                    log.info("Reached minimum. TrainingBatchScore {} < prevBatchScore {}", trainBatchScore, prevBatchScore);
+                    done = true;
                 }
                 prevBatchScore = trainBatchScore;
 
@@ -216,7 +214,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
             iter += 1;
 
             // shall validate?
-            if (op.trainOp.validate &&
+            if (done || op.trainOp.validate &&
                 (iter + 1) % op.trainOp.validationFreq == 0) {
                 preProcessOnBatch();
                 long validStartTime = System.currentTimeMillis();

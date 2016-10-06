@@ -108,7 +108,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old W =\n {}", W);
             log.info("dW =\n {}", dq.getDqdw().getDQdW());
         }
-        W = W.sub(dq.getDqdw().getDQdW());
+        W = W.subi(dq.getDqdw().getDQdW());
         if (op.debug) {
             log.info("new W =\n {}", W);
         }
@@ -117,7 +117,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old u = \n {}", u);
             log.info("du = \n {}", dq.getDqdu().getDQdu());
         }
-        u = u.sub(dq.getDqdu().getDQdu());
+        u = u.subi(dq.getDqdu().getDQdu());
         if (op.debug) {
             log.info("new u = \n {}", u);
         }
@@ -126,7 +126,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old h1 = \n {}", h1);
             log.info("dh1 = \n {}", dq.getDqdh1().getDQdh1());
         }
-	    h1 = h1.sub(dq.getDqdh1().getDQdh1());
+	    h1 = h1.subi(dq.getDqdh1().getDQdh1());
         if (op.debug) {
             log.info("new h1 = \n {}", h1);
         }
@@ -135,7 +135,7 @@ public class Parameters implements IParameter<Sentence> {
             log.info("old h2 = \n {}", h2);
             log.info("dh2 = \n {}", dq.getDqdh2().getDQdh2());
         }
-	    h2 = h2.sub(dq.getDqdh2().getDQdh2());
+	    h2 = h2.subi(dq.getDqdh2().getDQdh2());
         if (op.debug) {
             log.info("new h2 = \n {}", h2);
         }
@@ -155,11 +155,15 @@ public class Parameters implements IParameter<Sentence> {
 
         double l2term = op.trainOp.l2term;
         if (l2term != 0) {
-            u = u.sub(u.mul(l2term));
-            W = W.sub(W.mul(l2term));
-            X = X.sub(X.mul(l2term));
-	        h1 = h1.sub(h1.mul(l2term));
-	        h2 = h2.sub(h2.mul(l2term));
+            u = u.subi(u.mul(l2term));
+            W = W.subi(W.mul(l2term));
+            X = X.subi(X.mul(l2term));
+	        h1 = h1.subi(h1.mul(l2term));
+	        h2 = h2.subi(h2.mul(l2term));
+        }
+
+        if (op.trainOp.normalize) {
+            normalizeZeroMeanAndUnitVariance();
         }
 
 	    if (op.debug) {

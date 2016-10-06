@@ -133,8 +133,8 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
                                     synchronized (dEdW_ij) {
                                         dEdW_ij = dEdW_ij
-                                            .add(lineardXdW
-                                                    .mul(muByPW));
+                                            .addi(lineardXdW
+                                                    .muli(muByPW));
                                     }
                                 }
 
@@ -145,7 +145,7 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
                                 compMuSum /= pW;
 
-                                dEdW_ij = dEdW_ij.sub(model
+                                dEdW_ij = dEdW_ij.subi(model
                                             .Expectedl(
                                                 start, end, dEW_ij_l,
                                                 compositionMatrix[start][end],

@@ -276,7 +276,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             // (start, split), (split, end)
             s.compositionMatrix[start][end][sp] =
                     s.compositionMatrix[start][end][sp]
-                        .add(model.compose(child1, child2));
+                        .addi(model.compose(child1, child2));
 
             // Composition energy of parent (start,end)
             // by children (start, split), (split, end)
@@ -577,23 +577,21 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             } // for unary rules
         }
 
+
         for (int split = start + 1; split < end; split++) {
+
+            if (s.compIScore[start][end] == 0) {
+                continue;
+            }
+
+            final double splitNorm =  s.compISplitScore[start][end][split]/s.compIScore[start][end];
             // X(i,j) * \pi(i,j) = X(i,k,j) * \pi(i,j,k)
             s.phraseMatrix[start][end] =
                 s.phraseMatrix[start][end]
-                .add(s.compositionMatrix[start][end][split]
-                    .mul(s.compISplitScore[start][end][split]));
+                .addi(s.compositionMatrix[start][end][split]
+                        .mul(splitNorm));
         }
 
-        // normalize weights to get them to sum to 1.
-        // X(i,j) = X(i,k) * \pi(i,j)/\pi(i,j)
-        if (s.compIScore[start][end] != 0) {
-            double tmp = Math.pow(10, 6);
-            s.phraseMatrix[start][end] =
-                s.phraseMatrix[start][end]
-                .div(s.compIScore[start][end] * tmp)
-                .div(tmp);
-        }
     }
 
 
@@ -928,9 +926,10 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             int end = start + 1;
             phraseMatrix[start][end] = Nd4j.zeros(model.getDimensions(), 1);
             phraseMatrix[start][end] = phraseMatrix[start][end]
-                                        .add(model.word2vec(sentence.get(start)));
+                                        .addi(model.word2vec(sentence.get(start)));
+
             qScore += log(model.probabilityWord(phraseMatrix[start][end]))
-	                        * score.compositionalMu[start][end][start];
+	                        * score.compositionalMu[start][end][start]/ p_W;
         }
 
         for (int diff = 2; diff <= length; diff++) {
@@ -939,34 +938,39 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
                 phraseMatrix[start][end] = Nd4j.zeros(model.getDimensions(), 1);
 	            double zUnProbComp = 0;
 	            double[] unProbComp = new double[length];
+
+                if (score.compIScore[start][end] == 0) {
+                    continue;
+                }
+
                 for (int split = start + 1; split < end; split++) {
                     INDArray child1 = phraseMatrix[start][split];
                     INDArray child2 = phraseMatrix[split][end];
                     INDArray compVector = model.compose(child1, child2);
 
+                    unProbComp[split] = model.unProbabilityComp(compVector, child1, child2);
+                    zUnProbComp += unProbComp[split];
+
+
+                    final double splitNorm =
+                        score.compISplitScore[start][end][split]/score.compIScore[start][end];
+
                     phraseMatrix[start][end] =
                         phraseMatrix[start][end]
-		                .add(compVector)
-		                .mul(score.compISplitScore[start][end][split]);
+		                .addi(compVector
+		                        .muli(splitNorm));
 
-	                unProbComp[split] = model.unProbabilityComp(compVector, child1, child2);
-	                zUnProbComp += unProbComp[split];
                 }
 
 	            for (int split = start + 1; split < end; split++) {
+
 		            qScore += log(unProbComp[split]/zUnProbComp)
-                                * score.compositionalMu[start][end][split];
+                                * score.compositionalMu[start][end][split]/p_W;
 	            }
 
-                if (score.compIScore[start][end] != 0) {
-                    double tmp = Math.pow(10, 6);
-                    phraseMatrix[start][end] =
-                        phraseMatrix[start][end].div(score.compIScore[start][end] * tmp)
-                                                .div(tmp);
-                }
             }
         }
-        return -1.0 * qScore / p_W;
+        return -1.0 * qScore;
     }
 
 

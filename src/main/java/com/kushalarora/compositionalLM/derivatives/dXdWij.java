@@ -85,20 +85,20 @@ public class dXdWij<T extends IIndexedSized> {
                         // (1_j \dot c_12
                         vec = vec
                             // + (W
-                            .add(model
+                            .addi(model
                                 .getParams()
                                 .getW()
                                 //* [dc_1 dc_2]^T)))
                                 .mmul(dC12))
                             // \dot  f'(c_1, c_2)
-                            .mul(dC)
-                            .mul(splitNorm);
+                            .muli(dC)
+                            .muli(splitNorm);
 
                         // weighted marginalization over split
                         // dXdW_ij += dXW_ij[k] * \pi(start,end,split)
                         synchronized (dXdWij[start][end]) {
                             dXdWij[start][end] =
-                                dXdWij[start][end].add(vec);
+                                dXdWij[start][end].addi(vec);
                         }
                         return null;
                     }

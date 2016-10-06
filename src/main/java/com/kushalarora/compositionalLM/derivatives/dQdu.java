@@ -130,9 +130,9 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                 synchronized (dQdu) {
 
                     double muByPW = compositionMu[start][end][split]/pW;
-                    // dQdu * p(w) += dEdu * mu(start, end, split)
-                    dQdu = dQdu.add(dEdu.sub(ZLeaf_dEdu(model, dimensions))
-                                            .mul(muByPW));
+                    // dQdu * p(w) += {dEdu - E_W} * mu(start, end, split)
+                    dQdu = dQdu.addi(dEdu.subi(ZLeaf_dEdu(model, dimensions))
+                                            .muli(muByPW));
                 }
                 return null;
             }
@@ -171,8 +171,8 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
 
                         dEdu[split] = dEdus;
                         synchronized (dQdu) {
-                            // dQdu * p(w) += dEdu * \mu[start][end][split]
-                            dQdu = dQdu.add(dEdus.mul(muByPW));
+                            // dQdu * p(w) += dEdu * \mu[start][end][split]/p(W)
+                            dQdu = dQdu.addi(dEdus.muli(muByPW));
 
                             if (containsNanOrInf(dQdu)) {
                                 log.error("Contains Nan ");
@@ -196,7 +196,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                 }
                 compMuSum /= pW;
 
-                dQdu = dQdu.sub(model
+                dQdu = dQdu.subi(model
                             .Expectedl(start, end, dEdu,
                                         compositionMatrix[start][end],
                                         phraseMatrix, compMuSum,
