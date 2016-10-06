@@ -930,6 +930,9 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
             qScore += log(model.probabilityWord(phraseMatrix[start][end]))
 	                        * score.compositionalMu[start][end][start]/ p_W;
+            if (!Double.isFinite(qScore)) {
+                log.info("qScore infinite");
+            }
         }
 
         for (int diff = 2; diff <= length; diff++) {
@@ -966,6 +969,9 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
 		            qScore += log(unProbComp[split]/zUnProbComp)
                                 * score.compositionalMu[start][end][split]/p_W;
+                    if (!Double.isFinite(qScore)) {
+                        log.info("qScore infinite");
+                    }
 	            }
 
             }
