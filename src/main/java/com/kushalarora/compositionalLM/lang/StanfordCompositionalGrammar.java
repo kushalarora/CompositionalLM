@@ -927,11 +927,16 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
             phraseMatrix[start][end] = Nd4j.zeros(model.getDimensions(), 1);
             phraseMatrix[start][end] = phraseMatrix[start][end]
                                         .addi(model.word2vec(sentence.get(start)));
+            double prob = model.probabilityWord(phraseMatrix[start][end]);
 
-            qScore += log(model.probabilityWord(phraseMatrix[start][end]))
-	                        * score.compositionalMu[start][end][start]/ p_W;
+            if (prob == 0) {
+                log.info("Prob while calculating qScore is zero for sentence {} for word at pos:{}", sentence.getIndex(), start);
+                qScore += -300;
+                continue;
+            }
+            qScore += log(prob) * score.compositionalMu[start][end][start]/ p_W;
             if (!Double.isFinite(qScore)) {
-                log.info("qScore infinite");
+                log.warn("qScore infinite");
             }
         }
 
@@ -965,9 +970,21 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
                 }
 
+                if (zUnProbComp == 0) {
+                    log.warn("zUnProbComp zero for sentence#{}, start: {}, end: {}", sentence.getIndex(), start, end);
+                    zUnProbComp = -300;
+                }
+
 	            for (int split = start + 1; split < end; split++) {
 
-		            qScore += log(unProbComp[split]/zUnProbComp)
+                    double compProb = unProbComp[split];
+
+                    if (compProb == 0) {
+                        log.warn("compProb zero for sentence: {},start: {}, end: {}, split:{}", sentence.getIndex(), start, end, split);
+                        compProb = -300/(end - start);
+                    }
+
+		            qScore += log(compProb/zUnProbComp)
                                 * score.compositionalMu[start][end][split]/p_W;
                     if (!Double.isFinite(qScore)) {
                         log.info("qScore infinite");
