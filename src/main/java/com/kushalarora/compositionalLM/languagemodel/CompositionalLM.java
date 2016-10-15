@@ -542,7 +542,7 @@ public class CompositionalLM {
         }
 
         final CompositionalLM cLM = new CompositionalLM(grammar, op, model,
-                                        new Parallelizer(op, 1, Executor.getInstance()));
+                                        new Parallelizer(op, 1, Executors.newCachedThreadPool()));
 
         if (op.train) {
             log.info("starting training");
