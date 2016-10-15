@@ -14,6 +14,7 @@ import com.kushalarora.compositionalLM.optimizer.AbstractOptimizer;
 import com.kushalarora.compositionalLM.optimizer.OptimizerFactory;
 import com.kushalarora.compositionalLM.options.ArgParser;
 import com.kushalarora.compositionalLM.options.Options;
+import com.kushalarora.compositionalLM.utils.Executor;
 import com.kushalarora.compositionalLM.utils.Parallelizer;
 import com.kushalarora.compositionalLM.utils.Visualization;
 import edu.stanford.nlp.io.IOUtils;
@@ -541,7 +542,7 @@ public class CompositionalLM {
         }
 
         final CompositionalLM cLM = new CompositionalLM(grammar, op, model,
-                                        new Parallelizer(op, 1, Executors.newFixedThreadPool(100)));
+                                        new Parallelizer(op, 1, Executor.getInstance()));
 
         if (op.train) {
             log.info("starting training");
