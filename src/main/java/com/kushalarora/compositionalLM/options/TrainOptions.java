@@ -34,7 +34,7 @@ public class TrainOptions implements Serializable {
     public int validBatchSize;
     public boolean saveVisualization;
     public String visualizationFilename;
-    public int blockNum;
+    public int blockSize;
     public double l2term;
     public boolean normalize;
 
@@ -95,8 +95,8 @@ public class TrainOptions implements Serializable {
         saveVisualization =
                 config.getBoolean("saveVisualization", false);
 
-        blockNum =
-                config.getInt("blockNum", 6);
+        blockSize =
+                config.getInt("blockSize", 6);
 
         normalize = config.getBoolean("normalize", true);
     }

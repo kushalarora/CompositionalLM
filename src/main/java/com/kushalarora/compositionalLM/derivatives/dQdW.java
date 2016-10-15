@@ -31,7 +31,7 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         this.dQdW = Nd4j.zeros(dim, 2 * dim);
         length = data.getSize();
         this.op = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     public dQdW(dQdW dqdW, T data, Options op)
@@ -41,7 +41,7 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         dim = dqdW.dim;
         length = data.getSize();
         this.op = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     private dQdW(INDArray dqdw, T data, Options op)
@@ -52,7 +52,7 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         dim = shape[0];
         length = data.getSize();
         this.op = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     public static INDArray dEdWBinary(INDArray dXdWijParent,

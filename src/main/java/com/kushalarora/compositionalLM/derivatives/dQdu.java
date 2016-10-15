@@ -39,7 +39,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         this.data = data;
         length = data.getSize();
         options = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     public dQdu(dQdu dqdu, T data, Options op) {
@@ -48,7 +48,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         dimensions = dqdu.dQdu.shape()[0];
         length = data.getSize();
         options = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     private dQdu(INDArray dqdu, T data, Options op) {
@@ -57,7 +57,7 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         dimensions = dqdu.shape()[0];
         length = data.getSize();
         options = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     public void clear() {

@@ -41,7 +41,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         V = vocabSize;
         length = data.getSize();
         this.op = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
 
@@ -52,7 +52,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         V = dqdxw.V;
         length = data.getSize();
         this.op = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     private dQdXw(Map<Integer, INDArray> indexToxMap, dQdXw dqdxw, T data, Options op) {
@@ -62,7 +62,7 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         length = data.getSize();
         this.indexToxMap = indexToxMap;
         this.op = op;
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength / op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     public static INDArray dEdXwUnary(INDArray word, Model model) {

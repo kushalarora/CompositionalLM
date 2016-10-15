@@ -82,7 +82,7 @@ public class StanfordGrammar extends AbstractGrammar {
             isTag[state] = true;
         }
 
-        parallelizer = new Parallelizer(op, (getVocabSize() + 1)/op.trainOp.blockNum);
+        parallelizer = new Parallelizer(op, (getVocabSize() + 1)/100);
     }
 
     /**

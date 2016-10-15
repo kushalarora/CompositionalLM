@@ -31,7 +31,7 @@ public class dXdWij<T extends IIndexedSized> {
         this.i = i;
         this.j = j;
         dXdWij = new INDArray[length][length + 1];
-        parallelizer = new Parallelizer(op, op.grammarOp.maxLength/op.trainOp.blockNum + 1);
+        parallelizer = new Parallelizer(op, op.trainOp.blockSize);
     }
 
     public INDArray[][] calcDerivative(final Model model,

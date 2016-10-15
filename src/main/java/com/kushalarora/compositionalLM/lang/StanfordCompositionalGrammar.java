@@ -75,7 +75,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
         ug = lexicalizedParser.ug;
         lex = lexicalizedParser.lex;
         numStates = lexicalizedParser.stateIndex.size();
-        blockSize = (getVocabSize() + 1)/op.trainOp.blockNum;
+        blockSize = (getVocabSize() + 1)/100;
         this.parallelizer = parallelizer;
     }
 

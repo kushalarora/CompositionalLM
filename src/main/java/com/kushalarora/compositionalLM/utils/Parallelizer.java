@@ -11,9 +11,7 @@ import com.google.common.base.Function;
 import com.kushalarora.compositionalLM.options.Options;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Created by arorak on 12/11/15.
- */
+import static java.lang.Integer.max;
 @Slf4j
 public class Parallelizer {
     public Parallelizer(Options op, int blockSize) {
@@ -32,23 +30,13 @@ public class Parallelizer {
     public <D> List<Future<List<D>>> parallelizer(final int start, final int end,
                                                   final Function<Integer, D> parallizableFunc,
                                                   final int blockSize) {
-        int length = end - start;
-        // Contains one extra block. Do something about it.
-        int blockNum = length / blockSize;
-
-        if (blockNum < 1) {
-            log.error("blockNum is zero. " +
-                    "Start: " + start +
-                    " End: " + end  +
-                    " blockSize: " + blockSize);
-            blockNum = 1;
-        }
 
         List<Callable<List<D>>> callables = new ArrayList<Callable<List<D>>>();
-        for (int i = 0; i < blockNum; i++) {
-            int startIdx = start + i * blockSize;
+        int startIdx = start;
+        while (startIdx < end) {
             int endIdx = (startIdx + blockSize < end) ? startIdx + blockSize : end;
             callables.add(new CallableWithInit<D>(startIdx, endIdx, parallizableFunc));
+            startIdx = endIdx;
         }
 
         try
