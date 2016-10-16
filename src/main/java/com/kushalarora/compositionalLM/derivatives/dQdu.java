@@ -88,6 +88,10 @@ public class dQdu<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
         return Nd4j.norm2(dQdu).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
+    public void clean() {
+        dQdu = null;
+    }
+
     public static INDArray dEduUnary(INDArray word, Model model) {
         // dE = g'(u.t().dot(p))
         double dE = model.energyWordDerivative(word);

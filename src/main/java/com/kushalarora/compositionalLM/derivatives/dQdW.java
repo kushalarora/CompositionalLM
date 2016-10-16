@@ -154,12 +154,22 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
                             }
                         }
 
+                        for (int diff = 2; diff <= length; diff++) {
+                            for (int st = 0; st + diff <= length; st++) {
+                                final int start = st;
+                                final int end = start + diff;
+                                dxdwArr[start][end] = null;
+                            }
+                        }
+
                         int[] dEdW_ijShape = dEdW_ij.shape();
                         if (dEdW_ijShape[0] != 1 && dEdW_ijShape[1] != 1) {
                             throw new RuntimeException("udXdWArr was expected to be a matrix of shape 1 X 1");
                         }
                         double dEdW_ijVal = dEdW_ij.getDouble(0, 0);
                         dQdW.putScalar(new int[]{i, j}, dEdW_ijVal);
+
+
 
                         return null;
                     }
@@ -217,6 +227,10 @@ public class dQdW<T extends IIndexedSized> extends AbstractBaseDerivativeClass<T
     public double norm()
     {
         return Nd4j.norm2(dQdW).sum(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    public void clean() {
+        dQdW = null;
     }
 
 

@@ -95,6 +95,14 @@ public class Derivatives extends AbstractDerivatives<Sentence> {
         dqdxw.clear();
     }
 
+    public void clean() {
+        dqdu.clean();
+        dqdh1.clean();
+        dqdh2.clean();
+        dqdw.clean();
+        dqdxw.clean();
+    }
+
     public void
     calcDerivative() {
         int idx = data.getIndex();

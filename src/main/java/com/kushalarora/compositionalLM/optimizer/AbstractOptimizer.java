@@ -107,12 +107,16 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 for (D derivative : future.get()) {
                     score += derivative.getScore();
                     derivativeAcc(derivative);
+                    derivative.clean();
+                    derivative = null;
                 }
             }
         } else {
             for (int i = 0; i < batchSize; i++) {
                 D derivative = fitRoutine.apply(i);
                 derivativeAcc(derivative);
+                derivative.clean();
+                derivative = null;
             }
         }
 
@@ -184,7 +188,11 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                 // train batch
                 fitBatch(trainList);
 
+                System.gc();
+
                 double trainBatchScore = getTrainBatchScore(trainList);
+
+                System.gc();
 
                 if (trainBatchScore > prevBatchScore * tolerance) {
                     log.info("Reached minimum. TrainingBatchScore {} < prevBatchScore {}", trainBatchScore, prevBatchScore);
@@ -258,6 +266,7 @@ public abstract class AbstractOptimizer<T extends IIndexedSized, D extends IDeri
                     log.info("$Updated Validation$  Updated best validation score epoch# {}, iter# {}:: {}", epoch, iter, mean);
                     saveModel(iter, epoch);
                     postProcessOnBatch();
+                    System.gc();
                 }
                 else {
                     // if mean isn't going down, no point looping

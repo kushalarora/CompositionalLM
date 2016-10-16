@@ -19,6 +19,8 @@ public interface IDerivative<T extends IIndexedSized> {
     public IDerivative adaGrad(IDerivative gradient);
 
     public double norm();
+
+    public void clean();
 }
 
 

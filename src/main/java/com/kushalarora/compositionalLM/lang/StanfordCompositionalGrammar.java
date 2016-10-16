@@ -993,6 +993,7 @@ public class StanfordCompositionalGrammar extends AbstractGrammar {
 
             }
         }
+        phraseMatrix = null;
         return -1.0 * qScore;
     }
 

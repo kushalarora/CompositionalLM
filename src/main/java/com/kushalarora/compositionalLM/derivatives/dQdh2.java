@@ -161,6 +161,10 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                                 compositionMatrix[start][end],
                                 phraseMatrix,
                                 compMuSum, new int[]{dimensions, 1}));
+
+                for (int sp = start + 1; sp < end; sp++) {
+                    dEdh2[sp] = null;
+                }
             }
         }
 
@@ -171,5 +175,9 @@ public class dQdh2<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         }
 
         dQdh2 = clampDerivativeIfNeeded(dQdh2);
+    }
+
+    public void clean() {
+        dQdh2 = null;
     }
 }

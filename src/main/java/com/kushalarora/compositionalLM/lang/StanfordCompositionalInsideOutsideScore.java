@@ -219,4 +219,18 @@ public class StanfordCompositionalInsideOutsideScore extends AbstractInsideOutsi
     public int getSize() {
         return sentence.getSize();
     }
+
+    public void clean() {
+        phraseMatrix = null;
+        compositionMatrix = null;
+        compositionalMu = null;
+        compIScore = null;
+        compIScorePCFG = null;
+        compISplitScore = null;
+        iScore = null;
+        iScorePCFG = null;
+        oScore = null;
+        oSpanWParentScore = null;
+        binaryRuleSet = null;
+    }
 }

@@ -73,5 +73,9 @@ public class StanfordInsideOutsideScore extends AbstractInsideOutsideScore {
     public int getSize() {
         return sentence.getSize();
     }
+
+    public void clean() {
+        
+    }
 }
 

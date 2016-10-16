@@ -194,6 +194,13 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                 }
 
                 indexToxMap.put(indexes[i], clampDerivativeIfNeeded(dQdXw_i));
+
+                for (int diff = 2; diff <= length; diff++) {
+                    for (int start = 0; start + diff <= length; start++) {
+                        int end = start + diff;
+                        dxdxwArr[start][end] = null;
+                    }
+                }
                 return null;
             }
         };
@@ -269,6 +276,10 @@ public class dQdXw<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
             norm += Nd4j.norm2(entry.getValue()).getDouble(0);
         }
         return norm;
+    }
+
+    public void clean() {
+        indexToxMap.clear();
     }
 
     public static synchronized INDArray ZLeaf_dEdXw(final Model model, final int dimensions, int vocabSize) {

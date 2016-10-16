@@ -122,8 +122,11 @@ public class CompositionalLM {
                 new Function<Sentence, Double>() {
                     @Nullable
                     public Double apply(Sentence sentence) {
-                        return ((StanfordCompositionalInsideOutsideScore)
-                            grammar.getInsideScore(sentence, true)).getSentenceScore();
+                        StanfordCompositionalInsideOutsideScore ioScore =
+                            (StanfordCompositionalInsideOutsideScore)grammar.getInsideScore(sentence, true);
+                        double score = ioScore.getSentenceScore();
+                        ioScore.clean();
+                        return score;
                     }
                 },
 

@@ -14,6 +14,8 @@ public interface IDerivatives<T extends IIndexedSized> extends Cloneable {
 
     public void clear();
 
+    public void clean();
+
     public T getData();
 
     public IDerivatives<T> adaGrad(IDerivatives<T> derivatives);

@@ -43,4 +43,6 @@ public interface IInsideOutsideScore extends Serializable, IIndexedSized {
 
     public double getScore(SparseMatrix matrix, long... indexes);
 
+    public void clean();
+
 }

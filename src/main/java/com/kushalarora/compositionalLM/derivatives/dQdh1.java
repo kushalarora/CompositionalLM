@@ -160,7 +160,13 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
                         .Expectedl(start, end, dEdh1,
                             compositionMatrix[start][end],
                             phraseMatrix, compMuSum, new int[] {dimensions, 1}));
+
+                for (int sp = start; sp < length; sp++) {
+                    dEdh1[sp] = null;
+                }
             }
+
+
         }
 
 
@@ -171,5 +177,9 @@ public class dQdh1<T extends IIndexedSized> extends AbstractBaseDerivativeClass<
         }
 
         dQdh1 = clampDerivativeIfNeeded(dQdh1);
+    }
+
+    public void clean() {
+        dQdh1 = null;
     }
 }
