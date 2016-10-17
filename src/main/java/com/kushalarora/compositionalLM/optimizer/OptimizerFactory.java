@@ -43,9 +43,7 @@ public class OptimizerFactory {
             final Options op,
             final Model model,
             final Function<T, Double> trainScorer,
-            final Function<T, Double> validScorer,
             final Function<T, Derivatives> derivativeCalculator,
-            final Function<IntTuple, Void> functionSaver,
             final Function<Void, Void> preProcessOnBatch,
             final Function<Void, Void> postProcessOnBatch,
             final Parallelizer parallelizer) {
@@ -61,16 +59,8 @@ public class OptimizerFactory {
                         return model.getParams();
                     }
 
-                    public double getValidationScore(T data) {
-                        return validScorer.apply(data);
-                    }
-
                     public double getTrainScore(T data) {
                         return trainScorer.apply(data);
-                    }
-
-                    public void saveModel(int iter, int epoch) {
-                        functionSaver.apply(new IntTuple(new int[] {iter, epoch}));
                     }
 
                     public void preProcessOnBatch() {
@@ -92,15 +82,8 @@ public class OptimizerFactory {
                         return model.getParams();
                     }
 
-                    public double getValidationScore(T data) {
-                        return validScorer.apply(data);
-                    }
-
                     public double getTrainScore(T data) {
                         return trainScorer.apply(data);
-                    }
-                    public void saveModel(int iter, int epoch) {
-                        functionSaver.apply(new IntTuple(new int[] {iter, epoch}));
                     }
                     public void preProcessOnBatch() {
                         preProcessOnBatch.apply(null);

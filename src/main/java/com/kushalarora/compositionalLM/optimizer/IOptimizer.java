@@ -22,11 +22,7 @@ public interface IOptimizer<T extends IIndexedSized, D extends IDerivatives> {
 
     public void flushDerivaiveAcc();
 
-    public double getValidationScore(T data);
-
     public double getTrainScore(T data);
-
-    public void saveModel(int iter, int epoch);
 
     public void preProcessOnBatch();
 

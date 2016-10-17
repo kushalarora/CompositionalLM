@@ -113,20 +113,6 @@ public class CompositionalLM {
                     @SneakyThrows
                     public Double apply(Sentence sentence) {
                         return grammar.getQScore(trainCache.get(sentence));
-//                        return ((StanfordCompositionalInsideOutsideScore)
-//                            grammar.getInsideScore(sentence, true)).getSentenceScore();
-                    }
-                },
-
-                // valid scorer
-                new Function<Sentence, Double>() {
-                    @Nullable
-                    public Double apply(Sentence sentence) {
-                        StanfordCompositionalInsideOutsideScore ioScore =
-                            (StanfordCompositionalInsideOutsideScore)grammar.getInsideScore(sentence, true);
-                        double score = ioScore.getSentenceScore();
-                        ioScore.clean();
-                        return score;
                     }
                 },
 
@@ -138,18 +124,6 @@ public class CompositionalLM {
                             model, trainCache.get(sentence));
                         derivatives.calcDerivative();
                         return derivatives;
-                    }
-                },
-
-                // saver
-                new Function<IntTuple, Void>() {
-                    @Nullable
-                    public Void apply(@Nullable IntTuple tuple) {
-                        String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
-                        str[0] = String.format("%s-%d-%d", str[0], tuple.get(0), tuple.get(1));
-                        String outFilename = String.join(".", str);
-                        saveModelSerialized(outFilename);
-                        return null;
                     }
                 },
 
@@ -176,30 +150,89 @@ public class CompositionalLM {
         int emIter = 0;
         double bestEMIterValidScore = Double.NEGATIVE_INFINITY;
 
-        // TODO: Add early stopping logic.
         while (emIter < op.trainOp.maxEMEpochs) {
             log.info("Starting EMIter#: {}", emIter);
             trainCache.clear();
             // Fit training data with validation on validation file.
-            optimizer.fit(trainSentList, validSentList);
-            optimizer.flushDerivaiveAcc();
-            double emIterValidScore = optimizer.getBestValidationScore();
-            log.info("EMIter#: {}, emIterValidScore => {}", emIter, emIterValidScore);
 
-            if (bestEMIterValidScore > emIterValidScore) {
-                log.info("Done Training. Total Iter: {}, Best Validation Score: {}", emIter, bestEMIterValidScore);
-                break;
+            Iterator<Sentence> trainIter = trainSentList.iterator();
+            int trainBatchIdx = 0;
+            while (trainIter.hasNext()) {
+                final List<Sentence> trainList = new ArrayList<Sentence>();
+                for (int idx = 0; idx < op.trainOp.batchSize && trainIter.hasNext(); idx++) {
+                    trainList.add(trainIter.next());
+                }
+
+                optimizer.fit(trainList);
+                trainCache.clear();
             }
 
-            log.info("EMIter#: {} improved validation score. " +
-                        "Old best: {}, new best: {}",
-                     emIter, bestEMIterValidScore, emIterValidScore );
+            boolean done = false;
+            double emIterValidationScore;
 
-            bestEMIterValidScore = emIterValidScore;
-            String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
-            str[0] = String.format("%s-%d", str[0], emIter);
-            String outFilename = String.join(".", str);
-            saveModelSerialized(outFilename);
+            // shall validate?
+            if (op.trainOp.validate &&
+                (emIter + 1) % op.trainOp.validationFreq == 0) {
+                model.preProcessOnBatch();
+                long validStartTime = System.currentTimeMillis();
+                // calc mean for validation set
+                double cumlValidScore = 0;
+                double cumlValidSize = 0;
+                Iterator<Sentence> validIter = validSentList.iterator();
+                int validBatchIdx = 0;
+
+                while (validIter.hasNext()) {
+                    log.info("Starting  validBatch#: {}", validBatchIdx);
+
+                    final List<Sentence> validList = new ArrayList<Sentence>();
+                    for (int idx = 0; idx < op.trainOp.validBatchSize && validIter.hasNext(); idx++) {
+                        Sentence validSent = validIter.next();
+                        validList.add(validSent);
+                        cumlValidSize += validSent.getSize();
+                    }
+
+                    cumlValidScore += getValidationScore(validList);
+                    validBatchIdx++;
+                }
+
+                emIterValidationScore = cumlValidScore / cumlValidSize;
+
+                long estimatedValidTime = System.currentTimeMillis() - validStartTime;
+                log.info("$Validation$ Mean validation score EMiter#{}, time#{}: {}",
+                    emIter, estimatedValidTime, emIterValidationScore);
+
+                // is better than the best
+                if (emIterValidationScore > bestEMIterValidScore) {
+
+                    // good enough for us?
+                    if (emIterValidationScore < bestEMIterValidScore * (1 + op.trainOp.tolerance)) {
+                        log.info("Done training mean : {} bestScore: {}", emIterValidationScore, bestEMIterValidScore);
+                        break;
+                    } // end if mean > bestValidationScore
+
+
+                    bestEMIterValidScore = emIterValidationScore;
+                    log.info("$Updated Validation$  Updated best validation score epoch# {}, iter# {}:: {}", emIter, emIterValidationScore);
+
+                    // Save Model
+                    String[] str = op.modelOp.outFilename.split(Pattern.quote("."));
+                    str[0] = String.format("%s-%d", str[0], emIter);
+                    String outFilename = String.join(".", str);
+                    saveModelSerialized(outFilename);
+
+                    model.postProcessOnBatch();
+                    System.gc();
+
+                    log.info("EMIter#: {} improved validation score. " +
+                            "Old best: {}, new best: {}",
+                        emIter, bestEMIterValidScore, emIterValidationScore );
+
+                } else {
+                    break;
+                }
+            }   // end if validate
+
+            optimizer.flushDerivaiveAcc();
 
             emIter++;
         }
@@ -209,6 +242,41 @@ public class CompositionalLM {
         }
 
         saveModelSerialized(op.modelOp.outFilename);
+    }
+
+    private double getValidationScore(final List<Sentence> validList) throws ExecutionException, InterruptedException {
+        int validBatchSize = validList.size();
+        double validBatchScore = 0;
+
+        // valid scorer
+        Function<Integer, Double> validFunc = new Function<Integer, Double>() {
+            @Nullable
+            public Double apply(Integer index) {
+                StanfordCompositionalInsideOutsideScore ioScore =
+                    (StanfordCompositionalInsideOutsideScore)grammar.getInsideScore(validList.get(index), true);
+                double score = ioScore.getSentenceScore();
+                ioScore.clean();
+                return score;
+            }
+        };
+        if (op.trainOp.dataParallel) {
+            List<Future<List<Double>>> validScoreFutures =
+                parallelizer.parallelizer(0, validBatchSize, validFunc);
+
+            for (Future<List<Double>> future : validScoreFutures) {
+                List<Double> scoreList = future.get();
+                for (double score : scoreList) {
+                    validBatchScore += score;
+                }
+            }
+        } else {
+            for (int i = 0; i < validBatchSize; i++) {
+                Double score = validFunc.apply(i);
+                log.info("Validation sentence#{}:: {}", validList.get(i).getIndex(), score);
+                validBatchScore += score;
+            }
+        }
+        return validBatchScore;
     }
 
     public void parse() {
