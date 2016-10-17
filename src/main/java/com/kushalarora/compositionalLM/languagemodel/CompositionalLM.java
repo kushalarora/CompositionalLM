@@ -21,6 +21,7 @@ import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
 import edu.stanford.nlp.parser.lexparser.Lexicon;
 import edu.stanford.nlp.util.IntTuple;
+import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -152,7 +153,6 @@ public class CompositionalLM {
 
         while (emIter < op.trainOp.maxEMEpochs) {
             log.info("Starting EMIter#: {}", emIter);
-            trainCache.clear();
             // Fit training data with validation on validation file.
 
             Iterator<Sentence> trainIter = trainSentList.iterator();
@@ -164,6 +164,13 @@ public class CompositionalLM {
                 }
 
                 optimizer.fit(trainList);
+
+                trainList.stream().forEach(new Consumer<Sentence>() {
+                    public void accept(Sentence sentence) {
+                        trainCache.get(sentence).clean();
+                    }
+                });
+                System.gc();
                 trainCache.clear();
             }
 
