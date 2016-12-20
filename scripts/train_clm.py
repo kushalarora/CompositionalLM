@@ -240,16 +240,16 @@ for epoch in range(n_epoch):
         if batch_count >= batchsize:
             print('Updating batch gradient for batch: {}'.format(batch))
             batch += 1
+            total_loss += float(accum_loss.data)
             accum_loss /= batch_count
             model.cleargrads()
             accum_loss.backward()
             optimizer.update()
-            total_loss += float(accum_loss.data)
 
             accum_loss = 0
             batch_count = 0
 
-            print('loss: {:.2f}'.format(total_loss))
+            print('loss: {:.2f}'.format(total_loss/epoch_count))
             model.clear_z_leaf()
             model.init_z_leaf(True)
 
